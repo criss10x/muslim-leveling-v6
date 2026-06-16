@@ -335,14 +335,14 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val sunnahItems = listOf(
-                        Triple("dhuha", "Sholat Dhuha", "Sholat sunnah di pagi hari"),
-                        Triple("tahajjud", "Sholat Tahajjud", "Sholat sunnah sepertiga malam terakhir"),
-                        Triple("rawatib_subuh_qobliyah", "Qobliyah Subuh", "Subuh: 2 rakaat sebelum"),
-                        Triple("rawatib_dzuhur_qobliyah", "Qobliyah Dzuhur Sebelum", "Dzuhur: 2 atau 4 rakaat sebelum"),
-                        Triple("rawatib_dzuhur_ba'diyyah", "Ba'diyyah Dzuhur Sesudah", "Dzuhur: 2 rakaat sesudah"),
-                        Triple("rawatib_ashar_qobliyah", "Qobliyah Ashar", "Ashar: 2 atau 4 rakaat sebelum"),
-                        Triple("rawatib_maghrib_ba'diyyah", "Ba'diyyah Maghrib", "Maghrib: 2 rakaat sesudah"),
-                        Triple("rawatib_isya_ba'diyyah", "Ba'diyyah Isya", "Isya: 2 rakaat sesudah")
+                        Triple("dhuha", "Sholat Dhuha", "Sunnah pagi"),
+                        Triple("tahajjud", "Sholat Tahajjud", "Sunnah sepertiga malam"),
+                        Triple("rawatib_subuh_qobliyah", "Qobliyah Subuh", "2 rakaat sebelum Subuh"),
+                        Triple("rawatib_dzuhur_qobliyah", "Qobliyah Dzuhur Sebelum", "2-4 rakaat sebelum Dzuhur"),
+                        Triple("rawatib_dzuhur_ba'diyyah", "Ba'diyyah Dzuhur Sesudah", "2 rakaat sesudah Dzuhur"),
+                        Triple("rawatib_ashar_qobliyah", "Qobliyah Ashar", "2-4 rakaat sebelum Ashar"),
+                        Triple("rawatib_maghrib_ba'diyyah", "Ba'diyyah Maghrib", "2 rakaat sesudah Maghrib"),
+                        Triple("rawatib_isya_ba'diyyah", "Ba'diyyah Isya", "2 rakaat sesudah Isya")
                     )
 
                     sunnahItems.forEach { (id, name, desc) ->
@@ -394,8 +394,8 @@ fun HomeScreen(
             ) {
                 val tilawahDone = state.prayerLog.any { it.date == todayStr && it.prayer == "tilawah" }
                 SunnahActionCard(
-                    title = "Tilawah & Dzikir Harian",
-                    description = "Membaca Al-Qur'an / Dzikir Pagi & Petang",
+                    title = "Tilawah & Dzikir",
+                    description = "Baca Al-Qur'an / Dzikir Pagi & Petang",
                     icon = "📖",
                     isClaimed = tilawahDone,
                     accentColor = RingBlue,
@@ -412,8 +412,8 @@ fun HomeScreen(
         val prayerName = showUnlogConfirm!!
         AlertDialog(
             onDismissRequest = { showUnlogConfirm = null },
-            title = { Text("⚠️ Uncheck Sholat?", color = TextLight, fontWeight = FontWeight.Bold) },
-            text = { Text("Apakah kamu yakin ingin membatalkan catatan Sholat ${prayerName.capitalizeCompat()} hari ini? XP dan streak akan dikurangi.", color = TextMuted) },
+            title = { Text("⚠️ Batalin Sholat?", color = TextLight, fontWeight = FontWeight.Bold) },
+            text = { Text("Yakin mau batalin catatan Sholat ${prayerName.capitalizeCompat()} hari ini? XP dan streak bakal dikurangi ya!", color = TextMuted) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -421,7 +421,7 @@ fun HomeScreen(
                         showUnlogConfirm = null
                     }
                 ) {
-                    Text("Ya, Batalkan", color = RingRed, fontWeight = FontWeight.Bold)
+                    Text("Iya, Batalkan", color = RingRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -468,7 +468,7 @@ fun getNextPrayerTimerInfo(timings: Timings, currentWajib: Int, denominator: Int
             // ignore
         }
     }
-    return NextPrayerTimer("Subuh besok", timings.subuh, "Perjuangan hari ini selesai! Istirahat yang cukup.")
+    return NextPrayerTimer("Subuh besok", timings.subuh, "Hari ini udah kelar! Istirahat yang cukup ya 😴")
 }
 
 @Composable
@@ -734,7 +734,7 @@ fun HeroStreakCard(state: MuslimLevelingData, isSantaiMode: Boolean) {
                             letterSpacing = 1.sp
                         )
                         Text(
-                            text = "Selesaikan semua 5 sholat wajib untuk membuka!",
+                            text = "Lengkapin 5 sholat wajib dulu buat buka ini! 🔓",
                             fontSize = 11.sp,
                             color = TextMuted,
                             lineHeight = 16.sp
@@ -1039,7 +1039,7 @@ fun SunnahActionCard(
     icon: String,
     isClaimed: Boolean,
     accentColor: Color,
-    buttonLabel: String = "Catat Done",
+    buttonLabel: String = "Catat ✅",
     onLog: () -> Unit
 ) {
     val cardBg = accentColor.copy(alpha = 0.05f)
@@ -1125,7 +1125,7 @@ fun SunnahActionCard(
                         .shadow(4.dp, RoundedCornerShape(10.dp), ambientColor = accentColor.copy(alpha = 0.3f))
                 ) {
                     Text(
-                        text = if (buttonLabel == "Catat Done") "+ Claim" else buttonLabel,
+                        text = if (buttonLabel == "Catat ✅") "+ Claim" else buttonLabel,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.Black
@@ -1165,7 +1165,7 @@ fun getNextPrayerCountdown(timings: Timings, currentWajib: Int, denominator: Int
             // ignore
         }
     }
-    return "Jadwal sholat fardhu selesai untuk hari ini. Subuh besok jam ${timings.subuh}."
+    return "Sholat fardhu hari ini udah lengkap! Subuh besok jam ${timings.subuh} ✨"
 }
 
 fun isCurrentOrUpcoming(prayer: String, timings: Timings): Boolean {

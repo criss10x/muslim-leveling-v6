@@ -157,7 +157,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (kota.isNotEmpty() && kota.lowercase() != oldKota.lowercase()) {
                 fetchPrayerTimes(kota)
             }
-            _toastEvent.emit("Pengaturan Profil Berhasil Diperbarui!")
+            _toastEvent.emit("Profil udah ke-update! ✅")
         }
     }
 
@@ -387,7 +387,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // Check if already logged today
             val alreadyLogged = state.prayerLog.any { it.date == todayStr && it.prayer == prayer }
             if (alreadyLogged) {
-                _toastEvent.emit("Sholat ini sudah dicatat hari ini!")
+                _toastEvent.emit("Sholat ini udah dicatat hari ini!")
                 return@launch
             }
 
@@ -677,7 +677,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             _gameData.value = updatedData
             repository.saveGameState(updatedData)
 
-            _toastEvent.emit("Catatan sholat berhasil dihapus.")
+            _toastEvent.emit("Sholat udah di-unlog.")
         }
     }
 
@@ -711,7 +711,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.saveGameState(updatedData)
 
             if (currentZikir.count == 3) {
-                _toastEvent.emit("Quest Dzikir setelah sholat selesai! Siap diklaim.")
+                _toastEvent.emit("Dzikir selesai! Quest udah siap diklaim 🎉")
             }
         }
     }
@@ -767,7 +767,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val updatedData = state.copy(quests = state.quests.copy(list = updatedList))
             _gameData.value = updatedData
             repository.saveGameState(updatedData)
-            _toastEvent.emit("Berdoa selesai! Quest berhasil diselesaikan.")
+            _toastEvent.emit("Doa udah kelar! Quest selesai 🎉")
         }
     }
 
@@ -782,7 +782,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val pool = mutableListOf(
                 Quest(
                     "quest_subuh_tepat",
-                    "Sholat Subuh tepat waktu (<=30 menit setelah adzan)",
+                    "Sholat Subuh tepat waktu (≤30 menit setelah adzan)",
                     xpReward = 50,
                     target = 1,
                     progress = 0,
@@ -791,7 +791,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 ),
                 Quest(
                     "quest_five_rings",
-                    "Lengkapi 5/5 ring sholat hari ini",
+                    "Lengkapin 5/5 sholat hari ini",
                     xpReward = 100,
                     target = 1,
                     progress = 0,
@@ -809,7 +809,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 ),
                 Quest(
                     "quest_timely_prayers",
-                    "Sholat tepat waktu (<=10 menit), 3x hari ini",
+                    "Sholat tepat waktu (≤10 menit), 3x hari ini",
                     xpReward = 60,
                     target = 3,
                     progress = 0,
@@ -852,7 +852,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 pool.add(
                     Quest(
                         "quest_rawatib_two",
-                        "Sholat sunnah rawatib 2x hari ini",
+                        "Rawatib 2x hari ini",
                         xpReward = 45,
                         target = 2,
                         progress = 0,
@@ -866,7 +866,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 pool.add(
                     Quest(
                         "quest_hero_streak_7",
-                        "Pertahankan Hero Streak 7 hari",
+                        "Pertahanin Hero Streak 7 hari! 🔥",
                         xpReward = 200,
                         target = 7,
                         progress = state.heroStreak.current,
@@ -1008,13 +1008,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     val updatedData = _gameData.value.copy(prayerTimesCache = newCache)
                     _gameData.value = updatedData
                     repository.saveGameState(updatedData)
-                    _toastEvent.emit("Jadwal Sholat kota $kota berhasil dimuat!")
+                    _toastEvent.emit("Jadwal sholat $kota udah ke-load! ✅")
                 } else {
-                    _toastEvent.emit("Gagal memuat jadwal sholat (API error).")
+                    _toastEvent.emit("Gagal load jadwal sholat 😥")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                _toastEvent.emit("Koneksi gagal. Menggunakan jadwal default.")
+                _toastEvent.emit("Koneksi error. Pakai jadwal default dulu ya.")
             } finally {
                 _isFetchingApi.value = false
             }

@@ -57,14 +57,14 @@ fun QuestScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Misi & Kontrak Harian",
+                text = "Misi Harian 📋",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 color = TextLight,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Selesaikan objektif di bawah untuk mengumpulkan tumpukan XP hari ini!",
+                text = "Selesaikan misi-misi di bawah buat ngumpulin XP hari ini!",
                 fontSize = 12.sp,
                 color = TextMuted,
                 textAlign = TextAlign.Center,
@@ -97,7 +97,7 @@ fun QuestScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "TARGET OPERASI (RESET 24:00)",
+                    text = "TARGET HARI INI (RESET JAM 24:00)",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = GoldAccent,
@@ -117,7 +117,7 @@ fun QuestScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Belum ada quest aktif. Masukkan kota asal di Pengaturan untuk memicu jadwal & quest!",
+                        text = "Belum ada quest nih. Masukin kota asal di Pengaturan dulu ya biar quest-nya muncul!",
                         color = TextMuted,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center
@@ -308,13 +308,13 @@ fun InteractiveZikirWidget(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "📿 Tasbih Counter Dzikir",
+                    text = "📿 Tasbih Dzikir",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = RingBlue
                 )
                 Text(
-                    text = "Ketuk tombol untuk menambah dzikir pengiring setelah shalat (Sekali per Sholat)",
+                    text = "Tap buat nambah dzikir setelah sholat (1x per sholat)",
                     fontSize = 11.sp,
                     color = TextMuted,
                     lineHeight = 15.sp,
@@ -380,13 +380,13 @@ fun InteractiveDoaWidget(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "🙏 Doa Singkat Setelah Sholat",
+                    text = "🙏 Doa Setelah Sholat",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = CyanAccent
                 )
                 Text(
-                    text = "Sudahkah kamu berdoa setelah sholat? Ketuk Selesai untuk klaim quest!",
+                    text = "Udah berdoa setelah sholat belum? Tap Selesai buat klaim quest!",
                     fontSize = 11.sp,
                     color = TextMuted,
                     lineHeight = 15.sp,

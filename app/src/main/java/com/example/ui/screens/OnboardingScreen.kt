@@ -146,7 +146,7 @@ fun OnboardingScreen(
 
                     // Username Input
                     Text(
-                        text = "Nama Nickname Gamer:",
+                        text = "Nickname Gamer:",
                         color = TextLight,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
@@ -175,7 +175,7 @@ fun OnboardingScreen(
 
                     // City Location
                     Text(
-                        text = "Kota / Kabupaten Asal (Jadwal Sholat):",
+                        text = "Kota Asal (untuk Jadwal Sholat):",
                         color = TextLight,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
@@ -184,7 +184,7 @@ fun OnboardingScreen(
                     OutlinedTextField(
                         value = kota,
                         onValueChange = { kota = it },
-                        placeholder = { Text("Masukkan kota mu...", color = TextMuted) },
+                        placeholder = { Text("Ketik kota kamu...", color = TextMuted) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = TextLight,
                             unfocusedTextColor = TextLight,
@@ -204,7 +204,7 @@ fun OnboardingScreen(
 
                     // Intensity Mode chooser
                     Text(
-                        text = "Mode Intensitas (Leveling):",
+                        text = "Pilih Mode Leveling:",
                         color = TextLight,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
@@ -266,9 +266,9 @@ fun OnboardingScreen(
                             .padding(12.dp)
                     ) {
                         val description = when (intensityMode) {
-                            "santai" -> "🔴 Ring Wajib dihitung dari 3 sholat wajib pilihanmu (Default: Subuh, Maghrib, Isya). Sholat lain tetap dapat XP bonus!"
-                            "standar" -> "🔴 Ring Wajib (5 sholat) + 🟢 Ring Sunnah aktif + 🔵 Ring Tilawah aktif. Seimbang untuk ibadah wajib dan sunnah harian!"
-                            "sultan" -> "🔴 Ring Wajib (5 sholat) + 🟢 Ring Sunnah aktif + 🔵 Ring Tilawah aktif. Mode gamer Muslim sejati penuh keberkahan!"
+                            "santai" -> "🔴 Ring Wajib dari 3 sholat favoritmu (Default: Subuh, Maghrib, Isya). Sholat lain tetep dapet XP bonus!"
+                            "standar" -> "🔴 Ring Wajib (5 sholat) + 🟢 Ring Sunnah aktif + 🔵 Ring Tilawah aktif. Balance ibadah wajib & sunnah!"
+                            "sultan" -> "🔴 Ring Wajib (5 sholat) + 🟢 Ring Sunnah aktif + 🔵 Ring Tilawah aktif. Mode gamer Muslim sejati! 🔥"
                             else -> ""
                         }
                         Text(
@@ -296,9 +296,9 @@ fun OnboardingScreen(
             Button(
                 onClick = {
                     if (username.trim().isEmpty()) {
-                        errorMsg = "Oops! Nickname karakter tidak boleh kosong."
+                        errorMsg = "Oops! Nickname-nya jangan kosong ya 😅"
                     } else if (kota.trim().isEmpty()) {
-                        errorMsg = "Masukkan kota asal untuk mendapatkan jadwal sholat mu."
+                        errorMsg = "Masukin kota asalmu dulu biar jadwal sholatnya muncul!"
                     } else {
                         onComplete(username.trim(), intensityMode, kota.trim())
                     }
@@ -315,7 +315,7 @@ fun OnboardingScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
             ) {
                 Text(
-                    text = "MEMULAI PERJALANAN ISTIQOMAH 🎮",
+                    text = "MULAI PETUALANGAN ISTIQOMAH 🎮",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = Color.Black

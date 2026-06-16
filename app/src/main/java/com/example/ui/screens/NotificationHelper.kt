@@ -34,15 +34,15 @@ object NotificationHelper {
         }
 
         if (!permissionGranted) {
-            Toast.makeText(context, "Izin notifikasi tidak aktif. Silahkan aktifkan di pengaturan HP Anda.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Notifikasi belum aktif. Aktifin di pengaturan HP ya!", Toast.LENGTH_LONG).show()
             return
         }
 
         val message = when (mode) {
-            "fokus" -> "Mode Fokus aktif! Hanya akan diingatkan sholat Subuh dan 15 menit sebelum sholat berikutnya."
-            "seimbang" -> "Mode Seimbang aktif! Pengingat semua waktu sholat wajib 15 menit sebelum adzan."
-            "intensif" -> "Mode Intensif aktif! Gamer akan diingatkan 30 menit dan 5 menit sebelum sholat dimulai. Pertahankan streak!"
-            else -> "Notikasi Muslim Leveling siap dikirim!"
+            "fokus" -> "Mode Fokus aktif! Cuma diingetin Subuh sama 15 menit sebelum sholat berikutnya."
+            "seimbang" -> "Mode Seimbang aktif! Pengingat semua sholat wajib 15 menit sebelum adzan."
+            "intensif" -> "Mode Intensif aktif! Kamu bakal diingetin 30 menit & 5 menit sebelum sholat. Pertahanin streak! 🔥"
+            else -> "Notifikasi Muslim Leveling siap! 🔔"
         }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)

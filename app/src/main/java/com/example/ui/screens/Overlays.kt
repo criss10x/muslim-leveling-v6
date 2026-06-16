@@ -105,7 +105,7 @@ fun LevelUpCelebrationOverlay(
 
             // Subtitles
             Text(
-                text = "SELAMAT PENDOAT!",
+                text = "SELAMAT, PEJUANG! 🎉",
                 fontSize = 14.sp,
                 color = TextLight,
                 fontWeight = FontWeight.Medium,
@@ -122,7 +122,7 @@ fun LevelUpCelebrationOverlay(
             )
 
             Text(
-                text = "Mencapai Level $unlockedLevel",
+                text = "Level $unlockedLevel tercapai!",
                 fontSize = 16.sp,
                 color = TextLight.copy(alpha = 0.8f),
                 fontWeight = FontWeight.SemiBold,
@@ -132,7 +132,7 @@ fun LevelUpCelebrationOverlay(
             Spacer(modifier = Modifier.height(40.dp))
 
             Text(
-                text = "KETUK DI MANA SAJA UNTUK LANJUT 🎮",
+                text = "TAP DI MANA AJA BUAT LANJUT 🎮",
                 fontSize = 11.sp,
                 color = TextMuted,
                 fontWeight = FontWeight.Bold,
@@ -233,7 +233,7 @@ fun RewardStepCard_Confirm(prayerName: String) {
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "IBADAH BERHASIL DICATAT",
+                text = "IBADAH TERCATAT! ✅",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = GoldAccent,
@@ -251,7 +251,7 @@ fun RewardStepCard_Confirm(prayerName: String) {
             )
 
             Text(
-                text = "Semoga ibadahmu diterima Allah SWT. Ring ritual harianmu sudah terapdet!",
+                text = "Semoga diterima ya! Ring ritual harian udah ke-update 🌟",
                 fontSize = 11.sp,
                 color = TextMuted,
                 textAlign = TextAlign.Center,
@@ -309,7 +309,7 @@ fun RewardStepCard_Xp(prayerName: String, xpGained: Int) {
             )
 
             Text(
-                text = "Kompensasi Loot ($prayerName)",
+                text = "Bonus Loot ($prayerName) 🎁",
                 fontSize = 12.sp,
                 color = TextMuted,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -326,7 +326,7 @@ fun RewardStepCard_Xp(prayerName: String, xpGained: Int) {
             )
 
             Text(
-                text = "Karaktermu makin berkembang, level up sudah dekat!",
+                text = "Karaktermu makin kuat! Level up udah deket nih 🔥",
                 fontSize = 11.sp,
                 color = TextMuted,
                 textAlign = TextAlign.Center,
@@ -390,7 +390,7 @@ fun RewardStepCard_FiveOfFive() {
             )
 
             Text(
-                text = "+50 XP Bonus 5/5 Terpasang!",
+                text = "+50 XP Bonus 5/5 Aktif! 🔥",
                 fontSize = 12.sp,
                 color = OrangeFlame,
                 fontWeight = FontWeight.Bold,
@@ -398,7 +398,7 @@ fun RewardStepCard_FiveOfFive() {
             )
 
             Text(
-                text = "Mantap gamer! Pertahankan rekam jejak sholat 5/5 fardhunya besok agar bonus gila ini terus aktif!",
+                text = "Keren! Pertahanin streak 5/5 besok ya biar bonus gila ini tetep aktif! 🔥",
                 fontSize = 11.sp,
                 color = TextMuted,
                 textAlign = TextAlign.Center,
@@ -468,7 +468,7 @@ fun RewardStepCard_GachaUnlock(rewardName: String, iconIndex: Int) {
             )
 
             Text(
-                text = "Item kosmetik langka ditambahkan ke koleksi profil gamer mu. Cek di tab Profil!",
+                text = "Item langka udah masuk koleksi profil kamu! Cek di tab Profil ya 🎁",
                 fontSize = 11.sp,
                 color = TextMuted,
                 textAlign = TextAlign.Center,

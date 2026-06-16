@@ -99,7 +99,7 @@ fun ProfileScreen(
 
             // CONSISTENCY CHART
             Text(
-                text = "GRAFIK KONSISTENSI SHOLAT FARDHU",
+                text = "GRAFIK SHOLAT FARDHU 📊",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = GoldAccent,
@@ -140,7 +140,7 @@ fun ProfileScreen(
 
             // ACHIEVEMENTS / BADGES GRID
             Text(
-                text = "PENCAPAIAN DAN BADGE (ACHIEVEMENTS)",
+                text = "PENCAPAIAN & BADGE 🏆",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = GoldAccent,
@@ -156,7 +156,7 @@ fun ProfileScreen(
 
             // REWARD UNLOCKS
             Text(
-                text = "KOLEKSI GACOAN REWARD MINGGU INI",
+                text = "REWARD MINGGU INI 🎁",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = GoldAccent,
@@ -188,7 +188,7 @@ fun ProfileScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(text = "⚙️", fontSize = 18.sp, modifier = Modifier.padding(end = 8.dp))
                         Text(
-                            text = "PENGATURAN KARAKTER & GAME",
+                            text = "PENGATURAN 🎮",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextLight
@@ -228,8 +228,8 @@ fun ProfileScreen(
     if (showResetConfirm) {
         AlertDialog(
             onDismissRequest = { showResetConfirm = false },
-            title = { Text("RESET DATA SHOLAT?", color = RingRed, fontWeight = FontWeight.Bold) },
-            text = { Text("Apakah kamu yakin ingin menghapus seluruh data karakter dan riwayat sholat? Seluruh level, streak, quest harian, dan item rewards akan terhapus selamanya.", color = TextLight) },
+            title = { Text("HAPUS DATA SHOLAT?", color = RingRed, fontWeight = FontWeight.Bold) },
+            text = { Text("Yakin mau hapus semua data karakter & riwayat sholat? Level, streak, quest, dan rewards bakal hilang selamanya!", color = TextLight) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -237,7 +237,7 @@ fun ProfileScreen(
                         showResetConfirm = false
                     }
                 ) {
-                    Text("Hapus Semua Data", color = RingRed, fontWeight = FontWeight.Bold)
+                    Text("Ya, Hapus Semua", color = RingRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -523,15 +523,15 @@ fun AchievementsGrid(unlockedBadges: List<String>) {
         Badge("langkah_pertama", "Langkah Pertama", "Catat sholat pertama", "👣"),
         Badge("subuh_warrior", "Subuh Warrior", "Streak Subuh 7 hari", "⏱️"),
         Badge("subuh_legend", "Subuh Legend", "Streak Subuh 30 hari", "🏆"),
-        Badge("five_five_master", "5/5 Master", "Pertama completes 5/5", "🥇"),
+        Badge("five_five_master", "5/5 Master", "Pertama kali 5/5!", "🥇"),
         Badge("five_five_streak_7", "Streak x7", "Hero streak 7 hari", "🎖️"),
         Badge("five_five_streak_30", "Streak x30", "Hero streak 30 hari", "👑"),
         Badge("sultan_sunnah", "Sultan Sunnah", "Total 50 sholat sunnah", "☘️"),
         Badge("tilawah_streak_14", "Tilawah Streak", "Streak Tilawah 14 hari", "📜"),
-        Badge("ramadan_champion", "Virtual Ramadan", "Logged during Ramadan", "🌙"),
-        Badge("comeback_king", "Comeback King", "Lolos 3x break penyelamat", "🛡️"),
+        Badge("ramadan_champion", "Virtual Ramadan", "Aktif selama Ramadan 🌙", "🌙"),
+        Badge("comeback_king", "Comeback King", "Pernah break 3x tapi balik lagi! 💪", "🛡️"),
         Badge("early_bird", "Early Bird", "20x Sholat tepat waktu", "🏹"),
-        Badge("mythic_reached", "Mythic Reached", "Mencapai level 80!", "🔮")
+        Badge("mythic_reached", "Mythic Reached", "Level 80 tercapai! 🔮", "🔮")
     )
 
     // Build absolute grid layout
@@ -633,7 +633,7 @@ fun RewardCollectorGallery(collectedRewards: List<String>) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Koleksi Gacha Loot (${collectedRewards.size}/10):",
+            text = "Gacha Loot (${collectedRewards.size}/10):",
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = GoldAccent,
@@ -733,7 +733,7 @@ fun SettingsPanelContent(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Edit city
-            Text("Edit Lokasi (Kota/Kabko):", fontSize = 12.sp, color = GoldAccent, fontWeight = FontWeight.Bold)
+            Text("Kota/Kabupaten:", fontSize = 12.sp, color = GoldAccent, fontWeight = FontWeight.Bold)
             OutlinedTextField(
                 value = kota,
                 onValueChange = { kota = it },
@@ -783,7 +783,7 @@ fun SettingsPanelContent(
             // If Santai, picker of 3 sholats
             if (intensityMode == "santai") {
                 Text(
-                    text = "Pilih 3 Sholat Wajib yg Dilacak:",
+                    text = "Pilih 3 sholat wajib yg mau dilacak:",
                     fontSize = 11.sp,
                     color = TextMuted,
                     modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
@@ -869,7 +869,7 @@ fun SettingsPanelContent(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Simpan Konfigurasi Baru 💾", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
+                Text("Simpan Perubahan 💾", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -882,7 +882,7 @@ fun SettingsPanelContent(
                 border = BorderStroke(1.dp, RingRed),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("⚠️ Reset Karakter & Riwayat Sholat ⚠️", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = RingRed)
+                Text("⚠️ Hapus Semua Data Karakter ⚠️", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = RingRed)
             }
         }
     }
