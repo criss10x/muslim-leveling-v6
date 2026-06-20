@@ -88,12 +88,20 @@ object LearningContent {
             icon = "🕌",
             modules = listOf(
                 LearningModule(
-                    id = "rukun_1.1",
+                    id = "rukun_2.1",
                     categoryId = "rukun_islam",
-                    title = "Rukun Islam: Apa Aja Sih?",
+                    title = "5 Rukun Islam: Fondasi Hidup Seorang Muslim",
                     icon = "⭐",
                     estimatedMinutes = 5,
                     xpReward = 60
+                ),
+                LearningModule(
+                    id = "rukun_2.2",
+                    categoryId = "rukun_islam",
+                    title = "Syahadat: Gerbang Pertama",
+                    icon = "🚪",
+                    estimatedMinutes = 4,
+                    xpReward = 50
                 )
             )
         ),
@@ -122,7 +130,8 @@ object LearningContent {
             "akidah_1.3" -> akidah1_3Article
             "akidah_1.4" -> akidah1_4Article
             "akidah_1.5" -> akidah1_5Article
-            "rukun_1.1" -> rukun1_1Article
+            "rukun_2.1" -> rukun2_1Article
+            "rukun_2.2" -> rukun2_2Article
             "praktik_1.1" -> praktik1_1Article
             else -> emptyList()
         }
@@ -136,7 +145,8 @@ object LearningContent {
             "akidah_1.3" -> akidah1_3Quiz
             "akidah_1.4" -> akidah1_4Quiz
             "akidah_1.5" -> akidah1_5Quiz
-            "rukun_1.1" -> rukun1_1Quiz
+            "rukun_2.1" -> rukun2_1Quiz
+            "rukun_2.2" -> rukun2_2Quiz
             "praktik_1.1" -> praktik1_1Quiz
             else -> emptyList()
         }
@@ -148,11 +158,12 @@ object LearningContent {
     }
 
     fun isModuleUnlocked(moduleId: String, progress: List<ModuleProgress>): Boolean {
-        val allModules = getAllModulesOrdered()
-        val index = allModules.indexOfFirst { it.id == moduleId }
-        if (index <= 0) return true // first module always unlocked
-        // Previous module must be completed
-        val prevModule = allModules[index - 1]
+        // Find which category this module belongs to
+        val category = categories.find { cat -> cat.modules.any { it.id == moduleId } } ?: return false
+        val indexInCategory = category.modules.indexOfFirst { it.id == moduleId }
+        if (indexInCategory <= 0) return true // first module in each category always unlocked
+        // Previous module IN SAME CATEGORY must be completed
+        val prevModule = category.modules[indexInCategory - 1]
         return progress.any { it.moduleId == prevModule.id && it.completed }
     }
 
@@ -1045,20 +1056,289 @@ object LearningContent {
     )
 
     // ═══════════════════════════════════════════
-    // ARTIKEL: RUKUN ISLAM 1.1 (placeholder for future prompt)
+    // ARTIKEL: RUKUN ISLAM 2.1 — 5 Rukun Islam: Fondasi Hidup Seorang Muslim
     // ═══════════════════════════════════════════
-    private val rukun1_1Article = listOf(
-        ArticleBlock.Heading("Rukun Islam: Apa Aja Sih?"),
-        ArticleBlock.Paragraph("Konten akan datang di prompt berikutnya. Stay tuned! 🚀"),
-        ArticleBlock.Cta("Kuis belum tersedia untuk modul ini.")
+    private val rukun2_1Article = listOf(
+        ArticleBlock.Heading("5 Rukun Islam: Fondasi Hidup Seorang Muslim"),
+        ArticleBlock.Paragraph(
+            "Oke, sekarang kamu udah paham soal dasar kepercayaan (Akidah). " +
+            "Sekarang pertanyaannya: kalau udah percaya, terus ngapain? " +
+            "Jawabannya ada di Rukun Islam."
+        ),
+        ArticleBlock.Paragraph(
+            "Rukun Islam itu 5 hal yang jadi FONDASI hidup seorang Muslim. " +
+            "\"Rukun\" artinya tiang penopang — kalau satu copot, " +
+            "bangunan goyah. Kelimanya saling ngisi, gak bisa pilih-pilih."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("1️⃣ Syahadat — \"Aku Bersaksi\""),
+        ArticleBlock.Paragraph(
+            "Ini gerbang masuk Islam. Dua kalimat syahadat: " +
+            "bersaksi bahwa gak ada Tuhan selain Allah, dan Muhammad ﷺ utusan Allah. " +
+            "Bukan cuma diucapkan — tapi diyakini di hati. " +
+            "Ini komitmen seumur hidup, bukan sekadar kata-kata."
+        ),
+        ArticleBlock.Highlight(
+            "Syahadat itu kayak \"terms & conditions\" — " +
+            "tapi yang beneran kamu baca dan setujuin, bukan langsung klik \"accept.\""
+        ),
+        ArticleBlock.Subheading("2️⃣ Sholat — 5 Waktu Sehari"),
+        ArticleBlock.Paragraph(
+            "Sholat itu cara ngobrol langsung sama Allah, 5 kali sehari. " +
+            "Subuh, Dzuhur, Ashar, Maghrib, Isya. " +
+            "Bukan ritual kosong — ada gerakan, bacaan, dan makna di tiap langkah. " +
+            "Ini \"appointment\" tetap kamu sama Tuhan. " +
+            "Gak bisa di-delegate, gak bisa di-skip."
+        ),
+        ArticleBlock.Subheading("3️⃣ Zakat — Berbagi dari Harta"),
+        ArticleBlock.Paragraph(
+            "Kalau udah punya harta yang cukup (nisab), " +
+            "wajib ngasih 2.5% ke yang membutuhkan. " +
+            "Bukan pajak — ini pembersihan harta. " +
+            "Konsepnya: harta yang kamu punya gak 100% milikmu, " +
+            "ada hak orang lain di situ. Zakat bikin harta berkah."
+        ),
+        ArticleBlock.Subheading("4️⃣ Puasa (Ramadan) — Tahan Lapar, Tahan Diri"),
+        ArticleBlock.Paragraph(
+            "Setiap Ramadan, umat Islam puasa dari terbit sampai terbenam matahari. " +
+            "Gak cuma tahan makan dan minum — tapi juga tahan emosi, " +
+            "gossip, dan hal-hal negatif. Tujuannya: melatih disiplin, " +
+            "empati sama yang kurang mampu, dan deketin diri sama Allah. " +
+            "Satu bulan penuh, setiap tahun."
+        ),
+        ArticleBlock.Subheading("5️⃣ Haji — Sekali Seumur Hidup"),
+        ArticleBlock.Paragraph(
+            "Kalau mampu (secara fisik dan finansial), " +
+            "wajib ke Makkah sekali seumur hidup. " +
+            "Ini ibadah terbesar — jutaan orang dari seluruh dunia " +
+            "berkumpul di satu tempat, pakai baju yang sama, " +
+            "ibadah yang sama. Gak ada bedanya kaya-miskin, " +
+            "bos-karyawan. Semuanya sama di depan Allah."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("💡 Kenapa 5, Bukan 3 atau 7?"),
+        ArticleBlock.Paragraph(
+            "Lima rukun ini udah ditetapkan langsung oleh Nabi Muhammad ﷺ. " +
+            "Masing-masing ngisi aspek kehidupan yang berbeda: " +
+            "Syahadat = hati, Sholat = waktu, Zakat = harta, " +
+            "Puasa = nafsu, Haji = fisik. " +
+            "Lengkap. Gak kurang, gak lebih."
+        ),
+        ArticleBlock.Paragraph(
+            "Di modul-modul berikutnya, kita bakal bahas satu per satu " +
+            "secara detail — mulai dari Syahadat di modul selanjutnya. " +
+            "Stay tuned!"
+        ),
+        ArticleBlock.Cta(
+            "Kamu udah paham overview-nya! Sekarang jawab kuis buat klaim XP. 🎯"
+        )
     )
 
-    private val rukun1_1Quiz = listOf(
+    private val rukun2_1Quiz = listOf(
         QuizQuestion(
-            question = "Modul ini belum tersedia. Kuis akan hadir segera!",
-            options = listOf("Oke, tunggu aja", "Siap!", "Penasaran", "Sip"),
-            correctIndex = 0,
-            explanation = "Modul ini sedang dalam pengembangan. Tunggu update berikutnya ya!"
+            question = "\"Rukun Islam\" artinya apa?",
+            options = listOf(
+                "Aturan Islam yang bisa dipilih-pilih",
+                "5 tiang penopang yang jadi fondasi — kalau satu copot, bangunan goyah",
+                "Anjuran saja, gak wajib",
+                "Hanya untuk orang yang rajin ibadah"
+            ),
+            correctIndex = 1,
+            explanation = "Rukun artinya tiang penopang. Kelimanya wajib dan saling ngisi — gak bisa pilih-pilih."
+        ),
+        QuizQuestion(
+            question = "Apa fungsi Sholat dalam kehidupan seorang Muslim?",
+            options = listOf(
+                "Cuma buat ngilangin capek",
+                "Cara ngobrol langsung sama Allah, 5 kali sehari — appointment tetap yang gak bisa di-skip",
+                "Biar dibilang rajin sama orang",
+                "Cuma wajib kalau lagi mood"
+            ),
+            correctIndex = 1,
+            explanation = "Sholat itu \"appointment\" tetap kamu sama Tuhan — 5 kali sehari, gak bisa di-delegate atau di-skip."
+        ),
+        QuizQuestion(
+            question = "Zakat itu beda dari pajak karena...",
+            options = listOf(
+                "Sama aja, cuma beda nama",
+                "Zakat itu pembersihan harta — ada hak orang lain di hartamu, bikin harta berkah",
+                "Zakat lebih mahal dari pajak",
+                "Zakat cuma buat orang kaya"
+            ),
+            correctIndex = 1,
+            explanation = "Zakat bukan pajak — ini pembersihan harta. Konsepnya: hartamu gak 100% milikmu, ada hak orang lain di situ."
+        ),
+        QuizQuestion(
+            question = "Puasa Ramadan itu tujuannya bukan cuma tahan lapar, tapi juga...",
+            options = listOf(
+                "Biar kurus",
+                "Melatih disiplin, empati sama yang kurang mampu, dan deketin diri sama Allah",
+                "Biar bisa makan enak pas buka",
+                "Cuma tradisi tahunan"
+            ),
+            correctIndex = 1,
+            explanation = "Puasa melatih disiplin dan empati. Bukan cuma tahan makan — tapi juga tahan emosi, gossip, dan hal negatif."
+        ),
+        QuizQuestion(
+            question = "Kapan wajib Haji?",
+            options = listOf(
+                "Setiap tahun wajib",
+                "Wajib sekali seumur hidup, kalau mampu secara fisik dan finansial",
+                "Cuma buat orang tua aja",
+                "Gak wajib, cuma sunnah"
+            ),
+            correctIndex = 1,
+            explanation = "Haji wajib sekali seumur hidup kalau mampu. Di sana, jutaan orang dari seluruh dunia berkumpul — gak ada bedanya kaya-miskin."
+        )
+    )
+
+    // ═══════════════════════════════════════════
+    // ARTIKEL: RUKUN ISLAM 2.2 — Syahadat: Gerbang Pertama
+    // ═══════════════════════════════════════════
+    private val rukun2_2Article = listOf(
+        ArticleBlock.Heading("Syahadat: Gerbang Pertama"),
+        ArticleBlock.Paragraph(
+            "\"Laa ilaaha illallah, Muhammadur Rasulullah.\" " +
+            "Kamu pasti pernah dengar kalimat ini. Tapi apa artinya sebenernya? " +
+            "Dan kenapa ini jadi rukun pertama?"
+        ),
+        ArticleBlock.Paragraph(
+            "Syahadat itu bukan mantra. Bukan jimat. " +
+            "Ini deklarasi — pernyataan resmi dari hati bahwa kamu " +
+            "memilih jalan hidup tertentu. Yuk kita bedah satu per satu."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("📜 Kalimat Pertama: Laa Ilaaha Illallah"),
+        ArticleBlock.Paragraph(
+            "\"Tidak ada Tuhan (yang layak disembah) selain Allah.\" " +
+            "Ini inti dari Tauhid yang udah kita bahas di modul 1.2. " +
+            "Bukan cuma bilang \"Tuhan itu ada\" — tapi juga \"Dia aja " +
+            "yang layak aku sembah dan taati.\""
+        ),
+        ArticleBlock.Paragraph(
+            "Implikasinya: kamu gak boleh menyembah selain Allah. " +
+            "Gak boleh takut sama selain Allah lebih dari takut sama-Nya. " +
+            "Gak boleh bergantung sama selain Allah lebih dari bergantung " +
+            "sama-Nya. Ini soal prioritas hidup."
+        ),
+        ArticleBlock.Highlight(
+            "Laa ilaaha illallah = \"Yang nomor satu dalam hidupku " +
+            "adalah Allah. Bukan duit, bukan jabatan, bukan orang lain.\""
+        ),
+        ArticleBlock.Subheading("📜 Kalimat Kedua: Muhammadur Rasulullah"),
+        ArticleBlock.Paragraph(
+            "\"Muhammad ﷺ adalah utusan Allah.\" " +
+            "Ini artinya kamu percaya Muhammad ﷺ beneran diutus " +
+            "oleh Allah buat jadi contoh hidup. " +
+            "Dan kalau percaya, konsekuensinya: ikutin ajarannya."
+        ),
+        ArticleBlock.Paragraph(
+            "Bayangin: kamu punya mentor yang udah terbukti " +
+            "jujur, cerdas, dan peduli. Kamu percaya dia. " +
+            "Maka kamu ikutin saran dia. Logis kan? " +
+            "Sama halnya dengan Muhammad ﷺ — kalau beneran percaya " +
+            "dia utusan Tuhan, maka ikutin ajarannya."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("⚡ Konsekuensi Logis"),
+        ArticleBlock.Paragraph(
+            "Syahadat itu bukan cuma ucapan — tapi komitmen. " +
+            "Begitu kamu ngucapin dan yakinin, ada konsekuensi logis:"
+        ),
+        ArticleBlock.Paragraph(
+            "• Kamu berkomitmen menyembah Allah aja — " +
+            "sholat, berdoa, bersyukur, semuanya ke Allah."
+        ),
+        ArticleBlock.Paragraph(
+            "• Kamu berkomitmen ngikutin ajaran Nabi ﷺ — " +
+            "cara hidup yang udah dia contohin."
+        ),
+        ArticleBlock.Paragraph(
+            "• Kamu berkomitmen ninggalin yang dilarang — " +
+            "bukan karena takut hukuman, tapi karena kamu " +
+            "percaya Allah lebih tahu apa yang terbaik buat kamu."
+        ),
+        ArticleBlock.Paragraph(
+            "Ini kayak kontrak seumur hidup — tapi kontrak " +
+            "yang bikin hidupmu lebih terarah dan bermakna."
+        ),
+        ArticleBlock.Highlight(
+            "Syahadat itu bukan \"slesai\" begitu diucapkan. " +
+            "Itu titik awal. Perjalanan baru aja dimulai."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("💡 Kenapa Ini Rukun Pertama?"),
+        ArticleBlock.Paragraph(
+            "Karena tanpa syahadat, 4 rukun yang lain gak punya dasar. " +
+            "Sholat tanpa percaya Allah? Cuma gerakan kosong. " +
+            "Zakat tanpa komitmen? Cuma buang duit. " +
+            "Puasa tanpa tauhid? Cuma diet. " +
+            "Haji tanpa iman? Cuma jalan-jalan."
+        ),
+        ArticleBlock.Paragraph(
+            "Syahadat itu fondasinya. Yang bikin semua ibadah " +
+            "punya makna. Dan yang bikin kamu jadi Muslim."
+        ),
+        ArticleBlock.Cta(
+            "Selesai baca! Kuis waktunya tiba. 🎯"
+        )
+    )
+
+    private val rukun2_2Quiz = listOf(
+        QuizQuestion(
+            question = "Apa arti \"Laa ilaaha illallah\"?",
+            options = listOf(
+                "Tuhan itu ada",
+                "Tidak ada Tuhan (yang layak disembah) selain Allah",
+                "Allah itu Maha Kuasa",
+                "Muhammad utusan Allah"
+            ),
+            correctIndex = 1,
+            explanation = "Bukan cuma bilang 'Tuhan ada' — tapi juga 'Dia aja yang layak aku sembah dan taati.' Ini soal prioritas hidup."
+        ),
+        QuizQuestion(
+            question = "Apa konsekuensi mengucapkan \"Muhammadur Rasulullah\"?",
+            options = listOf(
+                "Cuma tahu sejarah Nabi",
+                "Percaya Muhammad ﷺ utusan Allah DAN berkomitmen ikutin ajarannya",
+                "Cuma baca Al-Quran aja",
+                "Gak ada konsekuensi"
+            ),
+            correctIndex = 1,
+            explanation = "Kalau beneran percaya dia utusan Tuhan, maka logisnya: ikutin ajarannya. Kayak percaya sama mentor — pasti ikutin saran dia."
+        ),
+        QuizQuestion(
+            question = "\"Laa ilaaha illallah\" dalam kehidupan sehari-hari artinya...",
+            options = listOf(
+                "Cuma diucapkan pas sholat",
+                "Yang nomor satu dalam hidup adalah Allah — bukan duit, jabatan, atau orang lain",
+                "Gak boleh kerja keras",
+                "Cuma boleh sembahyang di masjid"
+            ),
+            correctIndex = 1,
+            explanation = "Laa ilaaha illallah = prioritas hidup. Gak boleh takut/bergantung sama selain Allah lebih dari-Nya."
+        ),
+        QuizQuestion(
+            question = "Kenapa Syahadat jadi rukun PERTAMA?",
+            options = listOf(
+                "Karena paling gampang",
+                "Karena tanpa syahadat, 4 rukun lainnya gak punya dasar dan makna",
+                "Karena urutannya dari yang paling penting ke paling gak penting",
+                "Karena Nabi ngucapin duluan"
+            ),
+            correctIndex = 1,
+            explanation = "Sholat tanpa percaya Allah = gerakan kosong. Zakat tanpa komitmen = buang duit. Syahadat adalah fondasi yang bikin semua ibadah punya makna."
+        ),
+        QuizQuestion(
+            question = "Syahadat itu akhir dari perjalanan spiritual?",
+            options = listOf(
+                "Iya, selesai begitu diucapkan",
+                "Engga — itu titik awal. Perjalanannya baru dimulai.",
+                "Tergantung orangnya",
+                "Cuma formalitas aja"
+            ),
+            correctIndex = 1,
+            explanation = "Syahadat bukan finish line — itu starting line. Komitmen seumur hidup yang baru aja dimulai."
         )
     )
 
