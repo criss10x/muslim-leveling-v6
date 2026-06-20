@@ -55,8 +55,16 @@ object LearningContent {
                     icon = "☝️",
                     estimatedMinutes = 5,
                     xpReward = 60
+                ),
+                LearningModule(
+                    id = "akidah_1.3",
+                    categoryId = "akidah",
+                    title = "Al-Quran: Firman Tuhan, Bukan Karangan Manusia",
+                    icon = "📖",
+                    estimatedMinutes = 6,
+                    xpReward = 70
                 )
-                // Future: akidah_1.3, akidah_1.4, ...
+                // Future: akidah_1.4, akidah_1.5, ...
             )
         ),
         LearningCategory(
@@ -96,6 +104,7 @@ object LearningContent {
         return when (moduleId) {
             "akidah_1.1" -> akidah1_1Article
             "akidah_1.2" -> akidah1_2Article
+            "akidah_1.3" -> akidah1_3Article
             "rukun_1.1" -> rukun1_1Article
             "praktik_1.1" -> praktik1_1Article
             else -> emptyList()
@@ -107,6 +116,7 @@ object LearningContent {
         return when (moduleId) {
             "akidah_1.1" -> akidah1_1Quiz
             "akidah_1.2" -> akidah1_2Quiz
+            "akidah_1.3" -> akidah1_3Quiz
             "rukun_1.1" -> rukun1_1Quiz
             "praktik_1.1" -> praktik1_1Quiz
             else -> emptyList()
@@ -441,6 +451,241 @@ object LearningContent {
             ),
             correctIndex = 1,
             explanation = "Allah gak lahir dari siapa pun dan gak melahirkan siapa pun. Dia ada tanpa sebab — karena Dia SEBAB dari segalanya."
+        )
+    )
+
+    // ═══════════════════════════════════════════
+    // ARTIKEL: AKIDAH 1.3 — Al-Quran: Firman Tuhan, Bukan Karangan Manusia
+    // ═══════════════════════════════════════════
+    private val akidah1_3Article = listOf(
+        ArticleBlock.Heading("Al-Quran: Firman Tuhan, Bukan Karangan Manusia"),
+        ArticleBlock.Paragraph(
+            "Kita udah bahas kalau Tuhan itu ada dan Esa. " +
+            "Pertanyaan berikutnya yang wajar banget: \"Oke, kalau Tuhan ada — " +
+            "dia ngomong sama kita gak? Ada buktinya?\""
+        ),
+        ArticleBlock.Paragraph(
+            "Kalau kamu Muslim, kamu pasti dengar \"Al-Quran itu firman Allah.\" " +
+            "Tapi kenapa bisa yakin? Apa bedanya sama buku biasa? " +
+            "Yuk kita lihat beberapa hal yang menarik — kamu nilai sendiri."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("1️⃣ Nabi Muhammad ﷺ Gak Bisa Baca-Tulis"),
+        ArticleBlock.Paragraph(
+            "Ini fakta sejarah yang disepakati semua sejarawan, " +
+            "baik Muslim maupun non-Muslim: Muhammad ﷺ itu ummi — " +
+            "gak bisa baca, gak bisa tulis. Tumbuh di jazirah Arab abad ke-7, " +
+            "di mana tingkat literasi sangat rendah."
+        ),
+        ArticleBlock.Paragraph(
+            "Sekarang bayangin: orang yang gak pernah baca buku, " +
+            "gak pernah sekolah, gak pernah belajar sastra atau sains — " +
+            "tiba-tiba menghasilkan teks sepanjang 30 juz (6.000+ ayat) " +
+            "dengan bahasa Arab paling tinggi tingkat sastranya, " +
+            "isi yang konsisten, dan pembahasan yang mencakup hukum, " +
+            "sejarah, sains, filsafat, dan spiritualitas."
+        ),
+        ArticleBlock.Highlight(
+            "Secara logika: kalau kamu gak pernah belajar coding, " +
+            "bisakah kamu tiba-tiba bikin app sekompleks Gojek? " +
+            "Sama halnya dengan Al-Quran."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("2️⃣ Keajaiban Bahasa (I'jaz)"),
+        ArticleBlock.Paragraph(
+            "Al-Quran itu bukan cuma soal isinya — bahasanya pun " +
+            "di luar kemampuan manusia biasa. Zaman Nabi ﷺ, bangsa Arab " +
+            "terkenal sebagai bangsa sastrawan. Puisi dan pidato itu " +
+            "olahraga nasional mereka."
+        ),
+        ArticleBlock.Paragraph(
+            "Tapi ketika Al-Quran dibacakan, para penyair terbaik Arab " +
+            "pada saat itu — yang udah bertahun-tahun bikin puisi — " +
+            "gak bisa menandinginya. Bahkan mereka mengakui: ini bukan " +
+            "karya manusia."
+        ),
+        ArticleBlock.Paragraph(
+            "Al-Quran sendiri menantang terbuka: \"Coba bikin 1 surah " +
+            "semisal ini kalau kamu sanggup.\" (QS. Al-Baqarah: 23). " +
+            "Tantangan itu udah ada selama 1.400 tahun. " +
+            "Belum ada yang berhasil."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("3️⃣ Diwahyukan 23 Tahun, Tanpa Kontradiksi"),
+        ArticleBlock.Paragraph(
+            "Bayangin kamu nulis buku — tapi gak sekaligus. " +
+            "Kamu nulisnya sedikit-sedikit selama 23 TAHUN. " +
+            "Di rumah, di perjalanan, di saat perang, di saat damai, " +
+            "di saat senang, di saat susah."
+        ),
+        ArticleBlock.Paragraph(
+            "Teks yang dihasilkan harus konsisten. Gak boleh ada " +
+            "yang saling bertentangan. Gak boleh lupa apa yang udah " +
+            "ditulis sebelumnya. Dan harus relevan dengan kejadian " +
+            "yang sedang terjadi saat itu."
+        ),
+        ArticleBlock.Paragraph(
+            "Al-Quran diwahyukan selama 23 tahun, di kondisi yang " +
+            "sangat berbeda-beda — dari Makkah (minoritas tertindas) " +
+            "sampai Madinah (memimpin negara). Tapi isinya konsisten. " +
+            "Gak ada kontradiksi internal. Cobain nulis jurnal 23 tahun " +
+            "tanpa pernah kontradiksi diri sendiri — susah banget kan?"
+        ),
+        ArticleBlock.Highlight(
+            "23 tahun. Ribuan ayat. Berbagai kondisi. " +
+            "Nol kontradiksi. Coba lakuin itu pakai buku catatanmu."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("4️⃣ Satu-Satunya Kitab Suci yang Teksnya Terjaga 100%"),
+        ArticleBlock.Paragraph(
+            "Ini fakta yang jarang orang sadari: hampir semua kitab suci " +
+            "di dunia pernah mengalami perubahan teks seiring waktu. " +
+            "Manuskrip lama ditemukan dengan variasi. Ada penambahan, " +
+            "pengurangan, atau perbedaan antar versi."
+        ),
+        ArticleBlock.Paragraph(
+            "Al-Quran? Dari awal diturunkan sampai sekarang — " +
+            "1.400+ tahun — teksnya IDENTIK. Gak ada perbedaan satu huruf pun. " +
+            "Kenapa? Karena Al-Quran dijaga dengan dua cara: " +
+            "ditulis DAN dihafal."
+        ),
+        ArticleBlock.Paragraph(
+            "Saat ini ada JUTAAN orang di seluruh dunia yang hafal " +
+            "seluruh 30 juz Al-Quran dari luar. Kalau semua mushaf " +
+            "di dunia hilang sekalipun, Al-Quran bisa ditulis ulang " +
+            "100% persis sama dari hafalan mereka."
+        ),
+        ArticleBlock.Paragraph(
+            "Gak ada kitab suci lain yang punya sistem preservasi se-ekstrem ini. " +
+            "Ini bukan soal iman — ini fakta historis yang bisa diverifikasi."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("5️⃣ Informasi yang \"Gak Mungkin Diketahui\" di Abad ke-7"),
+        ArticleBlock.Paragraph(
+            "Al-Quran berisi beberapa hal yang menarik — " +
+            "sesuatu yang baru bisa diverifikasi oleh sains modern, " +
+            "tapi udah disebutkan 14 abad lalu. Contoh:"
+        ),
+        ArticleBlock.Paragraph(
+            "• Perkembangan janin secara bertahap (QS. Al-Mu'minun: 12-14) — " +
+            "menggambarkan tahapan embrio dengan detail yang baru " +
+            "bisa diamati lewat mikroskop modern."
+        ),
+        ArticleBlock.Paragraph(
+            "• Alam semesta yang mengembang (QS. Adz-Dzariyat: 47) — " +
+            "\"Dan langit itu Kami bangun dengan kekuatan dan sesungguhnya Kami " +
+            "benar-benar meluaskannya.\" Fakta ini baru ditemukan astronom " +
+            "Edwin Hubble tahun 1929."
+        ),
+        ArticleBlock.Paragraph(
+            "• Siklus air (QS. Az-Zumar: 21) — menggambarkan proses " +
+            "penguapan, pembentukan awan, dan turunnya hujan secara " +
+            "ilmiah, jauh sebelum meteorologi modern."
+        ),
+        ArticleBlock.EducatorNote(
+            "Catatan penting: ini bukan klaim \"Al-Quran = buku sains.\" " +
+            "Al-Quran adalah kitab petunjuk. Tapi ayat-ayat ini menarik " +
+            "untuk direnungkan — bagaimana seseorang di abad ke-7 " +
+            "bisa tahu hal-hal ini tanpa alat modern? Worth thinking about."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("6️⃣ Tantangan Terbuka yang Belum Terjawab"),
+        ArticleBlock.Paragraph(
+            "Al-Quran punya satu tantangan yang gak pernah berubah " +
+            "selama 1.400 tahun: \"Buatlah satu surah semisal Al-Quran.\" " +
+            "(QS. Yunus: 38, Al-Baqarah: 23-24, Hud: 13)"
+        ),
+        ArticleBlock.Paragraph(
+            "Tantangan ini bukan cuma soal bikin puisi bagus. " +
+            "Kriterianya: harus dalam bahasa Arab yang setara, " +
+            "isinya harus konsisten, harus punya hukum dan petunjuk, " +
+            "dan harus bisa meyakinkan jutaan orang selama berabad-abad."
+        ),
+        ArticleBlock.Paragraph(
+            "Selama 14 abad, banyak yang mencoba. " +
+            "Hasilnya? Gak ada yang bertahan. " +
+            "Para pakar sastra Arab sendiri mengakui: " +
+            "gaya bahasa Al-Quran itu unik — bukan puisi, bukan prosa, " +
+            "bukan pidato. Kategorinya sendiri."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("💭 Refleksi"),
+        ArticleBlock.Paragraph(
+            "Kamu gak harus langsung percaya semua ini. " +
+            "Gak ada yang maksa. Justru bagus kalau kamu mau " +
+            "renungkan pelan-pelan, tanya-tanya, cari tahu sendiri."
+        ),
+        ArticleBlock.Paragraph(
+            "Yang menarik: semua poin di atas — ummi, i'jaz, " +
+            "23 tahun konsistensi, preservasi, informasi ilmiah, " +
+            "tantangan terbuka — ini bukan satu argumen lemah. " +
+            "Ini banyak argumen yang saling menguatkan."
+        ),
+        ArticleBlock.Paragraph(
+            "Dan kalau memang Al-Quran beneran dari Tuhan — " +
+            "maka isinya layak banget dibaca pelan-pelan. " +
+            "Mungkin itu langkah berikutnya."
+        ),
+        ArticleBlock.Cta(
+            "Kamu udah selesai baca! Sekarang coba jawab kuisnya. 🎯"
+        )
+    )
+
+    private val akidah1_3Quiz = listOf(
+        QuizQuestion(
+            question = "Kenapa fakta bahwa Nabi Muhammad ﷺ itu ummi (gak bisa baca-tulis) jadi penting?",
+            options = listOf(
+                "Karena itu artinya dia bodoh",
+                "Karena mustahil orang yang gak bisa baca-tulis mengarang teks serumit Al-Quran",
+                "Karena itu artinya dia kaya",
+                "Karena itu gak penting sama sekali"
+            ),
+            correctIndex = 1,
+            explanation = "Secara logika, orang yang gak pernah belajar sastra atau sains gak mungkin menghasilkan teks 30 juz dengan bahasa Arab paling tinggi tingkatnya. Ini jadi argumen kuat kalau Al-Quran bukan karangan manusia."
+        ),
+        QuizQuestion(
+            question = "Apa itu i'jaz Al-Quran?",
+            options = listOf(
+                "Jumlah ayat dalam Al-Quran",
+                "Keajaiban bahasa Al-Quran yang gak bisa ditandingi oleh siapa pun",
+                "Cara membaca Al-Quran yang benar",
+                "Nama surah pertama"
+            ),
+            correctIndex = 1,
+            explanation = "I'jaz artinya membuat takjub. Bahasa Al-Quran itu unik — bukan puisi, bukan prosa, bukan pidato. Para penyair terbaik Arab pun gagal menandinginya."
+        ),
+        QuizQuestion(
+            question = "Al-Quran diwahyukan selama berapa tahun, dan kenapa itu mengagumkan?",
+            options = listOf(
+                "1 tahun, karena cepat",
+                "23 tahun di berbagai kondisi, tapi tetap konsisten tanpa kontradiksi",
+                "50 tahun, karena terlalu lama",
+                "10 tahun di satu kondisi saja"
+            ),
+            correctIndex = 1,
+            explanation = "23 tahun di kondisi sangat berbeda (minoritas tertindas → pemimpin negara), tapi isinya konsisten tanpa kontradiksi internal. Cobain nulis jurnal 23 tahun tanpa pernah kontradiksi diri — susah banget."
+        ),
+        QuizQuestion(
+            question = "Apa yang bikin Al-Quran beda dari kitab suci lain soal preservasi?",
+            options = listOf(
+                "Cuma ditulis di batu",
+                "Dijaga lewat tulisan DAN dihafal jutaan orang — teksnya identik selama 1.400 tahun",
+                "Diterjemahkan ke banyak bahasa",
+                "Disimpan di satu tempat khusus"
+            ),
+            correctIndex = 1,
+            explanation = "Al-Quran dijaga dua cara: ditulis dan dihafal. Jutaan hafiz hafal 30 juz dari luar. Kalau semua mushaf hilang pun, Al-Quran bisa ditulis ulang 100% identik."
+        ),
+        QuizQuestion(
+            question = "Sikap yang tepat setelah baca modul ini menurut artikel adalah...",
+            options = listOf(
+                "Harus langsung percaya 100%",
+                "Tidak usah percaya sama sekali",
+                "Renyungkan pelan-pelan, tanya-tanya, cari tahu sendiri",
+                "Simpan aja, gak usah dipikirin"
+            ),
+            correctIndex = 2,
+            explanation = "Artikel bilang: kamu gak harus langsung percaya. Justru bagus kalau mau renungkan pelan-pelan, tanya-tanya, dan cari tahu sendiri. Kebenaran itu layak ditelusuri."
         )
     )
 
