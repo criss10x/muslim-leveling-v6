@@ -102,6 +102,30 @@ object LearningContent {
                     icon = "🚪",
                     estimatedMinutes = 4,
                     xpReward = 50
+                ),
+                LearningModule(
+                    id = "rukun_2.3",
+                    categoryId = "rukun_islam",
+                    title = "Kenapa Harus Puasa Ramadan?",
+                    icon = "🌙",
+                    estimatedMinutes = 5,
+                    xpReward = 55
+                ),
+                LearningModule(
+                    id = "rukun_2.4",
+                    categoryId = "rukun_islam",
+                    title = "Zakat: Kenapa Harus Berbagi?",
+                    icon = "💰",
+                    estimatedMinutes = 4,
+                    xpReward = 50
+                ),
+                LearningModule(
+                    id = "rukun_2.5",
+                    categoryId = "rukun_islam",
+                    title = "Haji: Perjalanan Sekali Seumur Hidup",
+                    icon = "🕋",
+                    estimatedMinutes = 4,
+                    xpReward = 55
                 )
             )
         ),
@@ -132,6 +156,9 @@ object LearningContent {
             "akidah_1.5" -> akidah1_5Article
             "rukun_2.1" -> rukun2_1Article
             "rukun_2.2" -> rukun2_2Article
+            "rukun_2.3" -> rukun2_3Article
+            "rukun_2.4" -> rukun2_4Article
+            "rukun_2.5" -> rukun2_5Article
             "praktik_1.1" -> praktik1_1Article
             else -> emptyList()
         }
@@ -147,6 +174,9 @@ object LearningContent {
             "akidah_1.5" -> akidah1_5Quiz
             "rukun_2.1" -> rukun2_1Quiz
             "rukun_2.2" -> rukun2_2Quiz
+            "rukun_2.3" -> rukun2_3Quiz
+            "rukun_2.4" -> rukun2_4Quiz
+            "rukun_2.5" -> rukun2_5Quiz
             "praktik_1.1" -> praktik1_1Quiz
             else -> emptyList()
         }
@@ -1339,6 +1369,447 @@ object LearningContent {
             ),
             correctIndex = 1,
             explanation = "Syahadat bukan finish line — itu starting line. Komitmen seumur hidup yang baru aja dimulai."
+        )
+    )
+
+    // ═══════════════════════════════════════════
+    // ARTIKEL: RUKUN ISLAM 2.3 — Kenapa Harus Puasa Ramadan?
+    // ═══════════════════════════════════════════
+    private val rukun2_3Article = listOf(
+        ArticleBlock.Heading("Kenapa Harus Puasa Ramadan?"),
+        ArticleBlock.Paragraph(
+            "Setiap tahun, umat Islam di seluruh dunia berhenti makan " +
+            "dan minum dari subuh sampai maghrib selama satu bulan penuh. " +
+            "Kedengerannya berat? Emang. Tapi ada alasan kuat di baliknya."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("🧘 Manfaat Spiritual: Latihan Self-Control"),
+        ArticleBlock.Paragraph(
+            "Inti puasa itu bukan \"tahan lapar.\" Intinya: " +
+            "latihan ngendaliin diri. Kamu pengen makan? Tahan. " +
+            "Kamu pengen marah? Tahan. Kamu pengen gossip? Tahan."
+        ),
+        ArticleBlock.Paragraph(
+            "Bayangin: kalau kamu bisa ngendaliin keinginan yang PALING " +
+            "dasar (makan dan minum), maka kamu juga bisa ngendaliin " +
+            "keinginan yang lebih kompleks — emosi, nafsu, ambisi. " +
+            "Puasa itu gym-nya jiwa."
+        ),
+        ArticleBlock.Highlight(
+            "Puasa itu bukan soal \"gak makan.\" Tapi soal: \"siapa " +
+            "yang pegang kendali — nafsu atau kamu?\""
+        ),
+        ArticleBlock.Subheading("🤝 Empati sama yang Kurang Mampu"),
+        ArticleBlock.Paragraph(
+            "Kamu pernah ngerasain lapar beneran? " +
+            "Bukan \"luput sarapan\" — tapi beneran gak makan seharian. " +
+            "Puasa bikin kamu ngerasain apa yang dirasain orang " +
+            "yang gak mampu makan setiap hari. " +
+            "Dari situ muncul empati — dan dorongan buat berbagi."
+        ),
+        ArticleBlock.Subheading("🏥 Manfaat Kesehatan (Secara Umum)"),
+        ArticleBlock.Paragraph(
+            "Banyak penelitian menunjukkan bahwa puasa intermiten " +
+            "(yang polanya mirip puasa Ramadan) punya dampak positif " +
+            "secara umum pada tubuh. Tapi ini bukan klaim medis — " +
+            "setiap orang beda kondisinya. Yang jelas: " +
+            "puasa Ramadan dirancang oleh Allah, dan Allah lebih tahu " +
+            "apa yang terbaik buat hamba-Nya."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("📋 Siapa yang Wajib Puasa?"),
+        ArticleBlock.Paragraph(
+            "Semua Muslim yang udah baligh dan sehat wajib puasa. " +
+            "Tapi ada keringanan untuk yang gak mampu:"
+        ),
+        ArticleBlock.Paragraph(
+            "• Sakit — boleh gak puasa, tapi wajib qadha (ganti) " +
+            "kalau udah sembuh."
+        ),
+        ArticleBlock.Paragraph(
+            "• Musafir (perjalanan jauh) — boleh gak puasa, " +
+            "wajib qadha juga."
+        ),
+        ArticleBlock.Paragraph(
+            "• Hamil/menyusui — boleh gak puasa kalau khawatir " +
+            "kebayi, qadha atau fidyah."
+        ),
+        ArticleBlock.Paragraph(
+            "• Lansia/gak mampu permanen — gak wajib puasa, " +
+            "cukup bayar fidyah (makan orang miskin per hari)."
+        ),
+        ArticleBlock.Highlight(
+            "Islam itu fleksibel. Ada aturan, tapi ada keringanan. " +
+            "Gak ada yang dipaksain di luar batas kemampuan."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("💡 Kesimpulan"),
+        ArticleBlock.Paragraph(
+            "Puasa Ramadan itu bukan hukuman — tapi pelatihan. " +
+            "Melatih disiplin, empati, dan ketergantungan pada Allah. " +
+            "Satu bulan penuh yang bikin 11 bulan sisanya lebih bermakna."
+        ),
+        ArticleBlock.Cta(
+            "Selesai baca! Saatnya kuis. 🎯"
+        )
+    )
+
+    private val rukun2_3Quiz = listOf(
+        QuizQuestion(
+            question = "Inti puasa Ramadan itu bukan cuma tahan lapar, tapi...",
+            options = listOf(
+                "Biar kurus sebelum Lebaran",
+                "Latihan ngendaliin diri — emosi, nafsu, dan keinginan",
+                "Cuma tradisi tahunan",
+                "Biar bisa makan enak pas buka"
+            ),
+            correctIndex = 1,
+            explanation = "Puasa itu gym-nya jiwa. Kalau kamu bisa ngendaliin keinginan paling dasar (makan), kamu juga bisa ngendaliin yang lebih kompleks."
+        ),
+        QuizQuestion(
+            question = "Apa hubungan puasa dengan empati?",
+            options = listOf(
+                "Gak ada hubungannya",
+                "Puasa bikin kamu ngerasain lapar yang dirasain orang gak mampu — muncul empati dan dorongan berbagi",
+                "Empati itu cuma perasaan aja",
+                "Puasa bikin kamu lupa sama orang miskin"
+            ),
+            correctIndex = 1,
+            explanation = "Dengan ngerasain lapar beneran, kamu jadi lebih paham kondisi orang yang gak mampu makan setiap hari."
+        ),
+        QuizQuestion(
+            question = "Kalau lagi sakit, wajib gak puasa Ramadan?",
+            options = listOf(
+                "Tetap wajib, gak boleh bolong",
+                "Gak wajib — boleh gak puasa, tapi wajib qadha (ganti) kalau udah sembuh",
+                "Gak wajib dan gak perlu ganti",
+                "Tergantung dokter aja"
+            ),
+            correctIndex = 1,
+            explanation = "Islam fleksibel. Sakit = boleh gak puasa. Tapi begitu sembuh, wajib ganti di hari lain."
+        ),
+        QuizQuestion(
+            question = "Lansia yang gak mampu puasa permanen, solusinya apa?",
+            options = listOf(
+                "Tetap dipaksa puasa",
+                "Gak wajib puasa, cukup bayar fidyah (makan orang miskin per hari)",
+                "Gak perlu apa-apa",
+                "Harus puasa setengah hari aja"
+            ),
+            correctIndex = 1,
+            explanation = "Lansia/gak mampu permanen = gak wajib puasa, cukup fidyah. Islam gak memaksakan di luar batas kemampuan."
+        ),
+        QuizQuestion(
+            question = "Puasa Ramadan itu hukuman atau pelatihan?",
+            options = listOf(
+                "Hukuman dari Allah",
+                "Pelatihan — melatih disiplin, empati, dan ketergantungan pada Allah",
+                "Cuma ritual aja",
+                "Tergantung niatnya"
+            ),
+            correctIndex = 1,
+            explanation = "Puasa itu pelatihan, bukan hukuman. Satu bulan yang bikin 11 bulan sisanya lebih bermakna."
+        )
+    )
+
+    // ═══════════════════════════════════════════
+    // ARTIKEL: RUKUN ISLAM 2.4 — Zakat: Kenapa Harus Berbagi?
+    // ═══════════════════════════════════════════
+    private val rukun2_4Article = listOf(
+        ArticleBlock.Heading("Zakat: Kenapa Harus Berbagi?"),
+        ArticleBlock.Paragraph(
+            "Kamu udah dengar soal zakat di modul overview Rukun Islam. " +
+            "Sekarang kita bedah lebih dalam: kenapa sih harus berbagi " +
+            "dari harta yang udah susah payah kamu cari?"
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("🧹 Zakat = Pembersih Harta"),
+        ArticleBlock.Paragraph(
+            "Kata \"zakat\" sendiri artinya \"bersih\" dan \"tumbuh.\" " +
+            "Konsepnya: harta yang kamu punya itu gak 100% milikmu. " +
+            "Ada hak orang lain di situ — yang butuh, yang kurang mampu. " +
+            "Dengan ngasih zakat, kamu \"bersihin\" hartamu dari hak mereka."
+        ),
+        ArticleBlock.Paragraph(
+            "Bayangin: kamu punya gelas air yang terus dituang. " +
+            "Kalau gak pernah dibagiin, gelasnya meluap dan tumpah. " +
+            "Zakat itu bikin aliran tetap lancar — kamu terima, kamu bagikan, " +
+            "dan hartamu jadi lebih berkah."
+        ),
+        ArticleBlock.Highlight(
+            "Zakat bukan \"buang duit.\" Zakat investasi di akhirat " +
+            "dan pembersihan harta di dunia."
+        ),
+        ArticleBlock.Subheading("📊 Beda Zakat, Infaq, dan Sedekah"),
+        ArticleBlock.Paragraph(
+            "Ketiganya sama-sama berbagi, tapi beda aturannya:"
+        ),
+        ArticleBlock.Paragraph(
+            "• Zakat — WAJIB. Ada nisab (batas minimal harta) dan " +
+            "haul (dimiliki setahun). Besarnya 2.5% dari harta. " +
+            "Ada 8 golongan yang berhak menerima (asnaf)."
+        ),
+        ArticleBlock.Paragraph(
+            "• Infaq — SUNNAH. Berbagi dari harta tanpa batasan " +
+            "persentase. Bisa kapan saja, berapa saja, ke siapa saja."
+        ),
+        ArticleBlock.Paragraph(
+            "• Sedekah — SUNNAH. Lebih luas dari infaq — " +
+            "bukan cuma uang. Senyum aja udah sedekah. " +
+            "Nolong orang, ngasih ilmu, bahkan buang duri dari jalan " +
+            "itu sedekah."
+        ),
+        ArticleBlock.Subheading("🌍 Dampak Sosial: Kurangi Kesenjangan"),
+        ArticleBlock.Paragraph(
+            "Zakat itu sistem distribusi kekayaan yang unik. " +
+            "Yang punya lebih → ngasih 2.5% → yang butuh terbantu. " +
+            "Kalau semua orang yang mampu bayar zakat, " +
+            "kesenjangan sosial bisa berkurang signifikan."
+        ),
+        ArticleBlock.Paragraph(
+            "Ini bukan sosialisme ala Barat — ini sistem dari Allah. " +
+            "Dan bedanya: zakat itu MOTIVASINYA cinta, bukan paksaan. " +
+            "Kamu ngasih karena percaya itu hak mereka, " +
+            "dan karena kamu sayang sama hartamu sendiri " +
+            "(maunya yang bersih dan berkah)."
+        ),
+        ArticleBlock.Highlight(
+            "Zakat: satu sistem yang bersihin hartamu " +
+            "SEKALIGUS bantu sesama. Win-win."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("💡 Penutup"),
+        ArticleBlock.Paragraph(
+            "Zakat itu bukan beban — itu hak orang lain yang " +
+            "dititipin di hartamu. Dan ketika kamu ngasih, " +
+            "yang kamu \"bersihin\" bukan cuma hartamu — tapi juga hatimu."
+        ),
+        ArticleBlock.Cta(
+            "Kamu udah paham soal zakat! Kuis waktunya. 🎯"
+        )
+    )
+
+    private val rukun2_4Quiz = listOf(
+        QuizQuestion(
+            question = "Apa arti kata \"zakat\"?",
+            options = listOf(
+                "Pajak",
+                "Bersih dan tumbuh",
+                "Sedekah wajib",
+                "Donasi"
+            ),
+            correctIndex = 1,
+            explanation = "Zakat artinya 'bersih' dan 'tumbuh.' Konsepnya: bersihin hartamu dari hak orang lain, dan hartamu jadi lebih berkah."
+        ),
+        QuizQuestion(
+            question = "Apa beda zakat, infaq, dan sedekah?",
+            options = listOf(
+                "Sama aja, cuma beda nama",
+                "Zakat wajib (2.5%, ada nisab), infaq sunnah (berbagi harta), sedekah sunnah (lebih luas — senyum aja sedekah)",
+                "Zakat paling sedikit, sedekah paling banyak",
+                "Infaq yang paling wajib"
+            ),
+            correctIndex = 1,
+            explanation = "Zakat = wajib dengan aturan ketat (2.5%, nisab, haul). Infaq = sunnah, berbagi harta. Sedekah = sunnah, lebih luas — bahkan senyum aja udah sedekah."
+        ),
+        QuizQuestion(
+            question = "Kenapa zakat bisa kurangi kesenjangan sosial?",
+            options = listOf(
+                "Karena zakat bikin semua orang kaya",
+                "Karena yang punya lebih ngasih 2.5% ke yang butuh — distribusi kekayaan secara alami",
+                "Karena zakat itu wajib",
+                "Karena zakat cuma buat orang kaya"
+            ),
+            correctIndex = 1,
+            explanation = "Zakat = sistem distribusi kekayaan dari Allah. Yang mampu → ngasih 2.5% → yang butuh terbantu. Kalau semua patuh, kesenjangan berkurang signifikan."
+        ),
+        QuizQuestion(
+            question = "Motivasi zakat yang benar itu apa?",
+            options = listOf(
+                "Takut dipenjara",
+                "Cinta — percaya itu hak mereka, dan mau hartamu bersih dan berkah",
+                "Biar dipuji orang",
+                "Cuma kewajiban yang harus ditunaikan"
+            ),
+            correctIndex = 1,
+            explanation = "Zakat motivasinya cinta, bukan paksaan. Kamu ngasih karena percaya itu hak mereka dan karena kamu sayang hartamu sendiri — mau yang bersih dan berkah."
+        ),
+        QuizQuestion(
+            question = "Sedekah itu cuma soal uang?",
+            options = listOf(
+                "Iya, harus berupa uang",
+                "Engga — senyum aja udah sedekah, nolong orang, ngasih ilmu, buang duri dari jalan",
+                "Cuma berupa makanan",
+                "Cuma buat orang kaya"
+            ),
+            correctIndex = 1,
+            explanation = "Sedekah itu lebih luas dari uang. Senyum, nolong orang, ngasih ilmu, bahkan buang duri dari jalan — semua itu sedekah."
+        )
+    )
+
+    // ═══════════════════════════════════════════
+    // ARTIKEL: RUKUN ISLAM 2.5 — Haji: Perjalanan Sekali Seumur Hidup
+    // ═══════════════════════════════════════════
+    private val rukun2_5Article = listOf(
+        ArticleBlock.Heading("Haji: Perjalanan Sekali Seumur Hidup"),
+        ArticleBlock.Paragraph(
+            "Ini rukun terakhir. Dan mungkin yang paling \"wow\" — " +
+            "karena kamu harus beneran pergi ke satu tempat di " +
+            "belahan dunia lain, bersama jutaan orang dari seluruh planet."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("🕋 Apa Itu Haji?"),
+        ArticleBlock.Paragraph(
+            "Haji itu ibadah ziarah ke Makkah, Arab Saudi. " +
+            "Wajib sekali seumur hidup buat Muslim yang MAMPU " +
+            "(secara fisik dan finansial). " +
+            "Kalau belum mampu? Gak wajib. Simple."
+        ),
+        ArticleBlock.Paragraph(
+            "Haji dilakukan setiap tanggal 8-12 Dzulhijjah " +
+            "(bulan ke-12 kalender Islam). Ada rangkaian ibadah: " +
+            "tawaf (keliling Ka'bah), sa'i (jalan bolak-balik), " +
+            "wukuf di Arafah (puncak haji), melempar jumrah, " +
+            "dan lain-lain."
+        ),
+        ArticleBlock.Subheading("👕 Ihram: Semua Sama Rata"),
+        ArticleBlock.Paragraph(
+            "Yang bikin haji beda dari ibadah lain: semua orang " +
+            "pakai baju yang SAMA. Putih, tanpa jahitan, " +
+            "gak ada merek, gak ada logo. " +
+            "Namanya ihram."
+        ),
+        ArticleBlock.Paragraph(
+            "Bayangin: Presiden, buruh, dokter, tukang ojek, " +
+            "pengusaha — semuanya pakai baju yang sama. " +
+            "Gak ada yang bisa pamer kekayaan. " +
+            "Gak ada yang bisa pamer jabatan. " +
+            "Di depan Allah, SEMUA SAMA."
+        ),
+        ArticleBlock.Highlight(
+            "Ihram itu pengingat: di mata Allah, " +
+            "yang membedakan kamu bukan harta atau jabatan — " +
+            "tapi ketakwaanmu."
+        ),
+        ArticleBlock.Subheading("⚖️ Makna Simbolis Haji"),
+        ArticleBlock.Paragraph(
+            "Haji itu bukan sekadar perjalanan fisik. " +
+            "Tiap ritual punya makna:"
+        ),
+        ArticleBlock.Paragraph(
+            "• Tawaf (keliling Ka'bah 7x) — " +
+            "hidupmu harus berpusat pada Allah, " +
+            "seperti bumi yang mengelilingi matahari."
+        ),
+        ArticleBlock.Paragraph(
+            "• Wukuf di Arafah — " +
+            "pengingat Hari Kiamat, saat semua manusia " +
+            "berkumpul di padang mahsyar."
+        ),
+        ArticleBlock.Paragraph(
+            "• Melempar jumrah — " +
+            "simbol nolak godaan setan, dari yang kecil sampai yang besar."
+        ),
+        ArticleBlock.Paragraph(
+            "• Sa'i (lari bolak-balik Safa-Marwa) — " +
+            "mengenang perjuangan Siti Hajar mencari air " +
+            "untuk bayinya, Ismail. Simbol ketekunan dan tawakkal."
+        ),
+        ArticleBlock.Subheading("💰 Syarat Wajib Haji"),
+        ArticleBlock.Paragraph(
+            "Haji cuma wajib kalau kamu MAMPU. Artinya:"
+        ),
+        ArticleBlock.Paragraph(
+            "• Fisik sehat — kuat jalan, berdiri, tahan cuaca panas. " +
+            "Kalau sakit parah, gak wajib."
+        ),
+        ArticleBlock.Paragraph(
+            "• Finansial cukup — punya biaya pergi DAN " +
+            "keluarga di rumah tetap tercukupi. " +
+            "Gak boleh haji tapi utang menumpuk."
+        ),
+        ArticleBlock.Paragraph(
+            "• Aman perjalanannya — jalur ke Makkah aman."
+        ),
+        ArticleBlock.Highlight(
+            "Haji itu wajib kalau mampu. " +
+            "Kalau belum mampu, gak dosa. " +
+            "Allah gak membebankan di luar batas kemampuan."
+        ),
+        ArticleBlock.Divider,
+        ArticleBlock.Subheading("💡 Penutup Kategori Rukun Islam"),
+        ArticleBlock.Paragraph(
+            "Kelima rukun ini — Syahadat, Sholat, Puasa, Zakat, Haji — " +
+            "adalah FONDASI hidup seorang Muslim. " +
+            "Masing-masing ngisi aspek berbeda: hati, waktu, nafsu, " +
+            "harta, dan fisik."
+        ),
+        ArticleBlock.Paragraph(
+            "Kalau kamu udah paham Akidah dan Rukun Islam, " +
+            "kamu udah punya kerangka yang kuat. " +
+            "Sekarang waktunya masuk ke bagian praktisnya."
+        ),
+        ArticleBlock.Cta(
+            "Kategori Rukun Islam selesai! 🎉 Lanjut ke tab \"Praktik Ibadah\" " +
+            "buat belajar cara sholat dari nol. Kamu makin keren! 🚀"
+        )
+    )
+
+    private val rukun2_5Quiz = listOf(
+        QuizQuestion(
+            question = "Kapan wajib haji?",
+            options = listOf(
+                "Setiap tahun wajib",
+                "Sekali seumur hidup, kalau mampu secara fisik dan finansial",
+                "Cuma buat orang tua",
+                "Gak wajib, cuma sunnah"
+            ),
+            correctIndex = 1,
+            explanation = "Haji wajib sekali seumur hidup TAPI cuma kalau mampu. Kalau belum mampu, gak dosa."
+        ),
+        QuizQuestion(
+            question = "Kenapa semua jamaah haji pakai baju putih yang sama (ihram)?",
+            options = listOf(
+                "Karena murah",
+                "Simbol kesetaraan — di depan Allah, semua sama, gak ada yang lebih karena harta atau jabatan",
+                "Tradisi Arab aja",
+                "Biar gampang nyari rombongan"
+            ),
+            correctIndex = 1,
+            explanation = "Ihram = baju putih tanpa merek. Presiden, buruh, pengusaha — semua sama. Yang membedakan di mata Allah bukan harta, tapi ketakwaan."
+        ),
+        QuizQuestion(
+            question = "Apa makna tawaf (keliling Ka'bah 7x)?",
+            options = listOf(
+                "Olahraga ringan",
+                "Hidup harus berpusat pada Allah, seperti bumi mengelilingi matahari",
+                "Cuma ritual tanpa makna",
+                "Biar capek biar kurus"
+            ),
+            correctIndex = 1,
+            explanation = "Tawaf = simbol hidup berpusat pada Allah. Seperti planet yang mengorbit — hidupmu harus berputar di sekitar-Nya."
+        ),
+        QuizQuestion(
+            question = "Kalau belum mampu haji secara finansial, apa yang terjadi?",
+            options = listOf(
+                "Tetap wajib, harus pinjam uang",
+                "Gak wajib — Allah gak membebankan di luar batas kemampuan",
+                "Dosa besar",
+                "Harus nabung 10 tahun dulu"
+            ),
+            correctIndex = 1,
+            explanation = "Haji cuma wajib kalau mampu. Kalau belum mampu, gak dosa. Keluarga di rumah harus tetap tercukupi dulu."
+        ),
+        QuizQuestion(
+            question = "Apa makna melempar jumrah saat haji?",
+            options = listOf(
+                "Main kelereng raksasa",
+                "Simbol nolak godaan setan — dari yang kecil sampai yang besar",
+                "Tradisi pra-Islam aja",
+                "Biar seru-seruan"
+            ),
+            correctIndex = 1,
+            explanation = "Melempar jumrah = simbol nolak godaan setan. Dari jumrah kecil, sedang, sampai besar — makin lama makin tegas nolaknya."
         )
     )
 
