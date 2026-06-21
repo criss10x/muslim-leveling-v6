@@ -1,8 +1,12 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -33,11 +38,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
 
+/**
+ * Futuristic onboarding flow with 2 steps:
+ *   Step 0 — Welcome (hero logo, animated gradient, benefit cards with neon borders)
+ *   Step 1 — Create Character (form with neon inputs + mode chooser gradient)
+ */
 @Composable
 fun OnboardingScreen(
     onComplete: (String, String, String) -> Unit
 ) {
-    var currentStep by remember { mutableStateOf(0) } // 0 = welcome, 1 = create character
+    var currentStep by remember { mutableStateOf(0) }
     var username by remember { mutableStateOf("") }
     var kota by remember { mutableStateOf("Jakarta") }
     var intensityMode by remember { mutableStateOf("standar") }
@@ -45,13 +55,38 @@ fun OnboardingScreen(
 
     val scrollState = rememberScrollState()
 
+    // Slow rotating ambient glow behind everything
+    val infiniteTransition = rememberInfiniteTransition(label = "onboard_ambient")
+    val ambientRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ambient_rotation"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
-            .muslimPattern()
+            .futuristicBackground()
             .drawBehind {
-                drawIslamicGeometricBackground()
+                // Slow-rotating conic-like ambient beam (approximated by radial sweep)
+                val center = Offset(size.width / 2f, size.height * 0.25f)
+                drawCircle(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(
+                            IslamicGreen.copy(alpha = 0.04f),
+                            Color.Transparent,
+                            GoldAccent.copy(alpha = 0.03f),
+                            Color.Transparent,
+                            IslamicGreen.copy(alpha = 0.04f)
+                        )
+                    ),
+                    radius = size.width * 0.9f,
+                    center = center
+                )
             }
             .windowInsetsPadding(WindowInsets.statusBars)
             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -73,9 +108,7 @@ fun OnboardingScreen(
                 label = "onboarding_step"
             ) { step ->
                 when (step) {
-                    0 -> WelcomeStep(
-                        onStart = { currentStep = 1 }
-                    )
+                    0 -> WelcomeStep(onStart = { currentStep = 1 })
                     1 -> CreateCharacterStep(
                         username = username,
                         onUsernameChange = { username = it; errorMsg = "" },
@@ -99,28 +132,39 @@ fun OnboardingScreen(
             }
         }
 
-        // Step indicator dots
-        if (currentStep == 1) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                repeat(2) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(if (index == currentStep) 24.dp else 8.dp, 8.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (index == currentStep) IslamicGreen else DarkSurfaceVariant
-                            )
-                    )
-                }
+        // Futuristic step indicator dots
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            repeat(2) { index ->
+                val isActive = index == currentStep
+                Box(
+                    modifier = Modifier
+                        .size(if (isActive) 28.dp else 8.dp, 8.dp)
+                        .clip(CircleShape)
+                        .then(
+                            if (isActive) Modifier
+                                .shadow(
+                                    elevation = 6.dp,
+                                    shape = CircleShape,
+                                    ambientColor = IslamicGreen.copy(alpha = 0.6f),
+                                    spotColor = IslamicGreen.copy(alpha = 0.4f)
+                                )
+                                .background(neonGreenBrush())
+                            else Modifier.background(DarkSurfaceVariant)
+                        )
+                )
             }
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 1 — Welcome
+// ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun WelcomeStep(
@@ -132,30 +176,71 @@ private fun WelcomeStep(
     ) {
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Hero Logo with glowing ring
+        // ── Hero Logo with rotating gradient ring + glow ──
+        val infiniteTransition = rememberInfiniteTransition(label = "logo_ring")
+        val ringRotation by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 4000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "ring_rotation"
+        )
+        val pulse by infiniteTransition.animateFloat(
+            initialValue = 0.5f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1400, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "logo_pulse"
+        )
+
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(140.dp)
                 .drawBehind {
-                    // Outer glow
+                    val radius = size.minDimension / 2f
+                    val center = Offset(size.width / 2f, size.height / 2f)
+
+                    // Pulsing radial glow
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(IslamicGreen.copy(alpha = 0.3f), Color.Transparent),
+                            colors = listOf(
+                                IslamicGreen.copy(alpha = pulse * 0.35f),
+                                Color.Transparent
+                            ),
                             center = center,
-                            radius = size.minDimension / 1.2f
-                        )
+                            radius = radius * 1.3f
+                        ),
+                        center = center,
+                        radius = radius * 1.3f
                     )
-                    // Progress ring
+
+                    // Static ring
                     drawCircle(
-                        color = IslamicGreen.copy(alpha = 0.6f),
-                        radius = size.minDimension / 2f,
-                        style = Stroke(width = 3.dp.toPx())
+                        color = IslamicGreen.copy(alpha = 0.3f),
+                        radius = radius * 1.05f,
+                        center = center,
+                        style = Stroke(width = 1.5.dp.toPx())
                     )
+
+                    // Rotating gradient arc
                     drawArc(
-                        color = GoldAccent,
-                        startAngle = -90f,
-                        sweepAngle = 270f,
+                        brush = Brush.sweepGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                IslamicGreen,
+                                GoldAccent,
+                                Color.Transparent
+                            )
+                        ),
+                        startAngle = ringRotation,
+                        sweepAngle = 240f,
                         useCenter = false,
+                        topLeft = Offset(center.x - radius, center.y - radius),
+                        size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
                         style = Stroke(width = 3.dp.toPx())
                     )
                 },
@@ -163,49 +248,55 @@ private fun WelcomeStep(
         ) {
             Box(
                 modifier = Modifier
-                    .size(96.dp)
-                    .background(DarkSurface, RoundedCornerShape(28.dp))
-                    .border(
-                        BorderStroke(2.dp, IslamicGreen.copy(alpha = 0.5f)),
+                    .size(100.dp)
+                    .shadow(
+                        elevation = 20.dp,
+                        shape = RoundedCornerShape(28.dp),
+                        ambientColor = IslamicGreen.copy(alpha = 0.5f),
+                        spotColor = GoldAccent.copy(alpha = 0.3f)
+                    )
+                    .background(
+                        brush = Brush.verticalGradient(listOf(DarkSurface, DarkSurfaceElevated)),
                         RoundedCornerShape(28.dp)
-                    ),
+                    )
+                    .border(
+                        width = 2.dp,
+                        brush = Brush.linearGradient(GradientGreenGold),
+                        shape = RoundedCornerShape(28.dp)
+                    )
+                    .clip(RoundedCornerShape(28.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "🌙",
-                    fontSize = 52.sp,
-                    textAlign = TextAlign.Center
-                )
+                Text(text = "🌙", fontSize = 48.sp)
             }
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // App name with stronger presence
+        // App name with gradient text glow
         Text(
             text = "MUSLIM LEVELING",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = IslamicGreen,
-            letterSpacing = 2.sp,
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Black,
+            color = TextLight,
+            letterSpacing = 3.sp,
             textAlign = TextAlign.Center
         )
 
         Text(
             text = "QUSHO",
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = GoldAccent,
-            letterSpacing = 8.sp,
+            letterSpacing = 10.sp,
             textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // New tagline
         Text(
             text = "Level Up Iman, Level Up Kehidupanmu",
-            fontSize = 18.sp,
+            fontSize = 17.sp,
             color = TextLight,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
@@ -220,60 +311,40 @@ private fun WelcomeStep(
             modifier = Modifier.padding(top = 8.dp, start = 24.dp, end = 24.dp)
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(36.dp))
 
-        // Benefit cards
+        // ── Benefit cards with neon gradient borders ──
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            BenefitItem(
+            BenefitCard(
                 emoji = "🎯",
                 title = "Quest Sholat Harian",
-                description = "Tracking 5 waktu sholat dengan sistem XP & level"
+                description = "Tracking 5 waktu sholat dengan sistem XP & level",
+                gradient = GradientGreenGold,
+                glowColor = IslamicGreen
             )
-            BenefitItem(
+            BenefitCard(
                 emoji = "📚",
                 title = "Belajar Sambil Main",
-                description = "16 modul + 80 quiz bikin belajar Islam jadi asyik"
+                description = "16 modul + 80 quiz bikin belajar Islam jadi asyik",
+                gradient = GradientCyanGreen,
+                glowColor = CyanAccent
             )
-            BenefitItem(
+            BenefitCard(
                 emoji = "🏆",
                 title = "Badge & Achievement",
-                description = "Dapatkan reward karena istiqomah, bukan sekadar hadir"
+                description = "Dapatkan reward karena istiqomah, bukan sekadar hadir",
+                gradient = GradientGoldAmber,
+                glowColor = GoldAccent
             )
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(36.dp))
 
-        // Primary CTA
-        Button(
-            onClick = onStart,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = IslamicGreen,
-                contentColor = Color.Black
-            ),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .testTag("start_button"),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-        ) {
-            Text(
-                text = "MULAI JOURNEY",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.Black,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = Color.Black
-            )
-        }
+        // ── Primary CTA (neon button) ──
+        NeonStartButton(onStart = onStart)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -285,6 +356,140 @@ private fun WelcomeStep(
         )
     }
 }
+
+@Composable
+private fun BenefitCard(
+    emoji: String,
+    title: String,
+    description: String,
+    gradient: List<Color>,
+    glowColor: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(18.dp),
+                ambientColor = glowColor.copy(alpha = 0.2f),
+                spotColor = glowColor.copy(alpha = 0.12f)
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.linearGradient(gradient),
+                shape = RoundedCornerShape(18.dp)
+            )
+            .background(
+                brush = Brush.verticalGradient(GradientDarkSurface),
+                RoundedCornerShape(18.dp)
+            )
+            .clip(RoundedCornerShape(18.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Emoji container with subtle gradient bg
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    shape = RoundedCornerShape(12.dp),
+                    ambientColor = glowColor.copy(alpha = 0.4f),
+                    spotColor = glowColor.copy(alpha = 0.25f)
+                )
+                .background(
+                    brush = Brush.radialGradient(
+                        listOf(glowColor.copy(alpha = 0.25f), Color.Transparent)
+                    ),
+                    RoundedCornerShape(12.dp)
+                )
+                .border(
+                    width = 1.dp,
+                    color = glowColor.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = emoji, fontSize = 24.sp)
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        Column {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextLight
+            )
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = TextMuted,
+                lineHeight = 18.sp,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun NeonStartButton(onStart: () -> Unit) {
+    Button(
+        onClick = onStart,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = Color.Black
+        ),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = IslamicGreen.copy(alpha = 0.55f),
+                spotColor = GoldAccent.copy(alpha = 0.3f)
+            )
+            .testTag("start_button"),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.horizontalGradient(GradientGreenGold),
+                    RoundedCornerShape(16.dp)
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(GradientGreenGold),
+                    shape = RoundedCornerShape(16.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "MULAI JOURNEY",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.Black,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = Color.Black
+                )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 2 — Create Character
+// ═══════════════════════════════════════════════════════════════
 
 @Composable
 private fun CreateCharacterStep(
@@ -303,9 +508,7 @@ private fun CreateCharacterStep(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Back button
-        Box(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "← Kembali",
                 color = TextMuted,
@@ -319,23 +522,59 @@ private fun CreateCharacterStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Hero icon
+        // Hero icon with rotating ring
         Box(
             modifier = Modifier
-                .size(80.dp)
-                .background(DarkSurface, RoundedCornerShape(20.dp))
-                .border(
-                    BorderStroke(1.5.dp, GoldAccent.copy(alpha = 0.5f)),
-                    RoundedCornerShape(20.dp)
-                ),
+                .size(90.dp)
+                .drawBehind {
+                    val radius = size.minDimension / 2f
+                    val center = Offset(size.width / 2f, size.height / 2f)
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            listOf(GoldAccent.copy(alpha = 0.3f), Color.Transparent),
+                            center = center,
+                            radius = radius * 1.2f
+                        ),
+                        center = center,
+                        radius = radius * 1.2f
+                    )
+                    drawCircle(
+                        color = GoldAccent.copy(alpha = 0.4f),
+                        radius = radius * 1.05f,
+                        center = center,
+                        style = Stroke(width = 1.5.dp.toPx())
+                    )
+                },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                tint = GoldAccent,
-                modifier = Modifier.size(40.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .shadow(
+                        elevation = 14.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        ambientColor = GoldAccent.copy(alpha = 0.4f),
+                        spotColor = GoldAccent.copy(alpha = 0.25f)
+                    )
+                    .background(
+                        brush = Brush.verticalGradient(GradientDarkSurface),
+                        RoundedCornerShape(20.dp)
+                    )
+                    .border(
+                        width = 1.5.dp,
+                        brush = Brush.linearGradient(GradientGoldAmber),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .clip(RoundedCornerShape(20.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = GoldAccent,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -357,21 +596,30 @@ private fun CreateCharacterStep(
             modifier = Modifier.padding(top = 6.dp, bottom = 24.dp)
         )
 
-        // Form card
-        Card(
+        // ── Form card with neon gradient border ──
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("onboarding_card"),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            border = BorderStroke(1.5.dp, IslamicGreen.copy(alpha = 0.5f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = IslamicGreen.copy(alpha = 0.2f),
+                    spotColor = IslamicGreen.copy(alpha = 0.12f)
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(GradientGreenGold),
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .background(
+                    brush = Brush.verticalGradient(GradientDarkSurface),
+                    RoundedCornerShape(24.dp)
+                )
+                .clip(RoundedCornerShape(24.dp))
+                .testTag("onboarding_card")
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                // Username Input
+            Column(modifier = Modifier.padding(24.dp)) {
+                // Username
                 Text(
                     text = "Nickname Gamer",
                     color = TextLight,
@@ -400,7 +648,7 @@ private fun CreateCharacterStep(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // City Location
+                // City
                 Text(
                     text = "Kota Asal (untuk Jadwal Sholat)",
                     color = TextLight,
@@ -429,7 +677,7 @@ private fun CreateCharacterStep(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Intensity Mode chooser
+                // Intensity mode chooser
                 Text(
                     text = "Pilih Mode Leveling",
                     color = TextLight,
@@ -456,18 +704,40 @@ private fun CreateCharacterStep(
                             "sultan" -> GoldAccent
                             else -> IslamicGreen
                         }
+                        val modeGradient = when (mode) {
+                            "santai" -> GradientBlueCyan
+                            "standar" -> GradientGreenGold
+                            "sultan" -> GradientGoldAmber
+                            else -> GradientGreenGold
+                        }
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
+                                .then(
+                                    if (isSelected) Modifier
+                                        .shadow(
+                                            elevation = 8.dp,
+                                            shape = RoundedCornerShape(12.dp),
+                                            ambientColor = modeColor.copy(alpha = 0.45f),
+                                            spotColor = modeColor.copy(alpha = 0.25f)
+                                        )
+                                    else Modifier
+                                )
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) modeColor.copy(alpha = 0.25f) else DarkBackground)
+                                .background(
+                                    if (isSelected)
+                                        Brush.radialGradient(
+                                            listOf(modeColor.copy(alpha = 0.25f), DarkBackground)
+                                        )
+                                    else
+                                        Brush.verticalGradient(GradientDarkSurface)
+                                )
                                 .border(
-                                    BorderStroke(
-                                        if (isSelected) 2.dp else 1.dp,
-                                        if (isSelected) modeColor else DarkSurfaceVariant
-                                    ),
-                                    RoundedCornerShape(12.dp)
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    brush = if (isSelected) Brush.linearGradient(modeGradient)
+                                    else Brush.linearGradient(listOf(DarkSurfaceVariant, DarkSurfaceVariant)),
+                                    shape = RoundedCornerShape(12.dp)
                                 )
                                 .clickable { onIntensityModeChange(mode) }
                                 .padding(vertical = 12.dp),
@@ -485,11 +755,19 @@ private fun CreateCharacterStep(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Mode explanation text Box
+                // Mode description box
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(DarkBackground, RoundedCornerShape(12.dp))
+                        .background(
+                            Brush.verticalGradient(listOf(DarkBackground, DarkSurfaceVariant)),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = DarkSurfaceVariant,
+                            shape = RoundedCornerShape(12.dp)
+                        )
                         .padding(12.dp)
                 ) {
                     val description = when (intensityMode) {
@@ -519,94 +797,56 @@ private fun CreateCharacterStep(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Submit button
+        // Submit button (neon)
         Button(
             onClick = onSubmit,
             colors = ButtonDefaults.buttonColors(
-                containerColor = IslamicGreen,
+                containerColor = Color.Transparent,
                 contentColor = Color.Black
             ),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    ambientColor = IslamicGreen.copy(alpha = 0.55f),
+                    spotColor = GoldAccent.copy(alpha = 0.3f)
+                )
                 .testTag("submit_button"),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+            contentPadding = PaddingValues(0.dp)
         ) {
-            Text(
-                text = "BUAT KARAKTER & MULAI",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.Black,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = Color.Black
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.horizontalGradient(GradientGreenGold),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        brush = Brush.linearGradient(GradientGreenGold),
+                        shape = RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "BUAT KARAKTER & MULAI",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.Black
+                    )
+                }
+            }
         }
-    }
-}
-
-@Composable
-private fun BenefitItem(
-    emoji: String,
-    title: String,
-    description: String
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(DarkSurface, RoundedCornerShape(16.dp))
-            .border(
-                BorderStroke(1.dp, IslamicGreen.copy(alpha = 0.2f)),
-                RoundedCornerShape(16.dp)
-            )
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = emoji,
-            fontSize = 28.sp,
-            modifier = Modifier.padding(end = 16.dp)
-        )
-        Column {
-            Text(
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextLight
-            )
-            Text(
-                text = description,
-                fontSize = 12.sp,
-                color = TextMuted,
-                lineHeight = 18.sp,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-    }
-}
-
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawIslamicGeometricBackground() {
-    val pathColor = Color(0x1200A86B)
-    val linesCount = 8
-    for (i in 0..linesCount) {
-        val x = size.width * (i.toFloat() / linesCount)
-        drawLine(
-            color = pathColor,
-            start = Offset(x, 0f),
-            end = Offset(size.width - x, size.height),
-            strokeWidth = 1.5f
-        )
-        val y = size.height * (i.toFloat() / linesCount)
-        drawLine(
-            color = pathColor,
-            start = Offset(0f, y),
-            end = Offset(size.width, size.height - y),
-            strokeWidth = 1.5f
-        )
     }
 }

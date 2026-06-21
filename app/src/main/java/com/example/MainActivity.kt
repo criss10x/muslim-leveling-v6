@@ -52,6 +52,8 @@ class MainActivity : ComponentActivity() {
                 val isLoaded by gameViewModel.isLoaded.collectAsStateWithLifecycle()
                 val gameState by gameViewModel.gameData.collectAsStateWithLifecycle()
 
+                var showSplash by remember { mutableStateOf(true) }
+
                 // Register Toast events listener
                 LaunchedEffect(Unit) {
                     gameViewModel.toastEvent.collect { message ->
@@ -59,12 +61,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (!isLoaded) {
+                if (showSplash) {
+                    SplashScreen(onTimeout = { showSplash = false })
+                } else if (!isLoaded) {
                     // Loading central state
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(DarkBackground),
+                            .futuristicBackground(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = IslamicGreen)
