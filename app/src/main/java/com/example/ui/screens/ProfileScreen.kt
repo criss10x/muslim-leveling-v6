@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.*
+import com.example.ui.components.CityDropdownPicker
 import com.example.ui.components.NeonProgressBar
 import com.example.ui.theme.*
 import com.example.viewmodel.*
@@ -928,23 +929,13 @@ fun SettingsPanelContent(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text("Kota/Kabupaten:", fontSize = 12.sp, color = GoldAccent, fontWeight = FontWeight.Bold)
-            OutlinedTextField(
+            CityDropdownPicker(
                 value = kota,
                 onValueChange = { kota = it },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = TextLight,
-                    unfocusedTextColor = TextLight,
-                    focusedBorderColor = IslamicGreen,
-                    unfocusedBorderColor = DarkSurfaceVariant,
-                    focusedContainerColor = DarkBackground,
-                    unfocusedContainerColor = DarkBackground
-                ),
-                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp)
-                    .testTag("kota_edit_field"),
-                singleLine = true
+                    .testTag("kota_edit_field")
             )
 
             Spacer(modifier = Modifier.height(10.dp))

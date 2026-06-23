@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.CityDropdownPicker
 import com.example.ui.theme.*
 
 /**
@@ -656,23 +657,12 @@ private fun CreateCharacterStep(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
-                OutlinedTextField(
+                CityDropdownPicker(
                     value = kota,
                     onValueChange = onKotaChange,
-                    placeholder = { Text("Ketik kota kamu...", color = TextMuted) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextLight,
-                        unfocusedTextColor = TextLight,
-                        focusedBorderColor = IslamicGreen,
-                        unfocusedBorderColor = DarkSurfaceVariant,
-                        focusedContainerColor = DarkBackground,
-                        unfocusedContainerColor = DarkBackground
-                    ),
-                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("kota_input"),
-                    singleLine = true
+                        .testTag("kota_input")
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
