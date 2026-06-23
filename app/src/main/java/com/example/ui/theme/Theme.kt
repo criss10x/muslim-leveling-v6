@@ -18,9 +18,13 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
@@ -28,12 +32,14 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 // ═══════════════════════════════════════════════════════════════
-// QUSHO GAMING — Futuristic Backgrounds & Glow Effects
+// ARENA HIKMAH — Backgrounds & Glow Effects
+// Esports stage lighting + Islamic geometric star pattern
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Subtle animated mesh gradient background for futuristic feel.
- * Uses a slow-moving radial glow behind content.
+ * Arena background: deep midnight base + 8-point Islamic star grid
+ * (subtle, 4% opacity) + arena spotlights (radial glows top + corner).
+ * Replaces the old hexagonal dot grid — this is the signature texture.
  */
 fun Modifier.futuristicBackground(
     baseColor: Color = DarkBackground,
@@ -42,44 +48,70 @@ fun Modifier.futuristicBackground(
     // Base fill
     drawRect(color = baseColor)
 
-    // Hexagonal dot grid — gaming aesthetic
-    val dotColor = glowColor.copy(alpha = 0.035f)
-    val dotRadius = 1.2f.dp.toPx()
-    val gap = 28.dp.toPx()
+    // 8-point Islamic star grid — geometric pattern at 4% opacity
+    val starColor = glowColor.copy(alpha = 0.04f)
+    val starSize = 12f.dp.toPx()
+    val gap = 44.dp.toPx()
+    val halfDiag = starSize / 2f
     val width = size.width
     val height = size.height
+
     var x = gap / 2f
-    while (x < width) {
+    while (x < width + gap) {
         var y = gap / 2f
-        while (y < height) {
-            drawCircle(color = dotColor, radius = dotRadius, center = Offset(x, y))
+        while (y < height + gap) {
+            // Draw 8-point star as two overlapping squares (rotated 45°)
+            val rect1 = androidx.compose.ui.geometry.Rect(
+                Offset(x - halfDiag, y - halfDiag), androidx.compose.ui.geometry.Size(starSize, starSize)
+            )
+            // Simple star: draw two rotated squares
+            drawRect(color = starColor, topLeft = Offset(x - halfDiag, y - halfDiag), size = androidx.compose.ui.geometry.Size(starSize, starSize))
+            // Rotate context for second square
+            withTransform({
+                translate(x, y)
+                rotate(45f)
+            }) {
+                drawRect(color = starColor, topLeft = Offset(-halfDiag, -halfDiag), size = androidx.compose.ui.geometry.Size(starSize, starSize))
+            }
             y += gap
         }
         x += gap
     }
 
-    // Top-center radial glow
-    val ambientGlow = glowColor.copy(alpha = 0.045f)
+    // Top-center arena spotlight (teal)
+    val topGlow = glowColor.copy(alpha = 0.06f)
     drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(ambientGlow, Color.Transparent),
-            center = Offset(width / 2f, 0f),
-            radius = width * 0.65f
+            colors = listOf(topGlow, Color.Transparent),
+            center = Offset(width / 2f, -50f),
+            radius = width * 0.7f
         ),
-        radius = width * 0.65f,
-        center = Offset(width / 2f, 0f)
+        radius = width * 0.7f,
+        center = Offset(width / 2f, -50f)
     )
 
-    // Bottom-right secondary glow (purple/cyan)
-    val secondaryGlow = PurpleNeon.copy(alpha = 0.02f)
+    // Bottom-right gold spotlight (warm, like stage lighting)
+    val goldGlow = GoldAccent.copy(alpha = 0.04f)
     drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(secondaryGlow, Color.Transparent),
-            center = Offset(width * 0.85f, height),
+            colors = listOf(goldGlow, Color.Transparent),
+            center = Offset(width * 0.9f, height * 1.1f),
+            radius = width * 0.6f
+        ),
+        radius = width * 0.6f,
+        center = Offset(width * 0.9f, height * 1.1f)
+    )
+
+    // Bottom-left subtle crimson (depth, very faint)
+    val crimsonGlow = RingRed.copy(alpha = 0.025f)
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(crimsonGlow, Color.Transparent),
+            center = Offset(width * 0.1f, height * 0.9f),
             radius = width * 0.5f
         ),
         radius = width * 0.5f,
-        center = Offset(width * 0.85f, height)
+        center = Offset(width * 0.1f, height * 0.9f)
     )
 }
 

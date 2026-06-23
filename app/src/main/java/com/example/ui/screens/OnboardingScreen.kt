@@ -284,11 +284,11 @@ private fun WelcomeStep(
         )
 
         Text(
-            text = "QUSHO",
+            text = "ARENA HIKMAH",
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = GoldAccent,
-            letterSpacing = 10.sp,
+            letterSpacing = 6.sp,
             textAlign = TextAlign.Center
         )
 

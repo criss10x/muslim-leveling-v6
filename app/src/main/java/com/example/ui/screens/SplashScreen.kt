@@ -173,7 +173,7 @@ fun SplashScreen(
                             .size(108.dp)
                             .shadow(
                                 elevation = 24.dp,
-                                shape = RoundedCornerShape(28.dp),
+                                shape = CircleShape,
                                 ambientColor = IslamicGreen.copy(alpha = 0.6f),
                                 spotColor = GoldAccent.copy(alpha = 0.4f)
                             )
@@ -181,18 +181,18 @@ fun SplashScreen(
                                 brush = Brush.verticalGradient(
                                     listOf(DarkSurface, DarkSurfaceElevated)
                                 ),
-                                RoundedCornerShape(28.dp)
+                                CircleShape
                             )
                             .border(
                                 width = 2.dp,
                                 brush = Brush.linearGradient(GradientGreenGold),
-                                shape = RoundedCornerShape(28.dp)
+                                shape = CircleShape
                             )
-                            .clip(RoundedCornerShape(28.dp)),
+                            .clip(CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "🌙",
+                            text = "⭐",
                             fontSize = 56.sp
                         )
                     }
@@ -225,11 +225,11 @@ fun SplashScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "QUSHO",
+                        text = "ARENA HIKMAH",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = GoldAccent,
-                        letterSpacing = 12.sp,
+                        letterSpacing = 8.sp,
                         textAlign = TextAlign.Center
                     )
                 }

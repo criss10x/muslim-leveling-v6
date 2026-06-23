@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,14 +18,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
@@ -100,27 +108,24 @@ fun HomeScreen(
                 .padding(bottom = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header
-            GameHeaderView(state, viewModel)
+            // ═══ BINTANG SEAL — Hero ═══
+            BintangSealHero(state, viewModel)
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // ═══ RITUAL RINGS — Gaming Card ═══
-            Box(
-                modifier = Modifier
-                    .padding(bottom = 12.dp)
-                    .shadow(8.dp, RoundedCornerShape(100.dp), ambientColor = IslamicGreen.copy(alpha = 0.4f))
-                    .background(Brush.horizontalGradient(GradientGreenGold), RoundedCornerShape(100.dp))
-                    .padding(horizontal = 16.dp, vertical = 5.dp)
-            ) {
-                Text(
-                    text = "⚔ DAILY QUEST",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Black,
-                    letterSpacing = 2.sp
-                )
-            }
+            // ═══ COUNTDOWN CARD — Next Prayer Match Timer ═══
+            CountdownCard(
+                state = state,
+                checkedTrackedWajibToday = checkedTrackedWajibToday,
+                wajibDenominator = wajibDenominator
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ═══ RITUAL RINGS ═══
+            SectionPill(text = "⚔ DAILY QUEST", gradient = GradientGreenGold)
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Main rings card with neon gradient border + glow
             Card(
@@ -184,52 +189,28 @@ fun HomeScreen(
                             }
                         }
 
-                        // Right side: Countdown
+                        // Right side: compact ring labels (timer moved to CountdownCard)
                         Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(start = 20.dp)
                         ) {
-                            val timer = getNextPrayerTimerInfo(state.prayerTimesCache.timings, checkedTrackedWajibToday, wajibDenominator)
                             Text(
-                                text = timer.label,
-                                fontSize = 12.sp,
-                                color = TextMuted,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = timer.duration,
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Black,
-                                color = GoldAccent,
-                                letterSpacing = (-1).sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = timer.tagline,
+                                text = "RITUAL PROGRESS",
                                 fontSize = 10.sp,
-                                color = IslamicGreen.copy(alpha = 0.9f),
-                                lineHeight = 14.sp,
-                                style = androidx.compose.ui.text.TextStyle(
-                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                                )
+                                color = TextMuted,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.2.sp
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            RingLabelRow(color = RingRed, name = "Wajib", value = "$checkedTrackedWajibToday/$wajibDenominator")
+                            if (isSultanMode || isStandarMode) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                RingLabelRow(color = RingGreen, name = "Sunnah", value = "$sunnahCount/8")
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            RingLabelRow(color = RingBlue, name = "Tilawah", value = if (tilawahLogged) "Lengkap" else "Belum")
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Ring labels with neon dots
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RingLabelView(color = RingRed, name = "Wajib", value = "$checkedTrackedWajibToday/$wajibDenominator")
-                        if (isSultanMode || isStandarMode) {
-                            RingLabelView(color = RingGreen, name = "Sunnah", value = "$sunnahCount/8")
-                        }
-                        RingLabelView(color = RingBlue, name = "Tilawah", value = if (tilawahLogged) "Lengkap" else "Belum")
                     }
                 }
                 }
@@ -250,20 +231,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .shadow(6.dp, RoundedCornerShape(100.dp), ambientColor = GoldAccent.copy(alpha = 0.4f))
-                        .background(Brush.horizontalGradient(GradientGoldAmber), RoundedCornerShape(100.dp))
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "🕐 QUEST SHOLAT HARI INI",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.Black,
-                        letterSpacing = 1.5.sp
-                    )
-                }
+                SectionPill(text = "🕐 QUEST SHOLAT HARI INI", gradient = GradientGoldAmber)
                 val modeLabel = when (state.user.intensityMode) {
                     "santai" -> "🎮 SANTAI"
                     "sultan" -> "👑 SULTAN"
@@ -339,20 +307,10 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .shadow(6.dp, RoundedCornerShape(100.dp), ambientColor = RingGreen.copy(alpha = 0.4f))
-                            .background(Brush.horizontalGradient(GradientCyanGreen), RoundedCornerShape(100.dp))
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = if (isSultanMode) "🌙 BONUS QUEST — SUNNAH SULTAN" else "🌙 BONUS QUEST — SUNNAH",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Black,
-                            letterSpacing = 1.5.sp
-                        )
-                    }
+                    SectionPill(
+                        text = if (isSultanMode) "🌙 BONUS QUEST — SUNNAH SULTAN" else "🌙 BONUS QUEST — SUNNAH",
+                        gradient = GradientCyanGreen
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -405,20 +363,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f).height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, RingBlue.copy(alpha = 0.6f), Color.Transparent))))
-                Box(
-                    modifier = Modifier
-                        .shadow(5.dp, RoundedCornerShape(100.dp), ambientColor = RingBlue.copy(alpha = 0.4f))
-                        .background(Brush.horizontalGradient(GradientBlueCyan), RoundedCornerShape(100.dp))
-                        .padding(horizontal = 10.dp, vertical = 3.dp)
-                ) {
-                    Text(
-                        text = "📜 SIDE QUEST",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.Black,
-                        letterSpacing = 2.sp
-                    )
-                }
+                SectionPill(text = "📜 SIDE QUEST", gradient = GradientBlueCyan, compact = true)
                 Box(modifier = Modifier.weight(1f).height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, RingBlue.copy(alpha = 0.6f), Color.Transparent))))
             }
 
@@ -438,6 +383,15 @@ fun HomeScreen(
                     onLog = { viewModel.logPrayer("tilawah", "tilawah") }
                 )
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ═══ STATS GRID 2x2 ═══
+            SectionPill(text = "📊 STATS ARENA", gradient = GradientGreenGold)
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            StatsGrid2x2(state = state, viewModel = viewModel)
 
             Spacer(modifier = Modifier.height(20.dp))
         }
@@ -468,6 +422,599 @@ fun HomeScreen(
             containerColor = DarkSurface,
             shape = RoundedCornerShape(20.dp),
             
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BINTANG SEAL — Signature 8-point Islamic star medal
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Hero Bintang Seal: 8-point Islamic star medal with rotating glow ring,
+ * center level circle, LEVEL label, rank name. Replaces GameHeaderView.
+ */
+@Composable
+fun BintangSealHero(state: MuslimLevelingData, viewModel: GameViewModel) {
+    val levelInfo = viewModel.getLevelInfo(state.user.xp)
+    val rankTitle = viewModel.getRankTitle(levelInfo.level)
+    // Short rank name (e.g. "MUSAFIR", "WARRIOR") — first word, uppercased
+    val rankShort = rankTitle.split(" ").take(2).joinToString(" ").uppercase()
+
+    val modeLabel = when (state.user.intensityMode) {
+        "santai" -> "🎮 SANTAI"
+        "sultan" -> "👑 SULTAN"
+        else -> "⚔ STANDAR"
+    }
+
+    // Rotating glow ring animation
+    val infiniteTransition = rememberInfiniteTransition(label = "seal_glow")
+    val ringRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ring_rotation"
+    )
+    // Pulse for inner glow
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "seal_pulse"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .shadow(
+                elevation = 24.dp,
+                shape = RoundedCornerShape(28.dp),
+                ambientColor = IslamicGreen.copy(alpha = 0.32f),
+                spotColor = GoldAccent.copy(alpha = 0.22f)
+            ),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = BorderStroke(
+            1.5.dp,
+            Brush.linearGradient(GradientGreenGold)
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Brush.verticalGradient(GradientDarkSurface))
+                .fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // ── Top row: username + mode ──
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = state.user.username.uppercase(),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        color = TextLight,
+                        letterSpacing = 1.5.sp
+                    )
+                    Box(
+                        modifier = Modifier
+                            .background(IslamicGreen.copy(alpha = 0.12f), RoundedCornerShape(100.dp))
+                            .border(1.dp, IslamicGreen.copy(alpha = 0.35f), RoundedCornerShape(100.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = modeLabel,
+                            fontSize = 9.sp,
+                            color = IslamicGreen,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // ── Bintang Seal Canvas ──
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(180.dp)
+                ) {
+                    // Rotating conic-style glow ring (drawn behind)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .rotate(ringRotation)
+                    ) {
+                        drawRotatingGlowRing(
+                            center = center,
+                            radius = size.minDimension / 2f * 0.92f,
+                            teal = IslamicGreen,
+                            gold = GoldAccent
+                        )
+                    }
+
+                    // Pulse-scaled 8-point star
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(pulseScale)
+                    ) {
+                        drawBintangSeal(
+                            center = center,
+                            outerRadius = size.minDimension / 2f * 0.78f,
+                            innerRadius = size.minDimension / 2f * 0.42f,
+                            teal = IslamicGreen,
+                            gold = GoldAccent,
+                            surface = DarkSurface
+                        )
+                    }
+
+                    // Center text overlay (LEVEL / number / rank)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .background(DarkSurface.copy(alpha = 0.9f), CircleShape)
+                            .size(86.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "LEVEL",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            color = GoldAccent,
+                            letterSpacing = 2.sp
+                        )
+                        Text(
+                            text = "${levelInfo.level}",
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Black,
+                            color = TextLight,
+                            letterSpacing = (-1).sp
+                        )
+                    }
+
+                    // Rank name below the seal center
+                    Text(
+                        text = rankShort,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = IslamicGreen,
+                        letterSpacing = 2.sp,
+                        modifier = Modifier
+                            .padding(top = 116.dp)
+                            .background(DarkSurface.copy(alpha = 0.85f), RoundedCornerShape(100.dp))
+                            .border(1.dp, IslamicGreen.copy(alpha = 0.4f), RoundedCornerShape(100.dp))
+                            .padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ── XP bar ──
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "LV ${levelInfo.level}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextMuted
+                    )
+                    Text(
+                        text = "XP ${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = IslamicGreen
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                NeonProgressBar(
+                    progress = levelInfo.progress,
+                    modifier = Modifier.fillMaxWidth(),
+                    height = 10.dp,
+                    brush = Brush.horizontalGradient(listOf(IslamicGreen, GoldAccent, IslamicGreen)),
+                    glowColor = IslamicGreen
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Draws the 8-point Islamic star as two overlapping rotated squares,
+ * with a teal-to-gold gradient stroke.
+ */
+fun DrawScope.drawBintangSeal(
+    center: Offset,
+    outerRadius: Float,
+    innerRadius: Float,
+    teal: Color,
+    gold: Color,
+    surface: Color
+) {
+    val starStrokeWidth = 3.dp.toPx()
+
+    // Filled center disc (subtle)
+    drawCircle(
+        color = surface.copy(alpha = 0.6f),
+        radius = innerRadius,
+        center = center
+    )
+
+    // Two overlapping rotated squares forming 8-point star
+    val half = outerRadius
+    val starGradient = Brush.linearGradient(
+        colors = listOf(teal, gold, teal),
+        start = Offset(center.x - half, center.y - half),
+        end = Offset(center.x + half, center.y + half)
+    )
+
+    // Square 1 (axis-aligned)
+    drawRect(
+        brush = starGradient,
+        topLeft = Offset(center.x - half, center.y - half),
+        size = Size(half * 2, half * 2),
+        style = Stroke(width = starStrokeWidth)
+    )
+    // Square 2 (rotated 45°)
+    rotate(degrees = 45f, pivot = center) {
+        drawRect(
+            brush = starGradient,
+            topLeft = Offset(center.x - half, center.y - half),
+            size = Size(half * 2, half * 2),
+            style = Stroke(width = starStrokeWidth)
+        )
+    }
+
+    // Inner ring stroke (gold) around the center disc
+    drawCircle(
+        brush = Brush.linearGradient(
+            colors = listOf(gold, teal, gold),
+            start = Offset(center.x - innerRadius, center.y),
+            end = Offset(center.x + innerRadius, center.y)
+        ),
+        radius = innerRadius,
+        center = center,
+        style = Stroke(width = 2.dp.toPx())
+    )
+
+    // Subtle outer glow ring
+    drawCircle(
+        color = teal.copy(alpha = 0.15f),
+        radius = outerRadius + 6.dp.toPx(),
+        center = center,
+        style = Stroke(width = 8.dp.toPx())
+    )
+}
+
+/**
+ * Draws a rotating conic-gradient style glow ring using segmented arcs.
+ * Approximates conic gradient with 8 alternating teal/gold segments.
+ */
+fun DrawScope.drawRotatingGlowRing(
+    center: Offset,
+    radius: Float,
+    teal: Color,
+    gold: Color
+) {
+    val segments = 8
+    val sweep = 360f / segments
+    val strokeWidth = 4.dp.toPx()
+    val arcSize = Size(radius * 2, radius * 2)
+    val topLeft = Offset(center.x - radius, center.y - radius)
+
+    for (i in 0 until segments) {
+        val color = if (i % 2 == 0) teal.copy(alpha = 0.55f) else gold.copy(alpha = 0.55f)
+        drawArc(
+            color = color,
+            startAngle = i * sweep,
+            sweepAngle = sweep,
+            useCenter = false,
+            topLeft = topLeft,
+            size = arcSize,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+        )
+    }
+    // Outer faint halo
+    drawCircle(
+        color = teal.copy(alpha = 0.08f),
+        radius = radius + 8.dp.toPx(),
+        center = center,
+        style = Stroke(width = 14.dp.toPx())
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COUNTDOWN CARD — ML-style match timer for next prayer
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun CountdownCard(
+    state: MuslimLevelingData,
+    checkedTrackedWajibToday: Int,
+    wajibDenominator: Int
+) {
+    val timer = getNextPrayerTimerInfo(
+        state.prayerTimesCache.timings,
+        checkedTrackedWajibToday,
+        wajibDenominator
+    )
+
+    // Tick animation pulse
+    val infiniteTransition = rememberInfiniteTransition(label = "countdown_pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "countdown_pulse_alpha"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .shadow(
+                elevation = 14.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = GoldAccent.copy(alpha = 0.28f),
+                spotColor = IslamicGreen.copy(alpha = 0.15f)
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = BorderStroke(
+            1.5.dp,
+            Brush.linearGradient(GradientGoldAmber)
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Brush.verticalGradient(listOf(DarkSurfaceElevated, DarkSurface)))
+                .fillMaxWidth()
+                .drawBehind {
+                    // Subtle arena spotlight from left
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(GoldAccent.copy(alpha = 0.06f), Color.Transparent),
+                            center = Offset(size.width * 0.1f, size.height * 0.5f),
+                            radius = size.height * 1.8f
+                        ),
+                        radius = size.height * 1.8f,
+                        center = Offset(size.width * 0.1f, size.height * 0.5f)
+                    )
+                }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left: label
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(RingRed.copy(alpha = pulseAlpha), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "NEXT MATCH",
+                            fontSize = 9.sp,
+                            color = TextMuted,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.5.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = timer.label,
+                        fontSize = 14.sp,
+                        color = TextLight,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = timer.tagline,
+                        fontSize = 10.sp,
+                        color = IslamicGreen.copy(alpha = 0.85f),
+                        lineHeight = 13.sp,
+                        maxLines = 2,
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        )
+                    )
+                }
+
+                // Right: timer (big, gold, monospace)
+                Text(
+                    text = timer.duration,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
+                    color = GoldAccent,
+                    letterSpacing = (-1).sp,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.End
+                )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION PILL — gradient bg, black text (replaces plain titles)
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun SectionPill(
+    text: String,
+    gradient: List<Color>,
+    compact: Boolean = false
+) {
+    val glowColor = gradient.first()
+    Box(
+        modifier = Modifier
+            .shadow(
+                if (compact) 5.dp else 6.dp,
+                RoundedCornerShape(100.dp),
+                ambientColor = glowColor.copy(alpha = 0.4f)
+            )
+            .background(Brush.horizontalGradient(gradient), RoundedCornerShape(100.dp))
+            .padding(horizontal = if (compact) 10.dp else 12.dp, vertical = if (compact) 3.dp else 4.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = if (compact) 10.sp else 11.sp,
+            fontWeight = FontWeight.Black,
+            color = Color.Black,
+            letterSpacing = if (compact) 2.sp else 1.5.sp
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATS GRID 2x2 — accent left bars (teal, gold, crimson, violet)
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun StatsGrid2x2(state: MuslimLevelingData, viewModel: GameViewModel) {
+    val levelInfo = viewModel.getLevelInfo(state.user.xp)
+    val todayStr = LocalDate.now().toString()
+    val todayWajib = listOf("subuh", "dzuhur", "ashar", "maghrib", "isya").count { p ->
+        state.prayerLog.any { it.date == todayStr && it.prayer == p }
+    }
+    val todaySunnah = state.prayerLog.count {
+        it.date == todayStr && (it.type == "sunnah" || it.prayer == "dhuha" || it.prayer.startsWith("rawatib"))
+    }
+    val totalXp = state.user.xp
+    val bestStreak = state.heroStreak.best
+
+    val stats = listOf(
+        StatItem("LEVEL", "${levelInfo.level}", IslamicGreen),
+        StatItem("XP TOTAL", "$totalXp", GoldAccent),
+        StatItem("STREAK", "${state.heroStreak.current}🔥", RingRed),
+        StatItem("BEST", "${bestStreak}🏆", PurpleNeon)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        stats.chunked(2).forEach { rowStats ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowStats.forEach { stat ->
+                    StatCard(stat = stat, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+data class StatItem(val label: String, val value: String, val accent: Color)
+
+@Composable
+fun StatCard(stat: StatItem, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .height(72.dp)
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(14.dp),
+                ambientColor = stat.accent.copy(alpha = 0.2f)
+            ),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = BorderStroke(1.dp, DarkSurfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(GradientDarkSurface))
+        ) {
+            // Left accent bar
+            Box(
+                modifier = Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .background(stat.accent)
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 12.dp, top = 10.dp, bottom = 10.dp, end = 8.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = stat.label,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    color = TextMuted,
+                    letterSpacing = 1.2.sp
+                )
+                Text(
+                    text = stat.value,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = stat.accent,
+                    letterSpacing = (-0.5).sp
+                )
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RING LABEL ROW — compact label + value with neon dot
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun RingLabelRow(color: Color, name: String, value: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .shadow(4.dp, CircleShape, ambientColor = color.copy(alpha = 0.5f))
+                .background(color, CircleShape)
+        )
+        Text(
+            text = name,
+            fontSize = 11.sp,
+            color = TextMuted,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
+            fontSize = 11.sp,
+            color = color,
+            fontWeight = FontWeight.ExtraBold
         )
     }
 }
@@ -509,162 +1056,8 @@ fun getNextPrayerTimerInfo(timings: Timings, currentWajib: Int, denominator: Int
 
 @Composable
 fun GameHeaderView(state: MuslimLevelingData, viewModel: GameViewModel) {
-    val levelInfo = viewModel.getLevelInfo(state.user.xp)
-    val rankTitle = viewModel.getRankTitle(levelInfo.level)
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .shadow(
-                elevation = 20.dp,
-                shape = RoundedCornerShape(24.dp),
-                ambientColor = IslamicGreen.copy(alpha = 0.3f),
-                spotColor = GoldAccent.copy(alpha = 0.18f)
-            ),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        border = BorderStroke(
-            1.5.dp,
-            Brush.linearGradient(GradientGreenGold)
-        )
-    ) {
-        Box(
-            modifier = Modifier.background(Brush.verticalGradient(GradientDarkSurface))
-        ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Avatar + level badge combined
-                Box(
-                    contentAlignment = Alignment.BottomEnd,
-                    modifier = Modifier.size(58.dp)
-                ) {
-                    // Avatar circle with gradient
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        IslamicGreen.copy(alpha = 0.3f),
-                                        DarkSurfaceVariant
-                                    ),
-                                    radius = 120f
-                                ),
-                                CircleShape
-                            )
-                            .border(
-                                BorderStroke(2.dp, IslamicGreen.copy(alpha = 0.5f)),
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = state.user.username.take(1).uppercase(),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TextLight
-                        )
-                    }
-
-                    // Floating level badge
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .offset(x = 4.dp, y = 4.dp)
-                            .background(GoldAccent, CircleShape)
-                            .border(BorderStroke(2.dp, DarkSurface), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${levelInfo.level}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Black
-                        )
-                    }
-                }
-
-                // User info
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = state.user.username,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextLight
-                    )
-                    Text(
-                        text = rankTitle.uppercase(),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = GoldAccent,
-                        letterSpacing = 1.sp
-                    )
-                }
-
-                // Mode badge
-                val modeLabel = when (state.user.intensityMode) {
-                    "santai" -> "🎮 SANTAI"
-                    "sultan" -> "👑 SULTAN"
-                    else -> "⚔ STANDAR"
-                }
-                Box(
-                    modifier = Modifier
-                        .background(IslamicGreen.copy(alpha = 0.12f), RoundedCornerShape(100.dp))
-                        .border(1.dp, IslamicGreen.copy(alpha = 0.35f), RoundedCornerShape(100.dp))
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                ) {
-                    Text(
-                        text = modeLabel,
-                        fontSize = 9.sp,
-                        color = IslamicGreen,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // XP bar section
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "LV ${levelInfo.level}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = TextMuted
-                )
-                Text(
-                    text = "XP ${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = IslamicGreen
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            NeonProgressBar(
-                progress = levelInfo.progress,
-                modifier = Modifier.fillMaxWidth(),
-                height = 10.dp,
-                brush = Brush.horizontalGradient(listOf(IslamicGreen, GoldAccent, IslamicGreen)),
-                glowColor = IslamicGreen
-            )
-        }
-        }
-    }
+    // Preserved for backward compat — delegates to BintangSealHero
+    BintangSealHero(state, viewModel)
 }
 
 @Composable
@@ -837,8 +1230,9 @@ fun HeroStreakCard(state: MuslimLevelingData, isSantaiMode: Boolean) {
             }
         }
     } else {
+        // Arena Hikmah hero streak — crimson/gold esports gradient
         val heroGradient = Brush.linearGradient(
-            colors = listOf(Color(0xFF00E68A), Color(0xFF004D31))
+            colors = listOf(DarkSurfaceElevated, DarkSurface)
         )
 
         Card(
@@ -848,13 +1242,13 @@ fun HeroStreakCard(state: MuslimLevelingData, isSantaiMode: Boolean) {
                 .shadow(
                     elevation = 24.dp,
                     shape = RoundedCornerShape(24.dp),
-                    ambientColor = IslamicGreen.copy(alpha = 0.35f),
+                    ambientColor = RingRed.copy(alpha = 0.35f),
                     spotColor = GoldAccent.copy(alpha = 0.2f)
                 )
                 .testTag("hero_streak_card_active"),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            border = BorderStroke(1.5.dp, Brush.linearGradient(GradientGreenGold))
+            border = BorderStroke(1.5.dp, Brush.linearGradient(listOf(RingRed, GoldAccent)))
         ) {
             Box(
                 modifier = Modifier
@@ -899,7 +1293,7 @@ fun HeroStreakCard(state: MuslimLevelingData, isSantaiMode: Boolean) {
                                 text = "${hero.current} HARI",
                                 fontSize = 36.sp,
                                 fontWeight = FontWeight.Black,
-                                color = TextLight,
+                                color = GoldAccent,
                                 letterSpacing = (-1).sp
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -907,25 +1301,25 @@ fun HeroStreakCard(state: MuslimLevelingData, isSantaiMode: Boolean) {
                                 text = "🏆 REKOR: ${hero.best} HARI",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = GoldAccent.copy(alpha = 0.9f),
+                                color = IslamicGreen.copy(alpha = 0.9f),
                                 letterSpacing = 0.7.sp
                             )
                         }
 
                         val freezeText = if (hero.freezeAvailable) "❄ FREEZE READY" else "COOLDOWN"
-                        val freezeBgColor = if (hero.freezeAvailable) Color.Black.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.1f)
+                        val freezeBgColor = if (hero.freezeAvailable) RingRed.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.1f)
 
                         Box(
                             modifier = Modifier
                                 .background(freezeBgColor, RoundedCornerShape(100.dp))
-                                .border(BorderStroke(1.dp, if (hero.freezeAvailable) CyanAccent.copy(alpha = 0.5f) else Color.Transparent), RoundedCornerShape(100.dp))
+                                .border(BorderStroke(1.dp, if (hero.freezeAvailable) RingRed.copy(alpha = 0.5f) else Color.Transparent), RoundedCornerShape(100.dp))
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = freezeText,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (hero.freezeAvailable) CyanAccent else TextMuted
+                                color = if (hero.freezeAvailable) RingRed else TextMuted
                             )
                         }
                     }
@@ -935,8 +1329,8 @@ fun HeroStreakCard(state: MuslimLevelingData, isSantaiMode: Boolean) {
                     // Per-prayer streaks
                     Box(
                         modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
-                            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(16.dp))
+                            .background(Color.Black.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                            .border(BorderStroke(1.dp, IslamicGreen.copy(alpha = 0.15f)), RoundedCornerShape(16.dp))
                             .padding(14.dp)
                     ) {
                         Column {
@@ -1000,8 +1394,23 @@ fun PrayerRowCard(
     isSantaiMode: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    // Arena Hikmah states:
+    //  - Done    = teal border + glow
+    //  - Active  = gold border + pulse
+    //  - Locked  = muted
+    val infiniteTransition = rememberInfiniteTransition(label = "prayer_active_pulse")
+    val activePulse by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "active_pulse_alpha"
+    )
+
     val borderStroke = when {
-        isChecked -> BorderStroke(1.5.dp, Brush.linearGradient(GradientGreenGold))
+        isChecked -> BorderStroke(1.5.dp, Brush.linearGradient(listOf(IslamicGreen, CyanAccent)))
         isActive -> BorderStroke(1.5.dp, Brush.linearGradient(GradientGoldAmber))
         else -> BorderStroke(1.dp, DarkSurfaceVariant)
     }
@@ -1027,16 +1436,27 @@ fun PrayerRowCard(
         else -> "🕌"
     }
 
+    val accentBarColor = when {
+        isChecked -> IslamicGreen
+        isActive -> GoldAccent
+        else -> DarkSurfaceVariant
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .then(
-                if (isActive) Modifier.shadow(
+                if (isChecked) Modifier.shadow(
+                    elevation = 8.dp,
+                    shape = RoundedCornerShape(18.dp),
+                    ambientColor = IslamicGreen.copy(alpha = 0.3f),
+                    spotColor = IslamicGreen.copy(alpha = 0.15f)
+                ) else if (isActive) Modifier.shadow(
                     elevation = 10.dp,
                     shape = RoundedCornerShape(18.dp),
-                    ambientColor = GoldAccent.copy(alpha = 0.25f),
-                    spotColor = GoldAccent.copy(alpha = 0.15f)
+                    ambientColor = GoldAccent.copy(alpha = 0.25f * activePulse),
+                    spotColor = GoldAccent.copy(alpha = 0.15f * activePulse)
                 ) else Modifier.shadow(
                     elevation = 4.dp,
                     shape = RoundedCornerShape(18.dp),
@@ -1053,29 +1473,39 @@ fun PrayerRowCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(IntrinsicSize.Min)
                 .drawBehind {
                     if (isActive) {
                         drawCircle(
                             Brush.radialGradient(
-                                listOf(GoldAccent.copy(alpha = 0.08f), Color.Transparent),
+                                listOf(GoldAccent.copy(alpha = 0.08f * activePulse), Color.Transparent),
                                 center = Offset(size.width * 0.1f, size.height * 0.5f),
                                 radius = size.height * 2f
                             )
                         )
                     }
-                }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                },
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Left accent bar
+            Box(
+                modifier = Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .background(accentBarColor)
+            )
+
             Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 14.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Prayer emoji icon
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(40.dp)
                         .background(
                             if (isChecked) IslamicGreen.copy(alpha = 0.15f)
                             else if (isActive) GoldAccent.copy(alpha = 0.1f)
@@ -1124,19 +1554,37 @@ fun PrayerRowCard(
                 }
             }
 
+            // Right side: time + XP pill + check circle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(end = 14.dp)
             ) {
-                Text(
-                    text = time,
-                    fontSize = 15.sp,
-                    color = timeColor,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
+                // XP pill
+                Box(
+                    modifier = Modifier
+                        .background(
+                            if (isChecked) IslamicGreen.copy(alpha = 0.15f)
+                            else GoldAccent.copy(alpha = 0.1f),
+                            RoundedCornerShape(100.dp)
+                        )
+                        .border(
+                            1.dp,
+                            if (isChecked) IslamicGreen.copy(alpha = 0.3f)
+                            else GoldAccent.copy(alpha = 0.25f),
+                            RoundedCornerShape(100.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = if (isChecked) "+XP ✓" else "+XP",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (isChecked) IslamicGreen else GoldAccent
+                    )
+                }
 
-                // Gaming checkbox
+                // Gaming check circle
                 Box(
                     modifier = Modifier
                         .size(30.dp)
@@ -1150,7 +1598,7 @@ fun PrayerRowCard(
                             else if (isActive) Modifier.shadow(
                                 4.dp,
                                 RoundedCornerShape(10.dp),
-                                ambientColor = GoldAccent.copy(alpha = 0.4f)
+                                ambientColor = GoldAccent.copy(alpha = 0.4f * activePulse)
                             )
                             else Modifier
                         )
@@ -1208,12 +1656,22 @@ fun SunnahActionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Left accent bar
+            Box(
+                modifier = Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .background(accentColor)
+            )
+
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -1247,6 +1705,7 @@ fun SunnahActionCard(
             if (isClaimed) {
                 Box(
                     modifier = Modifier
+                        .padding(end = 14.dp)
                         .background(accentColor.copy(alpha = 0.15f), RoundedCornerShape(100.dp))
                         .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(100.dp))
                         .padding(horizontal = 14.dp, vertical = 6.dp)
@@ -1268,6 +1727,7 @@ fun SunnahActionCard(
                     shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
                     modifier = Modifier
+                        .padding(end = 14.dp)
                         .height(32.dp)
                         .shadow(4.dp, RoundedCornerShape(10.dp), ambientColor = accentColor.copy(alpha = 0.3f))
                 ) {
@@ -1360,6 +1820,8 @@ fun SunnahRowCard(
         else -> Brush.verticalGradient(GradientDarkSurface)
     }
 
+    val accentBarColor = if (isChecked) RingGreen else DarkSurfaceVariant
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1379,11 +1841,22 @@ fun SunnahRowCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Left accent bar
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(accentBarColor)
+            )
+
             Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
@@ -1429,6 +1902,7 @@ fun SunnahRowCard(
             // Gaming checkbox
             Box(
                 modifier = Modifier
+                    .padding(end = 14.dp)
                     .size(28.dp)
                     .clip(RoundedCornerShape(9.dp))
                     .then(
