@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B1437">
+<meta name="description" content="Muslim Leveling — gamified Islamic prayer tracker untuk pemuda Muslim Indonesia. Level up ibadahmu.">
+<title>Muslim Leveling — Arena Ibadah</title>
+
+<!-- PWA manifest inline via data URI -->
+<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"Muslim Leveling","short_name":"ML Arena","start_url":"./","display":"standalone","background_color":"%230B1437","theme_color":"%230B1437","orientation":"portrait","icons":[{"src":"data:image/svg%2Bxml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 fill=%27%230B1437%27/%3E%3Ctext x=%2796%27 y=%27120%27 font-size=%2796%27 text-anchor=%27middle%27 fill=%27%23F2C14E%27 font-family=%27serif%27 font-weight=%27900%27%3E12%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%230B1437"/><text x="32" y="44" font-size="34" text-anchor="middle" fill="%23F2C14E" font-family="serif" font-weight="900">12</text></svg>'>
+
+<!-- Google Fonts: Cinzel (display), Plus Jakarta Sans (body), JetBrains Mono (data) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   MUSLIM LEVELING — Mobile Arena Islam
+   Palette: night at the mosque
+   ============================================================ */
+:root{
+  --indigo-mid:#0B1437;
+  --indigo-royal:#1A2654;
+  --indigo-elev:#22306A;
+  --gold:#F2C14E;
+  --gold-deep:#C9941E;
+  --gold-soft:#F8DA8C;
+  --jade:#2E8B6F;
+  --jade-deep:#1F664F;
+  --saffron:#E07A3E;
+  --ivory:#F5F2EA;
+  --slate:#7C8AB0;
+  --slate-deep:#5A6789;
+  --danger:#C0453A;
+  --ring-track:rgba(124,138,176,.18);
+
+  --shadow-card:0 10px 28px -12px rgba(0,0,0,.7), 0 2px 6px rgba(0,0,0,.35);
+  --shadow-glow-gold:0 0 24px rgba(242,193,78,.35);
+  --radius:14px;
+  --radius-sm:10px;
+  --max-w:480px;
+  --tab-h:74px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+  background:var(--indigo-mid);
+  color:var(--ivory);
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* Ambient background: arabesque pattern + glows */
+.ambient{
+  position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+}
+.ambient::before{
+  content:"";position:absolute;inset:0;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><g fill='none' stroke='%23F2C14E' stroke-width='1'><path d='M40 4 L48 32 L76 40 L48 48 L40 76 L32 48 L4 40 L32 32 Z'/><circle cx='40' cy='40' r='18'/><circle cx='40' cy='40' r='10'/></g></svg>");
+  background-size:80px 80px;
+  opacity:.055;
+}
+.ambient::after{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(80% 50% at 50% -10%, rgba(242,193,78,.12), transparent 60%),
+    radial-gradient(60% 50% at 110% 110%, rgba(46,139,111,.09), transparent 60%);
+  animation:ambientPulse 9s ease-in-out infinite;
+}
+@keyframes ambientPulse{0%,100%{opacity:.85}50%{opacity:1}}
+
+/* App frame: mobile mockup centered on desktop */
+.app{
+  position:relative;z-index:1;
+  max-width:var(--max-w);
+  margin:0 auto;
+  min-height:100vh;
+  background:linear-gradient(180deg, rgba(11,20,55,.6) 0%, rgba(26,38,84,.45) 100%);
+  box-shadow:0 0 60px rgba(0,0,0,.6), 0 0 0 1px rgba(242,193,78,.06);
+  padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Scrollable screens */
+.screen{display:none;animation:fadeIn .35s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.screen-inner{padding:20px 18px 32px}
+
+/* ============================================================
+   BINTANG TAKHTAJ — signature octagonal crown star medal
+   ============================================================ */
+.takhtaj{position:relative;width:140px;height:140px;margin:0 auto}
+.takhtaj.lg{width:172px;height:172px}
+.takhtaj__rotor{
+  position:absolute;inset:0;
+  animation:spinSlow 8s linear infinite;
+}
+@keyframes spinSlow{to{transform:rotate(360deg)}}
+.takhtaj__ring{
+  position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg, var(--gold-deep), var(--gold-soft), var(--gold-deep), var(--gold-soft), var(--gold-deep));
+  padding:3px;
+  -webkit-mask:radial-gradient(circle, transparent 58%, #000 60%);
+          mask:radial-gradient(circle, transparent 58%, #000 60%);
+  filter:drop-shadow(0 0 8px rgba(242,193,78,.5));
+}
+.takhtaj__star{
+  position:absolute;inset:14px;
+  display:grid;place-items:center;
+}
+.takhtaj__star svg{width:100%;height:100%;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+.takhtaj__num{
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  font-family:'Cinzel',serif;font-weight:900;
+  font-size:54px;color:var(--gold);
+  text-shadow:0 0 18px rgba(242,193,78,.6), 0 2px 4px rgba(0,0,0,.7);
+  letter-spacing:-1px;
+}
+.takhtaj.lg .takhtaj__num{font-size:64px}
+
+/* XP silk ribbon (flanks the star) */
+.xp-ribbon{
+  position:relative;
+  margin:10px auto 0;width:88%;
+  background:linear-gradient(180deg, var(--indigo-elev), var(--indigo-royal));
+  border:1px solid rgba(242,193,78,.35);
+  border-radius:8px;
+  padding:8px 14px;
+  box-shadow:0 4px 14px rgba(0,0,0,.4);
+  overflow:hidden;
+}
+.xp-ribbon::before{
+  content:"";position:absolute;inset:0;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M20 2 L24 16 L38 20 L24 24 L20 38 L16 24 L2 20 L16 16 Z' fill='none' stroke='%23F2C14E' stroke-width='.7'/></svg>");
+  background-size:40px 40px;opacity:.08;
+}
+.xp-ribbon__row{position:relative;display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.xp-ribbon__bar{position:relative;height:5px;background:var(--ring-track);border-radius:3px;overflow:hidden;margin-top:6px}
+.xp-ribbon__bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--gold-deep),var(--gold));box-shadow:0 0 8px rgba(242,193,78,.5)}
+.xp-ribbon__label{color:var(--slate);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+
+/* ============================================================
+   HEADER (Beranda)
+   ============================================================ */
+.header{
+  position:relative;
+  padding:24px 18px 18px;
+  background:linear-gradient(180deg, rgba(34,48,106,.4), transparent);
+  border-bottom:1px solid rgba(242,193,78,.08);
+  text-align:center;
+}
+.header__id{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:8px}
+.header__id-block{text-align:left}
+.header__name{font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:var(--ivory);letter-spacing:.5px;line-height:1}
+.header__sub{margin-top:4px;display:flex;gap:6px;align-items:center}
+.class-badge{
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
+  color:var(--gold);background:rgba(242,193,78,.1);
+  border:1px solid rgba(242,193,78,.4);
+  padding:2px 8px;border-radius:4px;letter-spacing:.08em;text-transform:uppercase;
+}
+.title-tag{font-size:11px;color:var(--slate);font-weight:500}
+
+/* ============================================================
+   SECTION TITLES — MOBA pill style
+   ============================================================ */
+.section-title{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'Cinzel',serif;font-weight:700;font-size:13px;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:#1a1408;
+  background:linear-gradient(90deg,var(--gold-deep),var(--gold),var(--gold-soft));
+  padding:6px 14px;border-radius:20px;
+  box-shadow:0 4px 12px rgba(242,193,78,.3);
+  margin:24px 0 14px;
+}
+.section-title--muted{
+  background:none;color:var(--ivory);box-shadow:none;padding:0;border-radius:0;
+  border-left:3px solid var(--gold);padding-left:10px;
+  font-size:14px;
+}
+.section-title--muted::before{content:none}
+
+/* ============================================================
+   RITUAL RINGS (Apple Watch style)
+   ============================================================ */
+.rings{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
+.ring-card{
+  background:linear-gradient(180deg, var(--indigo-royal), rgba(26,38,84,.7));
+  border:1px solid rgba(124,138,176,.18);
+  border-radius:var(--radius);
+  padding:12px 8px 10px;text-align:center;
+  box-shadow:var(--shadow-card);
+}
+.ring{position:relative;width:72px;height:72px;margin:0 auto 6px}
+.ring svg{transform:rotate(-90deg)}
+.ring__track{stroke:var(--ring-track)}
+.ring__fill{fill:none;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.ring__label{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--ivory);
+}
+.ring__caption{font-size:11px;color:var(--slate);font-weight:600}
+.ring__caption strong{color:var(--ivory);font-weight:700}
+
+/* ============================================================
+   COUNTDOWN to next prayer
+   ============================================================ */
+.countdown{
+  position:relative;
+  background:linear-gradient(135deg, rgba(224,122,62,.14), rgba(46,139,111,.1));
+  border:1px solid rgba(224,122,62,.3);
+  border-radius:var(--radius);
+  padding:14px 16px;margin:14px 0;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  overflow:hidden;
+}
+.countdown::after{
+  content:"";position:absolute;right:-20px;top:-20px;width:80px;height:80px;
+  background:radial-gradient(circle, rgba(224,122,62,.25), transparent 70%);
+}
+.countdown__label{font-size:11px;color:var(--slate);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.countdown__prayer{font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:var(--saffron);margin-top:2px}
+.countdown__time{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--ivory);letter-spacing:.02em;position:relative;z-index:1}
+
+/* ============================================================
+   PRAYER CARDS
+   ============================================================ */
+.prayer-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.prayer-card{
+  position:relative;
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(90deg, var(--indigo-royal), rgba(26,38,84,.6));
+  border:1px solid rgba(124,138,176,.16);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  box-shadow:var(--shadow-card);
+  transition:transform .15s ease, border-color .2s;
+}
+.prayer-card--done{border-color:rgba(242,193,78,.45);background:linear-gradient(90deg, rgba(46,139,111,.12), rgba(26,38,84,.6))}
+.prayer-card--next{border-color:rgba(224,122,62,.55);box-shadow:var(--shadow-card), 0 0 18px rgba(224,122,62,.18)}
+.prayer-card__arabic{font-size:18px;color:var(--gold);font-weight:600;line-height:1;min-width:34px;text-align:center}
+.prayer-card__body{flex:1;min-width:0}
+.prayer-card__name{font-weight:700;font-size:14px;color:var(--ivory)}
+.prayer-card__time{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--slate);margin-top:1px}
+.prayer-card--next .prayer-card__time{color:var(--saffron)}
+
+.btn-check{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:8px 14px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--gold);color:var(--gold);
+  background:rgba(242,193,78,.06);
+  transition:all .18s ease;
+}
+.btn-check:hover{background:rgba(242,193,78,.16)}
+.btn-check:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn-check--done{
+  background:linear-gradient(135deg,var(--gold-deep),var(--gold));
+  color:#1a1408;border-color:var(--gold);
+  box-shadow:0 0 14px rgba(242,193,78,.5);
+}
+.btn-check--done.pulse{animation:goldPulse .6s ease}
+@keyframes goldPulse{
+  0%{box-shadow:0 0 0 0 rgba(242,193,78,.7)}
+  100%{box-shadow:0 0 0 16px rgba(242,193,78,0)}
+}
+
+/* ============================================================
+   QUEST CARDS
+   ============================================================ */
+.quest-card{
+  background:linear-gradient(180deg, var(--indigo-royal), rgba(26,38,84,.7));
+  border:1px solid rgba(124,138,176,.18);
+  border-radius:var(--radius);
+  padding:14px;
+  box-shadow:var(--shadow-card);
+  margin-bottom:10px;
+}
+.quest-card__head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.quest-card__title{font-weight:600;font-size:14px;color:var(--ivory)}
+.quest-card__reward{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  color:var(--jade);background:rgba(46,139,111,.14);
+  border:1px solid rgba(46,139,111,.35);
+  padding:3px 8px;border-radius:6px;white-space:nowrap;
+}
+.quest-card__progress{margin-top:10px}
+.quest-card__bar{height:6px;background:var(--ring-track);border-radius:4px;overflow:hidden}
+.quest-card__bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--jade-deep),var(--jade));box-shadow:0 0 8px rgba(46,139,111,.4);transition:width .6s}
+.quest-card__meta{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--slate);margin-top:5px}
+.quest-card__claim{
+  margin-top:12px;width:100%;
+  font-family:'Cinzel',serif;font-weight:700;font-size:12px;letter-spacing:.1em;
+  padding:9px;border-radius:8px;cursor:pointer;
+  background:linear-gradient(135deg,var(--gold-deep),var(--gold));
+  color:#1a1408;border:none;
+  box-shadow:0 4px 12px rgba(242,193,78,.25);
+  transition:transform .15s, box-shadow .2s;
+}
+.quest-card__claim:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(242,193,78,.35)}
+.quest-card__claim:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.quest-card__claim:disabled{background:var(--indigo-elev);color:var(--slate);box-shadow:none;cursor:not-allowed}
+
+/* ============================================================
+   STREAK SECTION
+   ============================================================ */
+.streak-hero{
+  position:relative;
+  background:linear-gradient(135deg, rgba(224,122,62,.16), rgba(26,38,84,.5));
+  border:1px solid rgba(224,122,62,.35);
+  border-radius:var(--radius);
+  padding:18px;text-align:center;
+  box-shadow:var(--shadow-card);
+  overflow:hidden;
+}
+.streak-hero__flame{font-size:34px;filter:drop-shadow(0 0 12px rgba(224,122,62,.6));animation:flicker 2.2s ease-in-out infinite}
+@keyframes flicker{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.streak-hero__num{font-family:'Cinzel',serif;font-weight:900;font-size:36px;color:var(--saffron);line-height:1;margin-top:4px;text-shadow:0 0 16px rgba(224,122,62,.4)}
+.streak-hero__cap{font-size:12px;color:var(--slate);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+
+.mini-streaks{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.mini-streak{
+  background:var(--indigo-royal);border:1px solid rgba(124,138,176,.18);
+  border-radius:10px;padding:8px 4px;text-align:center;
+}
+.mini-streak__name{font-size:10px;color:var(--slate);font-weight:600}
+.mini-streak__val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--gold);margin-top:2px}
+
+.freeze-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--jade);
+  background:rgba(46,139,111,.12);border:1px solid rgba(46,139,111,.35);
+  padding:6px 12px;border-radius:20px;margin-top:12px;font-weight:600;
+}
+
+/* Reward preview w/ shimmer */
+.reward-preview{
+  position:relative;overflow:hidden;
+  background:linear-gradient(135deg, var(--indigo-elev), var(--indigo-royal));
+  border:1px solid rgba(242,193,78,.35);
+  border-radius:var(--radius);padding:14px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow-card);
+}
+.reward-preview__icon{
+  width:44px;height:44px;border-radius:10px;
+  background:linear-gradient(135deg,var(--gold-deep),var(--gold));
+  display:grid;place-items:center;font-size:22px;
+  box-shadow:0 0 16px rgba(242,193,78,.4);
+}
+.reward-preview__label{font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:.1em}
+.reward-preview__name{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--gold);margin-top:2px}
+.shimmer{position:absolute;top:0;left:-60%;width:50%;height:100%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  animation:shimmerMove 2.6s infinite;pointer-events:none}
+@keyframes shimmerMove{0%{left:-60%}100%{left:120%}}
+
+/* ============================================================
+   BELAJAR — Learning Hub
+   ============================================================ */
+.bismillah{text-align:center;padding:8px 0 4px}
+.bismillah__arabic{font-size:26px;color:var(--gold);font-weight:500;line-height:1.4;font-family:'Cinzel',serif}
+.bismillah__latin{font-size:11px;color:var(--slate);font-style:italic;margin-top:6px;letter-spacing:.02em}
+.diamond-div{display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0 4px;color:var(--gold-deep)}
+.diamond-div::before,.diamond-div::after{content:"";height:1px;width:40px;background:linear-gradient(90deg,transparent,var(--gold-deep),transparent)}
+.diamond-div span{transform:rotate(45deg);display:inline-block;width:6px;height:6px;background:var(--gold)}
+
+.seg-control{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--indigo-royal);border:1px solid rgba(124,138,176,.18);border-radius:10px;padding:4px;margin:14px 0}
+.seg-btn{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:12px;padding:8px 4px;border-radius:7px;border:none;background:transparent;color:var(--slate);cursor:pointer;transition:all .2s}
+.seg-btn.active{background:linear-gradient(135deg,var(--gold-deep),var(--gold));color:#1a1408;box-shadow:0 3px 8px rgba(242,193,78,.25)}
+.seg-btn:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+
+.progress-summary{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--slate);margin:14px 2px 8px}
+.progress-summary strong{color:var(--ivory);font-family:'JetBrains Mono',monospace}
+.progress-summary__bar{flex:1;height:6px;background:var(--ring-track);border-radius:4px;overflow:hidden;margin:0 12px}
+.progress-summary__bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--jade-deep),var(--jade))}
+
+.module-card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg, var(--indigo-royal), rgba(26,38,84,.7));
+  border:1px solid rgba(124,138,176,.18);
+  border-radius:var(--radius);padding:14px;
+  margin-bottom:10px;box-shadow:var(--shadow-card);
+}
+.module-card--done{border-color:rgba(46,139,111,.4)}
+.module-card--avail{border-color:rgba(242,193,78,.5);box-shadow:var(--shadow-card), 0 0 18px rgba(242,193,78,.15)}
+.module-card--locked{opacity:.55;background:linear-gradient(180deg, rgba(26,38,84,.5), rgba(26,38,84,.4))}
+.module-card__wm{
+  position:absolute;top:6px;right:12px;
+  font-family:'Cinzel',serif;font-weight:900;font-size:38px;
+  color:rgba(242,193,78,.08);line-height:1;pointer-events:none;
+}
+.module-card__head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;position:relative}
+.module-card__title{font-weight:600;font-size:13.5px;color:var(--ivory);padding-right:36px}
+.module-card__meta{display:flex;gap:8px;align-items:center;margin-top:10px;position:relative}
+.module-card__time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--slate)}
+.module-card__xp{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--jade);background:rgba(46,139,111,.14);border:1px solid rgba(46,139,111,.3);padding:2px 7px;border-radius:6px}
+.module-card__status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-left:auto}
+.status--done{color:var(--jade)}
+.status--avail{color:var(--gold)}
+.status--locked{color:var(--slate)}
+
+/* ============================================================
+   PROFIL
+   ============================================================ */
+.profile-head{text-align:center;padding:8px 0 4px}
+.profile-head__name{font-family:'Cinzel',serif;font-weight:700;font-size:24px;color:var(--ivory);margin-top:12px}
+.profile-head__sub{font-size:13px;color:var(--slate);margin-top:2px}
+.profile-head__sub strong{color:var(--gold);font-weight:600}
+
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.stat{
+  background:linear-gradient(180deg, var(--indigo-royal), rgba(26,38,84,.6));
+  border:1px solid rgba(124,138,176,.18);
+  border-radius:10px;padding:12px 8px;text-align:center;
+}
+.stat__val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold)}
+.stat__label{font-size:10px;color:var(--slate);margin-top:3px;line-height:1.2}
+
+.badges-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.badge{text-align:center;padding:14px 6px 10px;border-radius:12px;background:var(--indigo-royal);border:1px solid rgba(124,138,176,.18);position:relative}
+.badge--earned{border-color:rgba(242,193,78,.35)}
+.badge--rare{border-color:rgba(224,122,62,.5);box-shadow:0 0 14px rgba(224,122,62,.2)}
+.badge--locked{opacity:.5}
+.badge__icon{font-size:26px;margin-bottom:6px;filter:drop-shadow(0 0 6px rgba(242,193,78,.4))}
+.badge--locked .badge__icon{filter:grayscale(1)}
+.badge__name{font-size:9.5px;color:var(--ivory);font-weight:600;line-height:1.2}
+.badge--locked .badge__name{color:var(--slate)}
+.badge__rarity{font-size:8px;color:var(--saffron);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;font-weight:700}
+
+.intensity{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.intensity__opt{padding:10px 4px;border-radius:10px;text-align:center;background:var(--indigo-royal);border:1px solid rgba(124,138,176,.18);cursor:pointer;font-size:12px;font-weight:600;color:var(--slate)}
+.intensity__opt.active{background:linear-gradient(135deg,var(--gold-deep),var(--gold));color:#1a1408;border-color:var(--gold);box-shadow:0 0 14px rgba(242,193,78,.3)}
+.intensity__opt small{display:block;font-size:9px;font-weight:400;margin-top:2px;opacity:.8}
+
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(124,138,176,.12);font-size:13px}
+.settings-row__label{color:var(--slate)}
+.settings-row__val{color:var(--ivory);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:12px}
+.toggle{width:40px;height:22px;background:var(--ring-track);border-radius:11px;position:relative;cursor:pointer;border:1px solid rgba(124,138,176,.2)}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--slate);transition:.25s}
+.toggle.on{background:rgba(46,139,111,.3)}
+.toggle.on::after{left:20px;background:var(--jade)}
+
+/* ============================================================
+   BOTTOM TAB BAR
+   ============================================================ */
+.tabbar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:var(--max-w);
+  background:rgba(11,20,55,.96);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid transparent;
+  background-image:linear-gradient(rgba(11,20,55,.96),rgba(11,20,55,.96)),linear-gradient(90deg,transparent,var(--gold),transparent);
+  background-origin:border-box;background-clip:padding-box,border-box;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px));
+  z-index:50;
+}
+.tab{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:none;border:none;cursor:pointer;
+  font-family:'Cinzel',serif;font-weight:700;font-size:10px;letter-spacing:.08em;
+  color:var(--slate);padding:4px 2px;position:relative;
+  transition:color .2s;
+}
+.tab__icon{font-size:20px;transition:transform .2s, filter .2s}
+.tab.active{color:var(--gold)}
+.tab.active .tab__icon{transform:translateY(-2px);filter:drop-shadow(0 0 8px rgba(242,193,78,.6))}
+.tab.active::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);border-radius:2px}
+.tab:focus-visible{outline:2px solid var(--gold);outline-offset:-4px;border-radius:6px}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast{
+  position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(135deg,var(--jade-deep),var(--jade));
+  color:var(--ivory);font-weight:600;font-size:13px;
+  padding:12px 20px;border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.5), 0 0 18px rgba(46,139,111,.4);
+  opacity:0;pointer-events:none;transition:all .3s ease;z-index:100;
+  max-width:90%;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.divider-orn{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px 0 12px;color:var(--gold-deep);opacity:.5}
+.divider-orn::before,.divider-orn::after{content:"";height:1px;flex:1;max-width:60px;background:linear-gradient(90deg,transparent,var(--gold-deep),transparent)}
+.divider-orn span{font-size:10px;letter-spacing:.2em}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .takhtaj__rotor,.ambient::after,.streak-hero__flame,.shimmer{animation:none !important}
+  *{scroll-behavior:auto !important}
+}
+</style>
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true"></div>
+
+<div class="app">
+
+<!-- ============ SCREEN 1: BERANDA ============ -->
+<main id="screen-beranda" class="screen active" role="region" aria-label="Beranda">
+  <header class="header">
+    <div class="takhtaj" role="img" aria-label="Bintang Takhtaj level 12">
+      <div class="takhtaj__rotor"><div class="takhtaj__ring"></div></div>
+      <div class="takhtaj__star">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <radialGradient id="starGrad" cx="50%" cy="40%" r="65%">
+              <stop offset="0%" stop-color="#2E8B6F"/>
+              <stop offset="60%" stop-color="#1F664F"/>
+              <stop offset="100%" stop-color="#0B1437"/>
+            </radialGradient>
+          </defs>
+          <polygon points="50,5 61,32 90,32 67,50 76,78 50,62 24,78 33,50 10,32 39,32" fill="url(#starGrad)" stroke="#F2C14E" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="takhtaj__num">12</div>
+    </div>
+
+    <div class="header__id">
+      <div class="header__id-block">
+        <div class="header__name">Kris</div>
+        <div class="header__sub">
+          <span class="class-badge">Mujahid</span>
+          <span class="title-tag">Musafir</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="xp-ribbon" role="meter" aria-label="XP menuju level 13" aria-valuenow="1240" aria-valuemin="0" aria-valuemax="1800">
+      <div class="xp-ribbon__row">
+        <span class="xp-ribbon__label">XP · Lv 12 → 13</span>
+        <span><strong style="color:var(--gold)">1.240</strong> / 1.800</span>
+      </div>
+      <div class="xp-ribbon__bar"><span style="width:68.9%"></span></div>
+    </div>
+  </header>
+
+  <div class="screen-inner">
+    <h2 class="section-title">Quest Hari Ini</h2>
+
+    <!-- Ritual Rings -->
+    <div class="rings">
+      <div class="ring-card">
+        <div class="ring">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle class="ring__track" cx="36" cy="36" r="30" fill="none" stroke-width="7"/>
+            <circle class="ring__fill" cx="36" cy="36" r="30" stroke="#F2C14E" stroke-width="7" stroke-dasharray="188.5" stroke-dashoffset="75.4"/>
+          </svg>
+          <div class="ring__label">3/5</div>
+        </div>
+        <div class="ring__caption"><strong>Wajib</strong></div>
+      </div>
+      <div class="ring-card">
+        <div class="ring">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle class="ring__track" cx="36" cy="36" r="30" fill="none" stroke-width="7"/>
+            <circle class="ring__fill" cx="36" cy="36" r="30" stroke="#2E8B6F" stroke-width="7" stroke-dasharray="188.5" stroke-dashoffset="141.4"/>
+          </svg>
+          <div class="ring__label">2/8</div>
+        </div>
+        <div class="ring__caption"><strong>Sunnah</strong></div>
+      </div>
+      <div class="ring-card">
+        <div class="ring">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle class="ring__track" cx="36" cy="36" r="30" fill="none" stroke-width="7"/>
+            <circle class="ring__fill" cx="36" cy="36" r="30" stroke="#E07A3E" stroke-width="7" stroke-dasharray="188.5" stroke-dashoffset="0"/>
+          </svg>
+          <div class="ring__label">1/1</div>
+        </div>
+        <div class="ring__caption"><strong>Tilawah</strong></div>
+      </div>
+    </div>
+
+    <!-- Countdown -->
+    <div class="countdown" role="timer" aria-live="polite">
+      <div>
+        <div class="countdown__label">Sholat berikutnya</div>
+        <div class="countdown__prayer">Maghrib</div>
+      </div>
+      <div class="countdown__time" id="countdown">02:14:33</div>
+    </div>
+
+    <!-- Prayer cards -->
+    <div class="prayer-list" id="prayer-list">
+      <div class="prayer-card prayer-card--done" data-prayer="subuh">
+        <div class="prayer-card__arabic" aria-hidden="true">٧</div>
+        <div class="prayer-card__body">
+          <div class="prayer-card__name">Subuh <span style="color:var(--slate);font-weight:400;font-size:11px">· الفجر</span></div>
+          <div class="prayer-card__time">04:42</div>
+        </div>
+        <button class="btn-check btn-check--done" aria-label="Tandai Subuh sudah dikerjakan">✓</button>
+      </div>
+      <div class="prayer-card prayer-card--done" data-prayer="dzuhur">
+        <div class="prayer-card__arabic" aria-hidden="true">٢</div>
+        <div class="prayer-card__body">
+          <div class="prayer-card__name">Dzuhur <span style="color:var(--slate);font-weight:400;font-size:11px">· الظهر</span></div>
+          <div class="prayer-card__time">12:01</div>
+        </div>
+        <button class="btn-check btn-check--done" aria-label="Tandai Dzuhur sudah dikerjakan">✓</button>
+      </div>
+      <div class="prayer-card prayer-card--done" data-prayer="ashar">
+        <div class="prayer-card__arabic" aria-hidden="true">٣</div>
+        <div class="prayer-card__body">
+          <div class="prayer-card__name">Ashar <span style="color:var(--slate);font-weight:400;font-size:11px">· العصر</span></div>
+          <div class="prayer-card__time">15:20</div>
+        </div>
+        <button class="btn-check btn-check--done" aria-label="Tandai Ashar sudah dikerjakan">✓</button>
+      </div>
+      <div class="prayer-card prayer-card--next" data-prayer="maghrib">
+        <div class="prayer-card__arabic" aria-hidden="true">٤</div>
+        <div class="prayer-card__body">
+          <div class="prayer-card__name">Maghrib <span style="color:var(--slate);font-weight:400;font-size:11px">· المغرب</span></div>
+          <div class="prayer-card__time">17:55 · berikutnya</div>
+        </div>
+        <button class="btn-check" aria-label="Catat sholat Maghrib">Catat</button>
+      </div>
+      <div class="prayer-card" data-prayer="isya">
+        <div class="prayer-card__arabic" aria-hidden="true">٥</div>
+        <div class="prayer-card__body">
+          <div class="prayer-card__name">Isya <span style="color:var(--slate);font-weight:400;font-size:11px">· العشاء</span></div>
+          <div class="prayer-card__time">19:08</div>
+        </div>
+        <button class="btn-check" aria-label="Catat sholat Isya">Catat</button>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top:28px">Quest Preview</h2>
+    <div id="quest-preview">
+      <div class="quest-card">
+        <div class="quest-card__head">
+          <div class="quest-card__title">Sholat 5 waktu</div>
+          <div class="quest-card__reward">+50 XP</div>
+        </div>
+        <div class="quest-card__progress">
+          <div class="quest-card__bar"><span style="width:60%"></span></div>
+          <div class="quest-card__meta"><span>3 / 5</span><span>Hari ini</span></div>
+        </div>
+      </div>
+      <div class="quest-card">
+        <div class="quest-card__head">
+          <div class="quest-card__title">Dzikir setelah sholat</div>
+          <div class="quest-card__reward">+30 XP</div>
+        </div>
+        <div class="quest-card__progress">
+          <div class="quest-card__bar"><span style="width:33%"></span></div>
+          <div class="quest-card__meta"><span>1 / 3</span><span>Hari ini</span></div>
+        </div>
+      </div>
+      <div class="quest-card">
+        <div class="quest-card__head">
+          <div class="quest-card__title">Subuh on time</div>
+          <div class="quest-card__reward">+25 XP</div>
+        </div>
+        <div class="quest-card__progress">
+          <div class="quest-card__bar"><span style="width:100%;background:linear-gradient(90deg,var(--gold-deep),var(--gold))"></span></div>
+          <div class="quest-card__meta"><span style="color:var(--gold)">Selesai</span><span>+25 XP</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ============ SCREEN 2: MISI ============ -->
+<main id="screen-misi" class="screen" role="region" aria-label="Misi">
+  <div class="screen-inner">
+    <h2 class="section-title">Quest Harian</h2>
+
+    <div class="quest-card">
+      <div class="quest-card__head">
+        <div class="quest-card__title">Sholat 5 waktu</div>
+        <div class="quest-card__reward">+50 XP</div>
+      </div>
+      <div class="quest-card__progress">
+        <div class="quest-card__bar"><span style="width:60%"></span></div>
+        <div class="quest-card__meta"><span>3 / 5</span><span>06:00 — 23:59</span></div>
+      </div>
+      <button class="quest-card__claim" onclick="claimQuest(this,50)">Klaim</button>
+    </div>
+
+    <div class="quest-card">
+      <div class="quest-card__head">
+        <div class="quest-card__title">Dzikir setelah sholat</div>
+        <div class="quest-card__reward">+30 XP</div>
+      </div>
+      <div class="quest-card__progress">
+        <div class="quest-card__bar"><span style="width:33%"></span></div>
+        <div class="quest-card__meta"><span>1 / 3</span><span>Hari ini</span></div>
+      </div>
+      <button class="quest-card__claim" onclick="claimQuest(this,30)">Klaim</button>
+    </div>
+
+    <div class="quest-card">
+      <div class="quest-card__head">
+        <div class="quest-card__title">Subuh on time</div>
+        <div class="quest-card__reward">+25 XP</div>
+      </div>
+      <div class="quest-card__progress">
+        <div class="quest-card__bar"><span style="width:100%;background:linear-gradient(90deg,var(--gold-deep),var(--gold))"></span></div>
+        <div class="quest-card__meta"><span style="color:var(--gold)">Selesai</span><span>Siap diklaim</span></div>
+      </div>
+      <button class="quest-card__claim" onclick="claimQuest(this,25)">Klaim</button>
+    </div>
+
+    <div class="quest-card">
+      <div class="quest-card__head">
+        <div class="quest-card__title">Tilawah 1 juz</div>
+        <div class="quest-card__reward">+40 XP</div>
+      </div>
+      <div class="quest-card__progress">
+        <div class="quest-card__bar"><span style="width:100%"></span></div>
+        <div class="quest-card__meta"><span style="color:var(--jade)">Selesai</span><span>Siap diklaim</span></div>
+      </div>
+      <button class="quest-card__claim" onclick="claimQuest(this,40)">Klaim</button>
+    </div>
+
+    <div class="quest-card">
+      <div class="quest-card__head">
+        <div class="quest-card__title">Sholat Dhuha 4 rakaat</div>
+        <div class="quest-card__reward">+35 XP</div>
+      </div>
+      <div class="quest-card__progress">
+        <div class="quest-card__bar"><span style="width:50%"></span></div>
+        <div class="quest-card__meta"><span>2 / 4</span><span>Hari ini</span></div>
+      </div>
+      <button class="quest-card__claim" disabled>Klaim</button>
+    </div>
+
+    <div class="quest-card">
+      <div class="quest-card__head">
+        <div class="quest-card__title">Tahajjud 1 malam</div>
+        <div class="quest-card__reward">+60 XP</div>
+      </div>
+      <div class="quest-card__progress">
+        <div class="quest-card__bar"><span style="width:0%"></span></div>
+        <div class="quest-card__meta"><span>0 / 1</span><span>Tonight</span></div>
+      </div>
+      <button class="quest-card__claim" disabled>Klaim</button>
+    </div>
+
+    <h2 class="section-title" style="margin-top:28px">Streak Mingguan</h2>
+
+    <div class="streak-hero">
+      <div class="streak-hero__flame" aria-hidden="true">🔥</div>
+      <div class="streak-hero__num">7 hari</div>
+      <div class="streak-hero__cap">Hero Streak berjalan</div>
+      <span class="freeze-pill">❄️ 1× Streak Freeze tersedia</span>
+    </div>
+
+    <div class="mini-streaks">
+      <div class="mini-streak"><div class="mini-streak__name">Subuh</div><div class="mini-streak__val">5</div></div>
+      <div class="mini-streak"><div class="mini-streak__name">Dzuhur</div><div class="mini-streak__val">7</div></div>
+      <div class="mini-streak"><div class="mini-streak__name">Ashar</div><div class="mini-streak__val">3</div></div>
+      <div class="mini-streak"><div class="mini-streak__name">Maghrib</div><div class="mini-streak__val">6</div></div>
+      <div class="mini-streak"><div class="mini-streak__name">Isya</div><div class="mini-streak__val">4</div></div>
+    </div>
+
+    <h2 class="section-title--muted section-title" style="margin-top:24px">Hadiah Berikutnya</h2>
+    <div class="reward-preview">
+      <div class="shimmer" aria-hidden="true"></div>
+      <div class="reward-preview__icon" aria-hidden="true">⚔️</div>
+      <div>
+        <div class="reward-preview__label">Reward Lv 13</div>
+        <div class="reward-preview__name">Pedang Sholat Mitik</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ============ SCREEN 3: BELAJAR ============ -->
+<main id="screen-belajar" class="screen" role="region" aria-label="Belajar">
+  <div class="screen-inner">
+    <div class="bismillah">
+      <div class="bismillah__arabic" lang="ar" dir="rtl">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+      <div class="bismillah__latin">Bismillāhirraḥmānirraḥīm</div>
+      <div class="diamond-div"><span></span></div>
+    </div>
+
+    <h2 class="section-title">Belajar</h2>
+
+    <div class="seg-control" role="tablist" aria-label="Kategori belajar">
+      <button class="seg-btn active" role="tab" aria-selected="true">Akidah</button>
+      <button class="seg-btn" role="tab" aria-selected="false">Rukun Islam</button>
+      <button class="seg-btn" role="tab" aria-selected="false">Praktik Ibadah</button>
+    </div>
+
+    <div class="progress-summary">
+      <span><strong>5</strong>/16 modul</span>
+      <div class="progress-summary__bar"><span style="width:31.25%"></span></div>
+      <span style="color:var(--jade)">31%</span>
+    </div>
+
+    <div class="module-card module-card--done">
+      <div class="module-card__wm">01</div>
+      <div class="module-card__head">
+        <div class="module-card__title">Kenapa Harus Percaya Ada Tuhan?</div>
+      </div>
+      <div class="module-card__meta">
+        <span class="module-card__time">5 mnt</span>
+        <span class="module-card__xp">+40 XP</span>
+        <span class="module-card__status status--done">✓ Selesai</span>
+      </div>
+    </div>
+
+    <div class="module-card module-card--done">
+      <div class="module-card__wm">02</div>
+      <div class="module-card__head">
+        <div class="module-card__title">Kenapa Allah Itu Esa (Tauhid)?</div>
+      </div>
+      <div class="module-card__meta">
+        <span class="module-card__time">5 mnt</span>
+        <span class="module-card__xp">+40 XP</span>
+        <span class="module-card__status status--done">✓ Selesai</span>
+      </div>
+    </div>
+
+    <div class="module-card module-card--avail">
+      <div class="module-card__wm">03</div>
+      <div class="module-card__head">
+        <div class="module-card__title">Al-Quran: Firman Tuhan, Bukan Karangan Manusia</div>
+      </div>
+      <div class="module-card__meta">
+        <span class="module-card__time">5 mnt</span>
+        <span class="module-card__xp">+40 XP</span>
+        <span class="module-card__status status--avail">▶ Mulai</span>
+      </div>
+    </div>
+
+    <div class="module-card module-card--locked">
+      <div class="module-card__wm">04</div>
+      <div class="module-card__head">
+        <div class="module-card__title">Siapa Itu Nabi Muhammad ﷺ?</div>
+      </div>
+      <div class="module-card__meta">
+        <span class="module-card__time">5 mnt</span>
+        <span class="module-card__xp">+40 XP</span>
+        <span class="module-card__status status--locked">🔒 Terkunci</span>
+      </div>
+    </div>
+
+    <div class="module-card module-card--locked">
+      <div class="module-card__wm">05</div>
+      <div class="module-card__head">
+        <div class="module-card__title">Apa Itu Iman dan Rukun Iman?</div>
+      </div>
+      <div class="module-card__meta">
+        <span class="module-card__time">5 mnt</span>
+        <span class="module-card__xp">+40 XP</span>
+        <span class="module-card__status status--locked">🔒 Terkunci</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ============ SCREEN 4: PROFIL ============ -->
+<main id="screen-profil" class="screen" role="region" aria-label="Profil">
+  <div class="screen-inner">
+    <div class="profile-head">
+      <div class="takhtaj lg" role="img" aria-label="Bintang Takhtaj level 12">
+        <div class="takhtaj__rotor"><div class="takhtaj__ring"></div></div>
+        <div class="takhtaj__star">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="50,5 61,32 90,32 67,50 76,78 50,62 24,78 33,50 10,32 39,32" fill="url(#starGrad)" stroke="#F2C14E" stroke-width="1.2"/>
+          </svg>
+        </div>
+        <div class="takhtaj__num">12</div>
+      </div>
+      <div class="profile-head__name">Kris</div>
+      <div class="profile-head__sub"><strong>Mujahid</strong> · Musafir · Lv 12</div>
+    </div>
+
+    <h2 class="section-title--muted section-title" style="margin-top:22px">Statistik</h2>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat__val">342</div><div class="stat__label">Total Sholat</div></div>
+      <div class="stat"><div class="stat__val">21</div><div class="stat__label">Streak Terbaik</div></div>
+      <div class="stat"><div class="stat__val">89</div><div class="stat__label">Quest Selesai</div></div>
+      <div class="stat"><div class="stat__val">5</div><div class="stat__label">Modul Selesai</div></div>
+      <div class="stat"><div class="stat__val">7</div><div class="stat__label">Badge</div></div>
+      <div class="stat"><div class="stat__val">12.450</div><div class="stat__label">XP Total</div></div>
+    </div>
+
+    <h2 class="section-title--muted section-title" style="margin-top:22px">Lencana</h2>
+    <div class="badges-grid">
+      <div class="badge badge--earned"><div class="badge__icon">🥇</div><div class="badge__name">First Week Warrior</div></div>
+      <div class="badge badge--earned"><div class="badge__icon">🌅</div><div class="badge__name">Subuh Champion</div></div>
+      <div class="badge badge--earned"><div class="badge__icon">👑</div><div class="badge__name">Consistency King</div></div>
+      <div class="badge badge--locked"><div class="badge__icon">💻</div><div class="badge__name">Santri Digital</div></div>
+      <div class="badge badge--rare badge--locked"><div class="badge__icon">🌙</div><div class="badge__name">Ramadhan Complete</div><div class="badge__rarity">Rare</div></div>
+      <div class="badge badge--earned"><div class="badge__icon">🕌</div><div class="badge__name">Tahajjud Master</div></div>
+    </div>
+
+    <h2 class="section-title--muted section-title" style="margin-top:22px">Mode Intensitas</h2>
+    <div class="intensity" role="radiogroup" aria-label="Mode intensitas">
+      <div class="intensity__opt" role="radio" aria-checked="false" tabindex="0">Santai<small>3 sholat</small></div>
+      <div class="intensity__opt active" role="radio" aria-checked="true" tabindex="0">Standar<small>5 sholat</small></div>
+      <div class="intensity__opt" role="radio" aria-checked="false" tabindex="0">Sultan<small>5 + sunnah</small></div>
+    </div>
+
+    <h2 class="section-title--muted section-title" style="margin-top:22px">Pengaturan</h2>
+    <div>
+      <div class="settings-row"><span class="settings-row__label">Kota</span><span class="settings-row__val">Denpasar</span></div>
+      <div class="settings-row"><span class="settings-row__label">Mode Notifikasi</span><span class="settings-row__val">Seimbang</span></div>
+      <div class="settings-row"><span class="settings-row__label">Tema Gelap</span><div class="toggle on" role="switch" aria-checked="true" aria-label="Tema gelap" tabindex="0"></div></div>
+    </div>
+  </div>
+</main>
+
+</div><!-- /.app -->
+
+<!-- ============ BOTTOM TAB BAR ============ -->
+<nav class="tabbar" role="tablist" aria-label="Navigasi utama">
+  <button class="tab active" role="tab" aria-selected="true" aria-controls="screen-beranda" data-target="beranda">
+    <span class="tab__icon" aria-hidden="true">🕌</span>Beranda
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="screen-misi" data-target="misi">
+    <span class="tab__icon" aria-hidden="true">⚔️</span>Misi
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="screen-belajar" data-target="belajar">
+    <span class="tab__icon" aria-hidden="true">📚</span>Belajar
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="screen-profil" data-target="profil">
+    <span class="tab__icon" aria-hidden="true">👑</span>Profil
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------- Tab switching ----------
+  var tabs = document.querySelectorAll('.tab');
+  var screens = document.querySelectorAll('.screen');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      var target = tab.getAttribute('data-target');
+      tabs.forEach(function(t){ t.classList.remove('active'); t.setAttribute('aria-selected','false'); });
+      tab.classList.add('active'); tab.setAttribute('aria-selected','true');
+      screens.forEach(function(s){ s.classList.remove('active'); });
+      var el = document.getElementById('screen-' + target);
+      if(el){ el.classList.add('active'); }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // ---------- Segmented control (Belajar) ----------
+  var segs = document.querySelectorAll('.seg-btn');
+  segs.forEach(function(seg){
+    seg.addEventListener('click', function(){
+      segs.forEach(function(s){ s.classList.remove('active'); s.setAttribute('aria-selected','false'); });
+      seg.classList.add('active'); seg.setAttribute('aria-selected','true');
+    });
+  });
+
+  // ---------- Intensity selector ----------
+  var ints = document.querySelectorAll('.intensity__opt');
+  ints.forEach(function(opt){
+    opt.addEventListener('click', function(){
+      ints.forEach(function(o){ o.classList.remove('active'); o.setAttribute('aria-checked','false'); });
+      opt.classList.add('active'); opt.setAttribute('aria-checked','true');
+    });
+  });
+
+  // ---------- Toggle ----------
+  var toggle = document.querySelector('.toggle');
+  if(toggle){
+    toggle.addEventListener('click', function(){
+      var on = toggle.classList.toggle('on');
+      toggle.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+
+  // ---------- Check-in buttons ----------
+  document.querySelectorAll('.prayer-card .btn-check').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(btn.classList.contains('btn-check--done')) return;
+      btn.classList.add('btn-check--done','pulse');
+      btn.textContent = '✓';
+      btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Catat','Sudah dikerjakan'));
+      var card = btn.closest('.prayer-card');
+      if(card) card.classList.add('prayer-card--done');
+      setTimeout(function(){ btn.classList.remove('pulse'); }, 700);
+      showToast('Sholat tercatat! +10 XP');
+    });
+  });
+
+  // ---------- Quest claim ----------
+  window.claimQuest = function(btn, xp){
+    if(btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = 'Diklaim ✓';
+    showToast('Quest diklaim! +' + xp + ' XP');
+  };
+
+  // ---------- Toast ----------
+  var toastEl = document.getElementById('toast');
+  var toastTimer;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+  }
+
+  // ---------- Countdown to next prayer ----------
+  // Prayer times for today (Denpasar-ish). Next = Maghrib 17:55.
+  var prayers = [
+    { name:'Subuh',   h: 4,  m: 42 },
+    { name:'Dzuhur',  h: 12, m: 1  },
+    { name:'Ashar',   h: 15, m: 20 },
+    { name:'Maghrib', h: 17, m: 55 },
+    { name:'Isya',    h: 19, m: 8  }
+  ];
+  var cdEl = document.getElementById('countdown');
+  function nextPrayerTarget(){
+    var now = new Date();
+    for(var i=0;i<prayers.length;i++){
+      var t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), prayers[i].h, prayers[i].m, 0);
+      if(t > now) return { target:t, name:prayers[i].name };
+    }
+    // all passed — roll to tomorrow Subuh
+    var t = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, prayers[0].h, prayers[0].m, 0);
+    return { target:t, name:prayers[0].name };
+  }
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function tick(){
+    var np = nextPrayerTarget();
+    var diff = Math.max(0, np.target - new Date());
+    var h = Math.floor(diff/3600000);
+    var m = Math.floor((diff%3600000)/60000);
+    var s = Math.floor((diff%60000)/1000);
+    if(cdEl) cdEl.textContent = pad(h)+':'+pad(m)+':'+pad(s);
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ---------- Register service worker (PWA) — best-effort, file:// safe ----------
+  if('serviceWorker' in navigator && location.protocol === 'http:' || location.protocol === 'https:'){
+    // inline SW via blob (works for showcase)
+    try{
+      var swCode = 'self.addEventListener("install",function(e){self.skipWaiting()});self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim())});';
+      var blob = new Blob([swCode], {type:'text/javascript'});
+      var url = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(url).catch(function(){});
+    }catch(e){}
+  }
+})();
+</script>
+</body>
+</html>
