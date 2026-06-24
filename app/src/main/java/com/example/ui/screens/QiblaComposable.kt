@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate as drawRotate
 import androidx.compose.ui.platform.LocalContext
@@ -27,8 +28,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import com.example.ui.theme.*
 import kotlin.math.*
+
+private val ArenaBorder = TextLight.copy(alpha = 0.08f)
 
 // ═══════════════════════════════════════════════════════════════
 // QIBLA COMPASS — Kompas Kiblat
