@@ -82,8 +82,8 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     } else {
-                        // Game Main Screen with 5 tabs switcher
-                        var activeTab by remember { mutableStateOf("home") } // home, jadwal, belajar, notif, profil
+                        // Game Main Screen with 4 tabs switcher
+                        var activeTab by remember { mutableStateOf("home") } // home, jadwal, belajar, profil
 
                         Scaffold(
                             modifier = Modifier.fillMaxSize(),
@@ -119,10 +119,6 @@ class MainActivity : ComponentActivity() {
                                             state = gameState
                                         )
                                         "belajar" -> BelajarScreen(
-                                            viewModel = gameViewModel,
-                                            state = gameState
-                                        )
-                                        "notif" -> NotificationSettingsScreen(
                                             viewModel = gameViewModel,
                                             state = gameState
                                         )
@@ -218,16 +214,7 @@ fun CustomGameBottomNavbar(
                     onClick = { onTabSelected("belajar") }
                 )
 
-                // Tab 4: Notifikasi
-                BottomTabItem(
-                    tag = "notif",
-                    label = "Notif",
-                    iconString = "🔔",
-                    isActive = activeTab == "notif",
-                    onClick = { onTabSelected("notif") }
-                )
-
-                // Tab 5: Profil
+                // Tab 4: Profil
                 BottomTabItem(
                     tag = "profil",
                     label = "Profil",
