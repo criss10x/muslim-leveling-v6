@@ -389,6 +389,58 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // ═══ QUEST HARIAN (dipindah dari Quest tab) ═══
+            SectionPill(text = "⚔️ QUEST HARIAN", gradient = GradientGreenGold)
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Dzikir Clicker Widget
+            val zikirQuestActive = state.quests.list.any { it.id == "quest_zikir_after_prayer" }
+            if (zikirQuestActive) {
+                InteractiveZikirWidget(state, viewModel)
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // Doa Quick Checker Widget
+            val doaQuestActive = state.quests.list.any { it.id == "quest_doa_solat" }
+            if (doaQuestActive) {
+                val doaQuest = state.quests.list.find { it.id == "quest_doa_solat" }
+                if (doaQuest != null && !doaQuest.completed) {
+                    InteractiveDoaWidget(viewModel)
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+
+            // Quest Cards
+            if (state.quests.list.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(DarkSurface, RoundedCornerShape(16.dp))
+                        .border(BorderStroke(1.dp, TextLight.copy(alpha = 0.08f)), RoundedCornerShape(16.dp))
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Belum ada quest nih. Masukin kota asal di Profil dulu ya!",
+                        color = TextMuted,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    state.quests.list.forEach { quest ->
+                        QuestRowCard(
+                            quest = quest,
+                            onClaim = { viewModel.claimQuest(quest.id) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             // ═══ STATS GRID 2x2 ═══
             SectionPill(text = "📊 STATS ARENA", gradient = GradientGreenGold)
 

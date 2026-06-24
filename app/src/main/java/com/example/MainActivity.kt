@@ -82,8 +82,8 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     } else {
-                        // Game Main Screen with 4 tabs switcher
-                        var activeTab by remember { mutableStateOf("home") } // home, quest, belajar, profil
+                        // Game Main Screen with 5 tabs switcher
+                        var activeTab by remember { mutableStateOf("home") } // home, jadwal, belajar, notif, profil
 
                         Scaffold(
                             modifier = Modifier.fillMaxSize(),
@@ -114,11 +114,15 @@ class MainActivity : ComponentActivity() {
                                             viewModel = gameViewModel,
                                             state = gameState
                                         )
-                                        "quest" -> QuestScreen(
+                                        "jadwal" -> JadwalSholatScreen(
                                             viewModel = gameViewModel,
                                             state = gameState
                                         )
                                         "belajar" -> BelajarScreen(
+                                            viewModel = gameViewModel,
+                                            state = gameState
+                                        )
+                                        "notif" -> NotificationSettingsScreen(
                                             viewModel = gameViewModel,
                                             state = gameState
                                         )
@@ -182,8 +186,8 @@ fun CustomGameBottomNavbar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp),
+                    .height(60.dp)
+                    .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -196,13 +200,13 @@ fun CustomGameBottomNavbar(
                     onClick = { onTabSelected("home") }
                 )
 
-                // Tab 2: Quest
+                // Tab 2: Jadwal Sholat
                 BottomTabItem(
-                    tag = "quest",
-                    label = "Quest",
-                    iconString = "⚔️",
-                    isActive = activeTab == "quest",
-                    onClick = { onTabSelected("quest") }
+                    tag = "jadwal",
+                    label = "Jadwal",
+                    iconString = "🕐",
+                    isActive = activeTab == "jadwal",
+                    onClick = { onTabSelected("jadwal") }
                 )
 
                 // Tab 3: Belajar
@@ -214,7 +218,16 @@ fun CustomGameBottomNavbar(
                     onClick = { onTabSelected("belajar") }
                 )
 
-                // Tab 4: Profil
+                // Tab 4: Notifikasi
+                BottomTabItem(
+                    tag = "notif",
+                    label = "Notif",
+                    iconString = "🔔",
+                    isActive = activeTab == "notif",
+                    onClick = { onTabSelected("notif") }
+                )
+
+                // Tab 5: Profil
                 BottomTabItem(
                     tag = "profil",
                     label = "Profil",
@@ -262,7 +275,7 @@ fun BottomTabItem(
                 else Modifier
             )
             .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
