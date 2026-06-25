@@ -294,6 +294,7 @@ private fun NextPrayerCountdownCard(
     ) {
         Box(
             modifier = Modifier
+                .fillMaxWidth()
                 .background(Brush.verticalGradient(GradientDarkSurface))
                 .padding(20.dp),
             contentAlignment = Alignment.Center
