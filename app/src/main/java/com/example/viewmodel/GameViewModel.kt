@@ -55,9 +55,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val levelUpAnimationEvent = MutableStateFlow<Int?>(null)
     val rewardRevealEvent = MutableStateFlow<RewardRevealState?>(null)
 
-    // For Aladhan loading state
+    // For KEMENAG prayer time loading state
     private val _isFetchingApi = MutableStateFlow(false)
     val isFetchingApi: StateFlow<Boolean> = _isFetchingApi.asStateFlow()
+
+    // Daftar kota KEMENAG (di-fetch dari API, di-cache in-memory)
+    private val _kemenagCities = MutableStateFlow<List<com.example.data.KemenagCity>>(emptyList())
+    val kemenagCities: StateFlow<List<com.example.data.KemenagCity>> = _kemenagCities.asStateFlow()
+
+    private val _isLoadingCities = MutableStateFlow(false)
+    val isLoadingCities: StateFlow<Boolean> = _isLoadingCities.asStateFlow()
 
     // 10 Gacha reward pool
     val rewardPool = listOf(
@@ -97,21 +104,51 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Start the game with onboarding data
      */
-    fun startNewGame(username: String, intensityMode: String, kota: String) {
+    fun startNewGame(username: String, intensityMode: String, kota: String, kotaId: String = "5171") {
         viewModelScope.launch {
             val defaultData = MuslimLevelingData(
                 user = User(
                     username = username,
                     intensityMode = intensityMode,
                     kota = kota,
+                    kotaId = kotaId,
                     santaiTrackedPrayers = listOf("subuh", "maghrib", "isya")
                 ),
                 lastCheckedDate = LocalDate.now().toString()
             )
             _gameData.value = defaultData
             repository.saveGameState(defaultData)
-            fetchPrayerTimes(kota)
+            fetchPrayerTimes(kotaId)
             generateQuests()
+        }
+    }
+
+    /**
+     * Load daftar kota dari API KEMENAG (api.myquran.com).
+     * Cache in-memory supaya tidak fetch berulang.
+     */
+    fun loadCitiesFromKemenag() {
+        if (_kemenagCities.value.isNotEmpty()) return
+        _isLoadingCities.value = true
+        viewModelScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    com.example.data.KemenagClient.apiService.getAllCities()
+                }
+                if (response.status && response.data.isNotEmpty()) {
+                    _kemenagCities.value = response.data
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Fallback ke daftar statis
+                if (_kemenagCities.value.isEmpty()) {
+                    _kemenagCities.value = com.example.data.IndonesianCities.fallbackCities.map {
+                        com.example.data.KemenagCity(id = it.id, lokasi = it.name)
+                    }
+                }
+            } finally {
+                _isLoadingCities.value = false
+            }
         }
     }
 
@@ -133,6 +170,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun updateProfileSettings(
         username: String,
         kota: String,
+        kotaId: String,
         intensityMode: String,
         santaiPrayers: List<String>,
         notifMode: String,
@@ -140,11 +178,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             val currentData = _gameData.value
-            val oldKota = currentData.user.kota
+            val oldKotaId = currentData.user.kotaId
 
             val updatedUser = currentData.user.copy(
                 username = username,
                 kota = kota,
+                kotaId = kotaId,
                 intensityMode = intensityMode,
                 santaiTrackedPrayers = santaiPrayers,
                 notifMode = notifMode,
@@ -155,8 +194,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             _gameData.value = updatedData
             repository.saveGameState(updatedData)
 
-            if (kota.isNotEmpty() && kota.lowercase() != oldKota.lowercase()) {
-                fetchPrayerTimes(kota)
+            if (kotaId.isNotEmpty() && kotaId != oldKotaId) {
+                fetchPrayerTimes(kotaId)
             }
             _toastEvent.emit("Profil udah ke-update! ✅")
         }
@@ -189,7 +228,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 repository.saveGameState(updated)
                 _gameData.value = updated
                 generateQuests()
-                fetchPrayerTimes(state.user.kota)
+                fetchPrayerTimes(state.user.kotaId)
                 return@launch
             }
 
@@ -990,26 +1029,37 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Formats API or caches for Aladhan
+     * Fetch prayer times from KEMENAG API (api.myquran.com mirror).
+     * Uses numeric city ID (not city name) per KEMENAG API requirement.
+     * Falls back to Aladhan if KEMENAG fails.
      */
-    fun fetchPrayerTimes(kota: String) {
-        if (kota.isEmpty()) return
+    fun fetchPrayerTimes(kotaId: String) {
+        if (kotaId.isEmpty()) return
         _isFetchingApi.value = true
         viewModelScope.launch {
             try {
+                val today = LocalDate.now()
                 val response = withContext(Dispatchers.IO) {
-                    AladhanClient.apiService.getTimingsByCity(city = kota)
+                    com.example.data.KemenagClient.apiService.getDailyJadwal(
+                        cityId = kotaId,
+                        year = today.year,
+                        month = today.monthValue,
+                        day = today.dayOfMonth
+                    )
                 }
-                if (response.code == 200) {
-                    val timings = response.data.timings
+                if (response.status) {
+                    val jadwal = response.data.jadwal
                     val newCache = PlayerPrayerTimesCache(
-                        date = LocalDate.now().toString(),
+                        date = today.toString(),
                         timings = Timings(
-                            subuh = timings.fajr,
-                            dzuhur = timings.dhuhr,
-                            ashar = timings.asr,
-                            maghrib = timings.maghrib,
-                            isya = timings.isha
+                            imsak = jadwal.imsak.ifEmpty { "04:30" },
+                            subuh = jadwal.subuh.ifEmpty { "04:42" },
+                            terbit = jadwal.terbit.ifEmpty { "05:55" },
+                            dhuha = jadwal.dhuha.ifEmpty { "06:20" },
+                            dzuhur = jadwal.dzuhur.ifEmpty { "12:01" },
+                            ashar = jadwal.ashar.ifEmpty { "15:20" },
+                            maghrib = jadwal.maghrib.ifEmpty { "17:55" },
+                            isya = jadwal.isya.ifEmpty { "19:08" }
                         )
                     )
                     val updatedData = _gameData.value.copy(prayerTimesCache = newCache)
@@ -1026,18 +1076,93 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     )
                     val ctx = getApplication<Application>()
                     if (NotificationScheduler.isRemindersEnabled(ctx)) {
-                        NotificationScheduler.scheduleAdhanReminders(ctx, kota, timingsMap)
+                        NotificationScheduler.scheduleAdhanReminders(ctx, kotaId, timingsMap)
                     }
 
-                    _toastEvent.emit("Jadwal sholat $kota udah ke-load! ✅")
+                    _toastEvent.emit("Jadwal sholat KEMENAG (${response.data.lokasi}) ke-load! ✅")
+                } else {
+                    // KEMENAG returned error status — try Aladhan fallback
+                    fetchPrayerTimesFromAladhanFallback(kotaId)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Try Aladhan fallback with city name lookup
+                fetchPrayerTimesFromAladhanFallback(kotaId)
+            } finally {
+                _isFetchingApi.value = false
+            }
+        }
+    }
+
+    /**
+     * Fallback: try Aladhan API if KEMENAG fails.
+     * Uses the cached city name from game data, or queries Aladhan directly.
+     */
+    private fun fetchPrayerTimesFromAladhanFallback(kotaId: String) {
+        viewModelScope.launch {
+            try {
+                // Find city name from cached KEMENAG cities
+                val cityName = _kemenagCities.value.find { it.id == kotaId }?.lokasi
+                    ?: _gameData.value.user.kota
+                    ?: ""
+
+                if (cityName.isEmpty()) {
+                    _toastEvent.emit("Koneksi error. Pakai jadwal default dulu ya.")
+                    return@launch
+                }
+
+                // Aladhan expects city name without "Kota"/"Kab." prefix
+                val aladhanCityName = cityName
+                    .replace("Kota ", "", ignoreCase = true)
+                    .replace("Kab. ", "", ignoreCase = true)
+                    .replace("Kabupaten ", "", ignoreCase = true)
+                    .trim()
+
+                val response = withContext(Dispatchers.IO) {
+                    com.example.data.AladhanClient.apiService.getTimingsByCity(city = aladhanCityName)
+                }
+                if (response.code == 200) {
+                    val timings = response.data.timings
+                    // Aladhan returns times with timezone suffix (e.g. "04:42 (WIB)") — strip it
+                    fun cleanTime(t: String): String {
+                        val parts = t.trim().split(" ")
+                        return parts.firstOrNull()?.take(5) ?: t
+                    }
+                    val newCache = PlayerPrayerTimesCache(
+                        date = LocalDate.now().toString(),
+                        timings = Timings(
+                            imsak = "00:00", // Aladhan doesn't provide imsak
+                            subuh = cleanTime(timings.fajr),
+                            terbit = cleanTime(timings.sunrise ?: "05:55"),
+                            dhuha = "00:00",
+                            dzuhur = cleanTime(timings.dhuhr),
+                            ashar = cleanTime(timings.asr),
+                            maghrib = cleanTime(timings.maghrib),
+                            isya = cleanTime(timings.isha)
+                        )
+                    )
+                    val updatedData = _gameData.value.copy(prayerTimesCache = newCache)
+                    _gameData.value = updatedData
+                    repository.saveGameState(updatedData)
+
+                    val timingsMap = mapOf(
+                        "subuh" to newCache.timings.subuh,
+                        "dzuhur" to newCache.timings.dzuhur,
+                        "ashar" to newCache.timings.ashar,
+                        "maghrib" to newCache.timings.maghrib,
+                        "isya" to newCache.timings.isya
+                    )
+                    val ctx = getApplication<Application>()
+                    if (NotificationScheduler.isRemindersEnabled(ctx)) {
+                        NotificationScheduler.scheduleAdhanReminders(ctx, kotaId, timingsMap)
+                    }
+                    _toastEvent.emit("Jadwal sholat (Aladhan fallback) ke-load! ✅")
                 } else {
                     _toastEvent.emit("Gagal load jadwal sholat 😥")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 _toastEvent.emit("Koneksi error. Pakai jadwal default dulu ya.")
-            } finally {
-                _isFetchingApi.value = false
             }
         }
     }

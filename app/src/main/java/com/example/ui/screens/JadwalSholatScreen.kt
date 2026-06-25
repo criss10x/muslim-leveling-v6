@@ -219,7 +219,7 @@ fun JadwalSholatScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Jadwal sholat diambil dari API Aladhan berdasarkan kota yang dipilih di profil. Data otomatis ter-update tiap hari saat app dibuka.",
+                        text = "Jadwal sholat diambil dari data KEMENAG (Kementerian Agama RI) via api.myquran.com, berdasarkan kota yang dipilih di profil. Data otomatis ter-update tiap hari saat app dibuka.",
                         fontSize = 11.sp,
                         color = TextMuted,
                         lineHeight = 16.sp

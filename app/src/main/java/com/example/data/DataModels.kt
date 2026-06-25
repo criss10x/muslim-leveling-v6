@@ -9,14 +9,18 @@ data class User(
     val xp: Int = 0,
     val intensityMode: String = "standar", // "santai" | "standar" | "sultan"
     val santaiTrackedPrayers: List<String> = listOf("subuh", "maghrib", "isya"),
-    val kota: String = "",
+    val kota: String = "",          // Nama kota (display) — e.g. "Kota Denpasar"
+    val kotaId: String = "5171",    // KEMENAG city ID (default: Kota Denpasar)
     val theme: String = "dark", // "dark" | "light"
     val notifMode: String = "seimbang" // "fokus" | "seimbang" | "intensif"
 )
 
 @JsonClass(generateAdapter = true)
 data class Timings(
+    val imsak: String = "04:32",
     val subuh: String = "04:42",
+    val terbit: String = "05:55",
+    val dhuha: String = "06:20",
     val dzuhur: String = "12:01",
     val ashar: String = "15:20",
     val maghrib: String = "17:55",

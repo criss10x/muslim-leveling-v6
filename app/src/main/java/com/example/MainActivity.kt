@@ -77,8 +77,9 @@ class MainActivity : ComponentActivity() {
                     if (gameState.user.username.isEmpty()) {
                         // Onboarding first launch
                         OnboardingScreen(
-                            onComplete = { username, intensityMode, kota ->
-                                gameViewModel.startNewGame(username, intensityMode, kota)
+                            viewModel = gameViewModel,
+                            onComplete = { username, intensityMode, kota, kotaId ->
+                                gameViewModel.startNewGame(username, intensityMode, kota, kotaId)
                             }
                         )
                     } else {

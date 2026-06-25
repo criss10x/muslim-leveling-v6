@@ -890,8 +890,16 @@ fun SettingsPanelContent(
 ) {
     var username by remember { mutableStateOf(state.user.username) }
     var kota by remember { mutableStateOf(state.user.kota) }
+    var kotaId by remember { mutableStateOf(state.user.kotaId) }
     var intensityMode by remember { mutableStateOf(state.user.intensityMode) }
     var notifMode by remember { mutableStateOf(state.user.notifMode) }
+
+    // Load daftar kota KEMENAG saat settings dibuka
+    LaunchedEffect(Unit) {
+        viewModel.loadCitiesFromKemenag()
+    }
+    val cities by viewModel.kemenagCities.collectAsState()
+    val isLoadingCities by viewModel.isLoadingCities.collectAsState()
     var selectedSantaiList by remember { mutableStateOf(state.user.santaiTrackedPrayers) }
 
     val context = LocalContext.current
@@ -932,7 +940,14 @@ fun SettingsPanelContent(
             Text("Kota/Kabupaten:", fontSize = 12.sp, color = GoldAccent, fontWeight = FontWeight.Bold)
             CityDropdownPicker(
                 value = kota,
-                onValueChange = { kota = it },
+                onValueChange = { newName ->
+                    kota = newName
+                    // Lookup ID kota dari daftar KEMENAG
+                    val match = cities.find { it.lokasi.equals(newName.trim(), ignoreCase = true) }
+                    kotaId = match?.id ?: state.user.kotaId
+                },
+                cities = cities,
+                isLoading = isLoadingCities,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp)
@@ -1027,18 +1042,14 @@ fun SettingsPanelContent(
                     .background(Brush.horizontalGradient(GradientGreenGold), RoundedCornerShape(12.dp))
                     .clickable {
                         val finalSantai = if (selectedSantaiList.isEmpty()) listOf("subuh", "maghrib", "isya") else selectedSantaiList
-                        // Validate kota: must be from the Indonesian cities list
-                        val validKota = if (IndonesianCities.allCities.contains(kota.trim())) {
-                            kota.trim()
-                        } else {
-                            // Try case-insensitive match
-                            IndonesianCities.allCities.find {
-                                it.equals(kota.trim(), ignoreCase = true)
-                            } ?: state.user.kota // fallback to existing city if invalid
-                        }
+                        // Validate kota: must match a KEMENAG city, fallback to existing
+                        val match = cities.find { it.lokasi.equals(kota.trim(), ignoreCase = true) }
+                        val validKota = match?.lokasi ?: state.user.kota
+                        val validKotaId = match?.id ?: state.user.kotaId
                         viewModel.updateProfileSettings(
                             username = username.trim(),
                             kota = validKota,
+                            kotaId = validKotaId,
                             intensityMode = intensityMode,
                             santaiPrayers = finalSantai,
                             notifMode = notifMode,

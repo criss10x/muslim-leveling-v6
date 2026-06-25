@@ -47,15 +47,24 @@ import com.example.ui.theme.*
  */
 @Composable
 fun OnboardingScreen(
-    onComplete: (String, String, String) -> Unit
+    viewModel: com.example.viewmodel.GameViewModel,
+    onComplete: (String, String, String, String) -> Unit
 ) {
     var currentStep by remember { mutableStateOf(0) }
     var username by remember { mutableStateOf("") }
-    var kota by remember { mutableStateOf("Jakarta") }
+    var kota by remember { mutableStateOf("Kota Denpasar") }
+    var kotaId by remember { mutableStateOf("5171") }
     var intensityMode by remember { mutableStateOf("standar") }
     var errorMsg by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
+
+    // Load daftar kota dari KEMENAG saat onboarding dibuka
+    LaunchedEffect(Unit) {
+        viewModel.loadCitiesFromKemenag()
+    }
+    val cities by viewModel.kemenagCities.collectAsState()
+    val isLoadingCities by viewModel.isLoadingCities.collectAsState()
 
     // Slow rotating ambient glow behind everything
     val infiniteTransition = rememberInfiniteTransition(label = "onboard_ambient")
@@ -115,7 +124,15 @@ fun OnboardingScreen(
                         username = username,
                         onUsernameChange = { username = it; errorMsg = "" },
                         kota = kota,
-                        onKotaChange = { kota = it; errorMsg = "" },
+                        onKotaChange = { newName ->
+                            kota = newName
+                            // Lookup ID kota dari daftar KEMENAG
+                            val match = cities.find { it.lokasi.equals(newName.trim(), ignoreCase = true) }
+                            kotaId = match?.id ?: "5171"
+                            errorMsg = ""
+                        },
+                        cities = cities,
+                        isLoadingCities = isLoadingCities,
                         intensityMode = intensityMode,
                         onIntensityModeChange = { intensityMode = it },
                         errorMsg = errorMsg,
@@ -126,9 +143,7 @@ fun OnboardingScreen(
                                     errorMsg = "Oops! Nickname-nya jangan kosong ya 😅"
                                 kota.trim().isEmpty() ->
                                     errorMsg = "Pilih kota asalmu dulu biar jadwal sholatnya muncul!"
-                                !IndonesianCities.allCities.contains(kota.trim()) ->
-                                    errorMsg = "Kotanya nggak ada di daftar nih. Pilih dari dropdown ya! 🙏"
-                                else -> onComplete(username.trim(), intensityMode, kota.trim())
+                                else -> onComplete(username.trim(), intensityMode, kota.trim(), kotaId)
                             }
                         }
                     )
@@ -501,6 +516,8 @@ private fun CreateCharacterStep(
     onUsernameChange: (String) -> Unit,
     kota: String,
     onKotaChange: (String) -> Unit,
+    cities: List<com.example.data.KemenagCity>,
+    isLoadingCities: Boolean,
     intensityMode: String,
     onIntensityModeChange: (String) -> Unit,
     errorMsg: String,
@@ -663,6 +680,8 @@ private fun CreateCharacterStep(
                 CityDropdownPicker(
                     value = kota,
                     onValueChange = onKotaChange,
+                    cities = cities,
+                    isLoading = isLoadingCities,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("kota_input")
