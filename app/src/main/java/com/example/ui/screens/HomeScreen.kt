@@ -234,7 +234,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SectionPill(text = "🕐 QUEST SHOLAT HARI INI", gradient = GradientGoldAmber)
+                SectionPill(text = "🕐 QUEST SHOLAT HARI INI", gradient = GradientGreenGold)
                 val modeLabel = when (state.user.intensityMode) {
                     "santai" -> "🎮 SANTAI"
                     "sultan" -> "👑 SULTAN"
@@ -831,14 +831,14 @@ fun CountdownCard(
             .shadow(
                 elevation = 14.dp,
                 shape = RoundedCornerShape(20.dp),
-                ambientColor = GoldAccent.copy(alpha = 0.28f),
+                ambientColor = IslamicGreen.copy(alpha = 0.28f),
                 spotColor = IslamicGreen.copy(alpha = 0.15f)
             ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         border = BorderStroke(
             1.5.dp,
-            Brush.linearGradient(GradientGoldAmber)
+            Brush.linearGradient(listOf(IslamicGreen.copy(alpha = 0.5f), IslamicGreen.copy(alpha = 0.15f), IslamicGreen.copy(alpha = 0.5f)))
         )
     ) {
         Box(
@@ -846,10 +846,10 @@ fun CountdownCard(
                 .background(Brush.verticalGradient(listOf(DarkSurfaceElevated, DarkSurface)))
                 .fillMaxWidth()
                 .drawBehind {
-                    // Subtle arena spotlight from left
+                    // Subtle arena spotlight from left (tosca)
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(GoldAccent.copy(alpha = 0.06f), Color.Transparent),
+                            colors = listOf(IslamicGreen.copy(alpha = 0.06f), Color.Transparent),
                             center = Offset(size.width * 0.1f, size.height * 0.5f),
                             radius = size.height * 1.8f
                         ),
@@ -901,12 +901,12 @@ fun CountdownCard(
                     )
                 }
 
-                // Right: timer (big, gold, monospace)
+                // Right: timer (big, tosca, monospace)
                 Text(
                     text = timer.duration,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Black,
-                    color = GoldAccent,
+                    color = IslamicGreen,
                     letterSpacing = (-1).sp,
                     fontFamily = FontFamily.Monospace,
                     textAlign = TextAlign.End
