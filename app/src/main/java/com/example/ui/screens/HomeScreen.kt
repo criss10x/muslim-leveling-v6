@@ -169,27 +169,7 @@ fun HomeScreen(
                                 showSunnahRing = isSultanMode || isStandarMode,
                                 modifier = Modifier.fillMaxSize().testTag("ritual_rings_canvas")
                             )
-                            // Center text — persentase (bukan 5/5, biar gak tabrakan sama label kanan)
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                val pct = if (wajibDenominator > 0) {
-                                    (checkedTrackedWajibToday * 100 / wajibDenominator)
-                                } else 0
-                                Text(
-                                    text = "$pct%",
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = IslamicGreen
-                                )
-                                Text(
-                                    text = "WAJIB",
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextMuted,
-                                    letterSpacing = 1.sp
-                                )
-                            }
+                            // Center kosong — ring tanpa text di tengah
                         }
 
                         // Right side: compact ring labels (timer moved to CountdownCard)
@@ -199,7 +179,7 @@ fun HomeScreen(
                                 .padding(start = 24.dp)
                         ) {
                             Text(
-                                text = "RITUAL PROGRESS",
+                                text = "QUEST PROGRESS",
                                 fontSize = 10.sp,
                                 color = TextMuted,
                                 fontWeight = FontWeight.ExtraBold,
