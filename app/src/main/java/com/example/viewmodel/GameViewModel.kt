@@ -1201,10 +1201,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun getXpNeededForLevel(level: Int): Int {
-        // Balanced curve: 20 + 3*level + 0.25*level²
-        // Total XP to level 100 ≈ 102K
-        // Casual (~350 XP/day): ~10 months | Active (~600 XP/day): ~6 months | Hardcore (~1000 XP/day): ~3 months
-        return Math.round(20f + 3f * level + 0.25f * level * level).toInt()
+        // Balanced curve: 40 + 8*level + 0.5*level²
+        // Total XP to level 100 ≈ 208K
+        // Casual (~350 XP/day): ~20 months | Active (~600 XP/day): ~11.5 months | Hardcore (~1000 XP/day): ~7 months
+        return Math.round(40f + 8f * level + 0.5f * level * level).toInt()
     }
 
     fun getLevelInfo(cumulativeXp: Int): LevelInfo {
