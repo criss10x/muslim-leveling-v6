@@ -402,12 +402,14 @@ fun RewardRevealOverlay(
     state: RewardRevealState,
     onDismiss: () -> Unit
 ) {
-    // We have 4 steps. Step 3 is conditional (only if 5/5 completed), Step 4 is conditional (only if reward is rolled)
-    // Step index goes from 1 to 4
+    // We have 5 steps. Step 3 (timely bonus) is conditional (only if ≤30min after adzan),
+    // Step 4 (5/5 bonus) is conditional, Step 5 (gacha) is conditional.
+    // Step index goes from 1 to 5
     val stepsSequence = remember(state) {
         val list = mutableListOf(1, 2)
-        if (state.isFiveOfFiveCompleted) list.add(3)
-        if (state.unlockedRewardName != null) list.add(4)
+        if (state.isTimelyBonus) list.add(3)
+        if (state.isFiveOfFiveCompleted) list.add(4)
+        if (state.unlockedRewardName != null) list.add(5)
         list
     }
 
@@ -467,8 +469,9 @@ fun RewardRevealOverlay(
                 when (targetStep) {
                     1 -> RewardStepCard_Confirm(state.prayerName, isLastStep)
                     2 -> RewardStepCard_Xp(state.prayerName, state.xpGained, isLastStep)
-                    3 -> RewardStepCard_FiveOfFive(isLastStep)
-                    4 -> RewardStepCard_GachaUnlock(state.unlockedRewardName ?: "", state.rewardIndex, isLastStep)
+                    3 -> RewardStepCard_TimelyBonus(isLastStep)
+                    4 -> RewardStepCard_FiveOfFive(isLastStep)
+                    5 -> RewardStepCard_GachaUnlock(state.unlockedRewardName ?: "", state.rewardIndex, isLastStep)
                     else -> Box(modifier = Modifier.size(1.dp))
                 }
             }
@@ -632,6 +635,98 @@ fun RewardStepCard_Xp(prayerName: String, xpGained: Int, isLastStep: Boolean) {
                 color = TextMuted,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 10.dp)
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = if (isLastStep) "👇 TAP DI MANA AJA BUAT TUTUP" else "👇 TAP DI MANA AJA BUAT LANJUT",
+                fontSize = 10.sp,
+                color = IslamicGreen.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun RewardStepCard_TimelyBonus(isLastStep: Boolean) {
+    Card(
+        modifier = Modifier
+            .width(310.dp)
+            .padding(16.dp)
+            .testTag("reward_step_3"),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(2.5.dp, Brush.linearGradient(GradientGreenGold))
+    ) {
+        Column(
+            modifier = Modifier
+                .drawBehind {
+                    drawCircle(
+                        Brush.radialGradient(
+                            listOf(IslamicGreen.copy(alpha = 0.18f), Color.Transparent),
+                            center = center,
+                            radius = size.width
+                        )
+                    )
+                }
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Icon: glowing clock to symbolize timeliness
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .shadow(12.dp, CircleShape, ambientColor = IslamicGreen.copy(alpha = 0.4f))
+                    .background(
+                        Brush.radialGradient(listOf(IslamicGreen.copy(alpha = 0.3f), Color.Transparent)),
+                        CircleShape
+                    )
+                    .border(
+                        BorderStroke(2.dp, Brush.linearGradient(GradientGreenGold)),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "⏰", fontSize = 42.sp)
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "TEPAT WAKTU! ⚡",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black,
+                color = IslamicGreen,
+                letterSpacing = 1.sp
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Sholat Tepat Waktu",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextLight
+            )
+
+            Text(
+                text = "+15 XP Bonus Tepat Waktu! 🌟",
+                fontSize = 12.sp,
+                color = IslamicGreen,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            Text(
+                text = "Mantap! Sholat dalam 30 menit pertama setelah adzan. Pertahanin terus ya! 💪",
+                fontSize = 11.sp,
+                color = TextMuted,
+                textAlign = TextAlign.Center,
+                lineHeight = 15.sp,
+                modifier = Modifier.padding(top = 12.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))

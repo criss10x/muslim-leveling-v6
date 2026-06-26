@@ -33,6 +33,7 @@ data class RewardRevealState(
     val prayerName: String,
     val xpGained: Int,
     val isFiveOfFiveCompleted: Boolean,
+    val isTimelyBonus: Boolean = false,
     val unlockedRewardName: String? = null,
     val rewardIndex: Int = 1
 )
@@ -451,6 +452,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 xpGained += 50 // Show "+50 XP bonus 5/5!" inside step 3
             }
 
+            // 2b. Timely bonus: +15 XP if logged ≤30 minutes after adzan (wajib only)
+            var isTimelyBonus = false
+            if (type == "wajib") {
+                val adzanTime = when (prayer) {
+                    "subuh" -> state.prayerTimesCache.timings.subuh
+                    "dzuhur" -> state.prayerTimesCache.timings.dzuhur
+                    "ashar" -> state.prayerTimesCache.timings.ashar
+                    "maghrib" -> state.prayerTimesCache.timings.maghrib
+                    "isya" -> state.prayerTimesCache.timings.isya
+                    else -> null
+                }
+                if (adzanTime != null && adzanTime.isNotEmpty()) {
+                    val minsAfterAdzan = getMinutesDifference(timeStr, adzanTime)
+                    if (minsAfterAdzan in 0..30) {
+                        xpGained += 15
+                        isTimelyBonus = true
+                    }
+                }
+            }
+
             // Update cumulative user XP
             val oldXp = state.user.xp
             val newXp = oldXp + xpGained
@@ -611,6 +632,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 prayerName = prayer.capitalizeCompat(),
                 xpGained = xpGained,
                 isFiveOfFiveCompleted = isHeroCompletor,
+                isTimelyBonus = isTimelyBonus,
                 unlockedRewardName = unlockedReward,
                 rewardIndex = rewardIdx
             )
@@ -660,6 +682,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             if (wasFullBefore) {
                 xpLost += 50 // subtract bonus as well
+            }
+
+            // Subtract timely bonus (+15) if the logged prayer was within 30 min of adzan
+            if (logItem.type == "wajib") {
+                val adzanTime = when (prayer) {
+                    "subuh" -> state.prayerTimesCache.timings.subuh
+                    "dzuhur" -> state.prayerTimesCache.timings.dzuhur
+                    "ashar" -> state.prayerTimesCache.timings.ashar
+                    "maghrib" -> state.prayerTimesCache.timings.maghrib
+                    "isya" -> state.prayerTimesCache.timings.isya
+                    else -> null
+                }
+                if (adzanTime != null && adzanTime.isNotEmpty()) {
+                    val minsAfterAdzan = getMinutesDifference(logItem.time, adzanTime)
+                    if (minsAfterAdzan in 0..30) {
+                        xpLost += 15
+                    }
+                }
             }
 
             val newXp = (state.user.xp - xpLost).coerceAtLeast(0)
