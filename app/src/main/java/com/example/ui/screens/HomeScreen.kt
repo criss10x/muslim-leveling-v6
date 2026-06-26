@@ -284,12 +284,16 @@ fun HomeScreen(
 
                 sunnahItems.forEach { (id, name, desc) ->
                     val isChecked = state.prayerLog.any { it.date == todayStr && it.prayer == id }
+                    val isOnTime = viewModel.checkSunnahOnTime(id, state.prayerTimesCache.timings)
+                    val isTimeLocked = !isOnTime && !isChecked
 
                     SunnahRowCard(
                         id = id,
                         name = name,
                         desc = desc,
                         isChecked = isChecked,
+                        isTimeLocked = isTimeLocked,
+                        timeWindowHint = viewModel.getSunnahTimeHintPublic(id),
                         onCheckedChange = { check ->
                             if (check) {
                                 viewModel.logPrayer(id, "sunnah")
@@ -1826,19 +1830,27 @@ fun SunnahRowCard(
     name: String,
     desc: String,
     isChecked: Boolean,
+    isTimeLocked: Boolean = false,
+    timeWindowHint: String = "",
     onCheckedChange: (Boolean) -> Unit
 ) {
     val borderStroke = when {
         isChecked -> BorderStroke(1.5.dp, Brush.linearGradient(GradientCyanGreen))
+        isTimeLocked -> BorderStroke(1.dp, DarkSurfaceVariant.copy(alpha = 0.5f))
         else -> BorderStroke(1.dp, DarkSurfaceVariant)
     }
 
     val containerColor = when {
         isChecked -> Brush.verticalGradient(listOf(RingGreen.copy(alpha = 0.12f), DarkSurface))
+        isTimeLocked -> Brush.verticalGradient(listOf(DarkBackground.copy(alpha = 0.4f), DarkSurface.copy(alpha = 0.6f)))
         else -> Brush.verticalGradient(GradientDarkSurface)
     }
 
-    val accentBarColor = if (isChecked) RingGreen else DarkSurfaceVariant
+    val accentBarColor = when {
+        isChecked -> RingGreen
+        isTimeLocked -> DarkSurfaceVariant.copy(alpha = 0.3f)
+        else -> DarkSurfaceVariant
+    }
 
     Card(
         modifier = Modifier
@@ -1883,20 +1895,28 @@ fun SunnahRowCard(
                     modifier = Modifier
                         .size(36.dp)
                         .background(
-                            if (isChecked) RingGreen.copy(alpha = 0.15f) else DarkBackground.copy(alpha = 0.5f),
+                            when {
+                                isChecked -> RingGreen.copy(alpha = 0.15f)
+                                isTimeLocked -> DarkBackground.copy(alpha = 0.3f)
+                                else -> DarkBackground.copy(alpha = 0.5f)
+                            },
                             RoundedCornerShape(10.dp)
                         )
                         .border(
                             BorderStroke(
                                 1.dp,
-                                if (isChecked) RingGreen.copy(alpha = 0.3f) else DarkSurfaceVariant
+                                when {
+                                    isChecked -> RingGreen.copy(alpha = 0.3f)
+                                    isTimeLocked -> DarkSurfaceVariant.copy(alpha = 0.3f)
+                                    else -> DarkSurfaceVariant
+                                }
                             ),
                             RoundedCornerShape(10.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "✨",
+                        text = if (isTimeLocked && !isChecked) "🔒" else "✨",
                         fontSize = 16.sp
                     )
                 }
@@ -1906,12 +1926,16 @@ fun SunnahRowCard(
                         text = name,
                         fontSize = 14.sp,
                         fontWeight = if (isChecked) FontWeight.ExtraBold else FontWeight.Bold,
-                        color = if (isChecked) RingGreen else TextLight
+                        color = when {
+                            isChecked -> RingGreen
+                            isTimeLocked -> TextMuted
+                            else -> TextLight
+                        }
                     )
                     Text(
-                        text = desc,
+                        text = if (isTimeLocked && !isChecked && timeWindowHint.isNotEmpty()) timeWindowHint else desc,
                         fontSize = 11.sp,
-                        color = TextMuted,
+                        color = if (isTimeLocked && !isChecked) TextMuted.copy(alpha = 0.6f) else TextMuted,
                         lineHeight = 15.sp
                     )
                 }

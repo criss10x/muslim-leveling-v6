@@ -518,6 +518,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
 
+            // ─── Sunnah time-window lock ───
+            // Cek apakah waktu sekarang sesuai untuk sholat sunnah ini.
+            // Berdasarkan riset fiqih & Aladhan API timings.
+            if (type == "sunnah") {
+                val isOnTime = isSunnahOnTime(prayer, timeStr, state.prayerTimesCache.timings)
+                if (!isOnTime) {
+                    val hint = getSunnahTimeHint(prayer)
+                    _toastEvent.emit("⏰ Belum waktunya! $hint")
+                    return@launch
+                }
+            }
+
             // Create new log item
             val newLog = PrayerLog(date = todayStr, prayer = prayer, time = timeStr, type = type)
             val updatedLogs = state.prayerLog + newLog
@@ -1378,6 +1390,122 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             mins1 < mins2
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private fun isTimeAfter(time1: String, time2: String): Boolean {
+        return try {
+            val parts1 = time1.split(":")
+            val parts2 = time2.split(":")
+            val mins1 = parts1[0].toInt() * 60 + parts1[1].toInt()
+            val mins2 = parts2[0].toInt() * 60 + parts2[1].toInt()
+            mins1 > mins2
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Cek apakah waktu sekarang masuk ke time window sholat sunnah.
+     * Berdasarkan Aladhan API timings (imsak, subuh, terbit, dhuha, dzuhur, ashar, maghrib, isya).
+     *
+     * Riset fiqih:
+     * - Dhuha: setelah matahari naik (±15 min after terbit) → sebelum dzuhur
+     * - Tahajjud: setelah isya → sebelum imsak (utamanya sepertiga malam terakhir)
+     * - Qobliyah Subuh: setelah imsak → sebelum subuh
+     * - Qobliyah Dzuhur: setelah syuruq (terbit + ~15 min) → sebelum dzuhur (atau: sebelum dzuhur masuk)
+     * - Ba'diyah Dzuhur: setelah dzuhur → sebelum ashar
+     * - Qobliyah Ashar: setelah dzuhur → sebelum ashar
+     * - Ba'diyah Maghrib: setelah maghrib → sebelum isya
+     * - Ba'diyah Isya: setelah isya → sebelum tengah malam (isya + ~5-6 jam)
+     */
+    private fun isSunnahOnTime(prayer: String, currentTime: String, timings: Timings): Boolean {
+        return try {
+            when (prayer) {
+                "dhuha" -> {
+                    // Dhuha: 15 menit setelah terbit → sebelum dzuhur
+                    val dhuhaStart = addMinutes(timings.terbit, 15)
+                    isTimeAfter(currentTime, dhuhaStart) && isTimeBefore(currentTime, timings.dzuhur)
+                }
+                "tahajjud" -> {
+                    // Tahajjud: setelah isya → sebelum imsak
+                    isTimeAfter(currentTime, timings.isya) || isTimeBefore(currentTime, timings.imsak)
+                    // Catatan: isya bisa malam, imsak pagi → cross-midnight, jadi OR
+                }
+                "rawatib_subuh_qobliyah" -> {
+                    // Qobliyah Subuh: setelah imsak → sebelum subuh
+                    isTimeAfter(currentTime, timings.imsak) && isTimeBefore(currentTime, timings.subuh)
+                }
+                "rawatib_dzuhur_qobliyah" -> {
+                    // Qobliyah Dzuhur: setelah terbit+15min → sebelum dzuhur
+                    val earliestStart = addMinutes(timings.terbit, 15)
+                    isTimeAfter(currentTime, earliestStart) && isTimeBefore(currentTime, timings.dzuhur)
+                }
+                "rawatib_dzuhur_ba'diyyah" -> {
+                    // Ba'diyah Dzuhur: setelah dzuhur → sebelum ashar
+                    isTimeAfter(currentTime, timings.dzuhur) && isTimeBefore(currentTime, timings.ashar)
+                }
+                "rawatib_ashar_qobliyah" -> {
+                    // Qobliyah Ashar: setelah dzuhur → sebelum ashar
+                    isTimeAfter(currentTime, timings.dzuhur) && isTimeBefore(currentTime, timings.ashar)
+                }
+                "rawatib_maghrib_ba'diyyah" -> {
+                    // Ba'diyah Maghrib: setelah maghrib → sebelum isya
+                    isTimeAfter(currentTime, timings.maghrib) && isTimeBefore(currentTime, timings.isya)
+                }
+                "rawatib_isya_ba'diyyah" -> {
+                    // Ba'diyah Isya: setelah isya → sebelum tengah malam (isya + 5 jam)
+                    val midnightCutoff = addMinutes(timings.isya, 300) // 5 jam after isya
+                    isTimeAfter(currentTime, timings.isya) && isTimeBefore(currentTime, midnightCutoff)
+                }
+                else -> true // sunnah lain (tilawah, dzikir) tidak di-lock waktu
+            }
+        } catch (e: Exception) {
+            true // fail-open kalau error parsing
+        }
+    }
+
+    /** Add N minutes to "HH:mm" string, return new "HH:mm" (wraps around 24h) */
+    private fun addMinutes(time: String, minutes: Int): String {
+        return try {
+            val parts = time.split(":")
+            var total = parts[0].toInt() * 60 + parts[1].toInt() + minutes
+            total = ((total % 1440) + 1440) % 1440 // wrap 0-1439
+            String.format("%02d:%02d", total / 60, total % 60)
+        } catch (e: Exception) {
+            time
+        }
+    }
+
+    /**
+     * Public wrapper untuk isSunnahOnTime — dipakai UI untuk show lock state.
+     * Returns true kalau waktu sekarang masuk window sholat sunnah.
+     */
+    fun checkSunnahOnTime(prayer: String, timings: com.example.data.Timings): Boolean {
+        val currentTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+        return isSunnahOnTime(prayer, currentTime, timings)
+    }
+
+    /**
+     * Public wrapper untuk getSunnahTimeHint — dipakai UI di SunnahRowCard.
+     */
+    fun getSunnahTimeHintPublic(prayer: String): String = getSunnahTimeHint(prayer)
+
+    /**
+     * Human-readable hint text untuk sunnah yang di-lock karena di luar waktu.
+     * Dipakai di toast message saat user coba log sunnah di luar window.
+     */
+    private fun getSunnahTimeHint(prayer: String): String {
+        return when (prayer) {
+            "dhuha" -> "Dhuha bisa setelah matahari naik (±15 min setelah terbit) sampai sebelum Dzuhur."
+            "tahajjud" -> "Tahajjud waktu setelah Isya sampai sebelum Imsak (utamanya sepertiga malam terakhir)."
+            "rawatib_subuh_qobliyah" -> "Qobliyah Subuh waktunya setelah Imsak sampai sebelum Subuh."
+            "rawatib_dzuhur_qobliyah" -> "Qobliyah Dzuhur waktunya sebelum Dzuhur masuk."
+            "rawatib_dzuhur_ba'diyyah" -> "Ba'diyah Dzuhur waktunya setelah Dzuhur sampai sebelum Ashar."
+            "rawatib_ashar_qobliyah" -> "Qobliyah Ashar waktunya setelah Dzuhur sampai sebelum Ashar."
+            "rawatib_maghrib_ba'diyyah" -> "Ba'diyah Maghrib waktunya setelah Maghrib sampai sebelum Isya."
+            "rawatib_isya_ba'diyyah" -> "Ba'diyah Isya waktunya setelah Isya sampai tengah malam."
+            else -> "Coba lagi nanti ya."
         }
     }
 
