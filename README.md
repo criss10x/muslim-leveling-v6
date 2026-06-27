@@ -1,21 +1,71 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Muslim Leveling V2 — Arena Hikmah
 
-# Run and deploy your AI Studio app
+Aplikasi Android yang mengubah ibadah harian menjadi perjalanan leveling ala game
+esports. Sholat, zikir, dan modul belajar memberi XP; naik level terbuka tier,
+badge, dan border avatar yang semakin loreak seiring progresi.
 
-This contains everything you need to run your app locally.
+Dibangun dengan Kotlin + Jetpack Compose + Room. Tema visual "Arena Hikmah":
+obsidian/teal/amber/crimson dengan elemen iluminasi Islami (Bintang Seal 8-titik).
 
-View your app in AI Studio: https://ai.studio/apps/c4a75aa6-f1a6-4f7d-abc8-10e147bdb747
+## Fitur
 
-## Run Locally
+- **Sistem leveling sholat** — 5 sholat wajib + 3 sunnah rawatib. Checklist terkunci
+  ke jendela waktu masing-masing. Tepat waktu (≤30 menit dari adzan) dapat bonus XP.
+- **Tier progresif** — Warrior → Elite → Master → Grandmaster → Epic → Legend →
+  Mythic → Mythic Honor → Mythic Glory → Mythic Immortal. Level cap 100.
+- **Border avatar tier-progresif** — dari solid 2dp (Warrior) sampai rotating ring +
+  particles + crown emblem (Mythic Immortal).
+- **Tier-up celebration overlay** — warna & emblem spesifik per tier.
+- **Daily Reward Chest** — gacha sistem sudah dihapus, diganti hadiah harian deterministic.
+- **Quest harian** — generated berdasarkan intensitas aktivitas.
+- **Belajar** — 16 modul, 200 XP per modul.
+- **Statistik** — weekly recap, win rate per sholat, longest streak, monthly XP.
+- **Profil** — foto profil + border, badge (Subuh Warrior, Mythic Reached, dll).
+- **Jadwal sholat** — KEMENAG (`api.myquran.com/v1/sholat`) sebagai sumber utama,
+  Aladhan sebagai fallback. 300+ kota Indonesia.
+- **Qibla** — kompas berbasis sensor magnetometer + akselerometer.
+- **Notifikasi adzan** — `AlarmManager` exact alarm + boot receiver untuk reschedule.
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+## Stack
 
+- **Kotlin** + **Jetpack Compose** (Material 3)
+- **Room** — local persistence (`AppDatabase`)
+- **Retrofit** — prayer times API (KEMENAG + Aladhan)
+- **AlarmManager** + BroadcastReceiver — jadwal notifikasi adzan
+- Min SDK / target SDK — lihat `app/build.gradle.kts`
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+## Build
+
+```bash
+./gradlew assembleDebug        # debug APK
+./gradlew assembleRelease      # release APK (perlu signing config)
+```
+
+Debug APK butuh `debug.keystore` di root project (CI generate otomatis).
+
+## CI
+
+`.github/workflows/build.yml` — build debug + release APK di push ke `main`.
+Release build `continue-on-error` (KSP headless bug di CI headless). Artifact
+disimpan 30 hari.
+
+## Struktur
+
+```
+app/src/main/java/com/example/
+├── MainActivity.kt
+├── data/           DataModels, Room (AppDatabase), Retrofit services, city list
+├── notifications/  AdhanReminderReceiver, BootReceiver, NotificationScheduler
+├── ui/
+│   ├── screens/    Home, Quest, Belajar, Profile, Statistik, Onboarding,
+│   │               Splash, JadwalSholat, Qibla, Overlays, NotificationHelper
+│   ├── components/ CityDropdownPicker, NeonComponents, ProfileAvatar
+│   └── theme/      Color, Theme, Type (Arena Hikmah palette)
+└── viewmodel/      GameViewModel (logika game: XP, tier, quest, badge)
+```
+
+## Konfigurasi
+
+- **`GEMINI_API_KEY`** — required di `.env` untuk build (legacy dari template AI Studio,
+  masih di-refer di `build.gradle.kts`). Placeholder cocok untuk build lokal.
+- **Prayer times API** — tidak butuh key. KEMENAG public endpoint.
