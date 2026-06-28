@@ -29,7 +29,7 @@ class HomeTab extends StatelessWidget {
                 children: [
                   Expanded(child: _countdownCard()),
                   const SizedBox(width: AppSpacing.md),
-                  _streakCard(),
+                  Flexible(child: _streakCard()),
                 ],
               ),
             ),
@@ -271,7 +271,6 @@ class HomeTab extends StatelessWidget {
 
   Widget _streakCard() {
     return Container(
-      width: 130,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainer.withValues(alpha: 0.6),
@@ -649,7 +648,7 @@ class HomeTab extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: AppSpacing.sm,
       crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 1.0,
+      childAspectRatio: 0.95,
       children: [
         _zikirTile('SUBHANALLAH', '33', AppColors.primary, '+1 XP', Icons.refresh),
         _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '+1 XP', Icons.refresh),

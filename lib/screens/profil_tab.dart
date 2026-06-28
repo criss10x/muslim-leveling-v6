@@ -127,7 +127,7 @@ class ProfilTab extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: AppSpacing.sm,
       crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 2.0,
+      childAspectRatio: 1.6,
       children: [
         _statCard('Sholat Selesai', '127', 'dari 150', Icons.mosque, AppColors.primary),
         _statCard('Tilawah', '8.5', 'juz', Icons.menu_book, AppColors.tertiary),
@@ -200,38 +200,39 @@ class ProfilTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: badges.map((b) {
-              return Opacity(
-                opacity: b.$4 ? 1.0 : 0.3,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: b.$3.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: b.$3.withValues(alpha: 0.4)),
-                        boxShadow: b.$4
-                            ? [
-                                BoxShadow(
-                                  color: b.$3.withValues(alpha: 0.3),
-                                  blurRadius: 12,
-                                ),
-                              ]
-                            : null,
+              return Expanded(
+                child: Opacity(
+                  opacity: b.$4 ? 1.0 : 0.3,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: b.$3.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: b.$3.withValues(alpha: 0.4)),
+                          boxShadow: b.$4
+                              ? [
+                                  BoxShadow(
+                                    color: b.$3.withValues(alpha: 0.3),
+                                    blurRadius: 12,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Icon(b.$2, color: b.$3, size: 22),
                       ),
-                      child: Icon(b.$2, color: b.$3, size: 22),
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      width: 60,
-                      child: Text(
+                      const SizedBox(height: 4),
+                      Text(
                         b.$1,
                         textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: AppText.labelCaps().copyWith(fontSize: 9),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }).toList(),
