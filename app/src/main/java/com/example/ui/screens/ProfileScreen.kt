@@ -1,7 +1,6 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -14,19 +13,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -38,9 +37,9 @@ import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.lifecycle.viewModelScope
 import com.example.data.*
-import com.example.notifications.NotificationScheduler
 import com.example.ui.components.CityDropdownPicker
 import com.example.ui.components.NeonProgressBar
+import com.example.ui.components.TierProfileAvatar
 import com.example.ui.theme.*
 import com.example.viewmodel.*
 import kotlinx.coroutines.Dispatchers
@@ -48,15 +47,17 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 // ═══════════════════════════════════════════════════════════════
-// ARENA HIKMAH — PROFILE SCREEN
-// Avatar with rotating gradient arc + pulsing glow; per-stat accent
-// bars (teal/gold/crimson/violet); achievements grid with X/N counter
-// + teal progress; consistency chart with glowing gradient dots;
-// per-mode gradient selectors; crimson-glow reset button.
+// NUR QUEST — PROFILE SCREEN (Stitch mockup: profil_pejuang_v2)
+// Layout top→bottom:
+//   1. Header card: avatar + LVL badge, name + 🏆, rank gold, XP bar
+//   2. Stats 2x2 grid: 🔥 STREAK, 📖 TILAWAH, ❄️ STREAK FREEZE, ⭐ TOTAL XP
+//   3. Weekly graph pill + card (Konsistensi Mingguan / 85% / trend) + STATISTIK MINGGUAN button
+//   4. Achievements pill + 3-col grid (SUBUH WARRIOR gold, TEPAT WAKTU teal, rest locked)
+//   5. Settings: PENGATURAN header + Lokasi + Notifikasi toggle + Reset red button
+// All Text() uses solid color (no brush param). VM signatures unchanged.
 // ═══════════════════════════════════════════════════════════════
 
-// Subtle card border equivalent (rgba(232,237,245,0.08))
-private val ArenaBorder = TextLight.copy(alpha = 0.08f)
+private val GlassBorder = TextLight.copy(alpha = 0.08f)
 
 @Composable
 fun ProfileScreen(
@@ -64,8 +65,9 @@ fun ProfileScreen(
     state: MuslimLevelingData
 ) {
     var showResetConfirm by remember { mutableStateOf(false) }
-    var isSettingsExpanded by remember { mutableStateOf(false) }
+    var isSettingsExpanded by remember { mutableStateOf(true) }
     var showStatistikSheet by remember { mutableStateOf(false) }
+    var notifEnabled by remember { mutableStateOf(true) }
 
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -75,7 +77,9 @@ fun ProfileScreen(
     }
     val avgFirstHalf = (weeklyConsistency[0] + weeklyConsistency[1]) / 2f
     val avgSecondHalf = (weeklyConsistency[2] + weeklyConsistency[3]) / 2f
-    val trendDirection = if (avgSecondHalf >= avgFirstHalf) "naik" else "turun"
+    val trendUp = avgSecondHalf >= avgFirstHalf
+    val trendDelta = (avgSecondHalf - avgFirstHalf).toInt().coerceAtLeast(0)
+    val consistencyPct = avgSecondHalf.toInt().coerceIn(0, 100)
 
     Box(
         modifier = Modifier
@@ -87,203 +91,38 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp)
-                .padding(top = 28.dp, bottom = 80.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 16.dp)
+                .padding(top = 24.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // ─── 1. HEADER CARD ───
             ProfileHeaderCard(state = state, viewModel = viewModel)
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // ─── STATS 2x2 GRID per Nur Quest mockup: 🔥 STREAK, 📖 TILAWAH, ❄️ FREEZE, ⭐ TOTAL XP ───
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                SmallStatCard(
-                    modifier = Modifier.weight(1f),
-                    title = "STREAK",
-                    iconEmoji = "🔥",
-                    value = "${state.heroStreak.current}",
-                    sub = "Hari · Rekor ${state.heroStreak.best}",
-                    accentColor = IslamicGreen
-                )
-                SmallStatCard(
-                    modifier = Modifier.weight(1f),
-                    title = "TILAWAH",
-                    iconEmoji = "📖",
-                    value = "${state.tilawahStreak.current}",
-                    sub = "Hari · Rekor ${state.tilawahStreak.best}",
-                    accentColor = GoldAccent
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                SmallStatCard(
-                    modifier = Modifier.weight(1f),
-                    title = "STREAK FREEZE",
-                    iconEmoji = "❄️",
-                    value = if (state.heroStreak.freezeAvailable) "1" else "0",
-                    sub = "Tersedia",
-                    accentColor = CyanAccent
-                )
-                SmallStatCard(
-                    modifier = Modifier.weight(1f),
-                    title = "TOTAL XP",
-                    iconEmoji = "⭐",
-                    value = "${state.user.xp}",
-                    sub = "Akumulasi",
-                    accentColor = GoldAccent
-                )
-            }
+            // ─── 2. STATS 2x2 GRID ───
+            StatsGrid(state = state)
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // ─── 3. WEEKLY GRAPH ───
+            WeeklyGraphSection(
+                consistencyPct = consistencyPct,
+                trendUp = trendUp,
+                trendDelta = trendDelta,
+                weeklyConsistency = weeklyConsistency,
+                onOpenStatistik = { showStatistikSheet = true }
+            )
 
-            // ─── CONSISTENCY CHART ───
-            ArenaSectionPill(text = "GRAFIK SHOLAT FARDHU 📊", gradient = GradientGoldAmber, modifier = Modifier.align(Alignment.Start))
-            Spacer(modifier = Modifier.height(10.dp))
+            // ─── 4. ACHIEVEMENTS ───
+            AchievementsSection(unlockedBadges = state.badges)
 
-            val chartShape = RoundedCornerShape(18.dp)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("consistency_chart_card")
-                    .shadow(14.dp, chartShape, ambientColor = IslamicGreen.copy(alpha = 0.2f)),
-                shape = chartShape,
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = BorderStroke(1.dp, ArenaBorder)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Konsistensi kamu $trendDirection dari ${avgFirstHalf.toInt()}% → ${avgSecondHalf.toInt()}% bulan ini",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (avgSecondHalf >= avgFirstHalf) IslamicGreen else RingRed,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    ConsistencyLineChartCanvas(
-                        stats = weeklyConsistency,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ─── STATISTIK BUTTON ───
-            val statistikShape = RoundedCornerShape(16.dp)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showStatistikSheet = true }
-                    .testTag("statistik_button_card")
-                    .shadow(10.dp, statistikShape, ambientColor = IslamicGreen.copy(alpha = 0.25f)),
-                shape = statistikShape,
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = BorderStroke(1.dp, Brush.linearGradient(
-                    listOf(IslamicGreen.copy(alpha = 0.6f), CyanAccent.copy(alpha = 0.2f))
-                ))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "📊", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
-                        Column {
-                            Text(
-                                text = "STATISTIK MINGGUAN",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextLight,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = "Bar chart · Win rate · Streak · XP bulan ini",
-                                fontSize = 10.sp,
-                                color = TextMuted
-                            )
-                        }
-                    }
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = "Buka Statistik",
-                        tint = IslamicGreen,
-                        modifier = Modifier.graphicsLayer { rotationZ = 90f }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ─── ACHIEVEMENTS ───
-            ArenaSectionPill(text = "PENCAPAIAN & BADGE 🏆", gradient = GradientGreenGold, modifier = Modifier.align(Alignment.Start))
-            Spacer(modifier = Modifier.height(10.dp))
-            AchievementsGrid(unlockedBadges = state.badges)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Reward Collector Gallery removed — replaced by Daily Reward Chest (Quest tab)
-            // Rewards list tetap disimpan di data model, tapi tidak ditampilkan di Profile lagi.
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ─── COLLAPSIBLE SETTINGS ───
-            val settingsShape = RoundedCornerShape(16.dp)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isSettingsExpanded = !isSettingsExpanded }
-                    .testTag("settings_header_card")
-                    .shadow(8.dp, settingsShape, ambientColor = IslamicGreen.copy(alpha = 0.15f)),
-                shape = settingsShape,
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = BorderStroke(1.dp, ArenaBorder)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "⚙️", fontSize = 18.sp, modifier = Modifier.padding(end = 8.dp))
-                        Text(
-                            text = "PENGATURAN 🎮",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextLight
-                        )
-                    }
-                    Icon(
-                        imageVector = if (isSettingsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Expand Settings",
-                        tint = GoldAccent
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = isSettingsExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    SettingsPanelContent(
-                        state = state,
-                        viewModel = viewModel,
-                        onResetClick = { showResetConfirm = true }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
+            // ─── 5. SETTINGS ───
+            SettingsSection(
+                state = state,
+                viewModel = viewModel,
+                isExpanded = isSettingsExpanded,
+                onToggleExpand = { isSettingsExpanded = !isSettingsExpanded },
+                notifEnabled = notifEnabled,
+                onToggleNotif = { notifEnabled = it },
+                onResetClick = { showResetConfirm = true }
+            )
         }
     }
 
@@ -291,7 +130,12 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showResetConfirm = false },
             title = { Text("HAPUS DATA SHOLAT?", color = RingRed, fontWeight = FontWeight.Bold) },
-            text = { Text("Yakin mau hapus semua data karakter & riwayat sholat? Level, streak, quest, dan rewards bakal hilang selamanya!", color = TextLight) },
+            text = {
+                Text(
+                    "Yakin mau hapus semua data karakter & riwayat sholat? Level, streak, quest, dan rewards bakal hilang selamanya!",
+                    color = TextLight
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.resetAllData()
@@ -318,33 +162,10 @@ fun ProfileScreen(
     }
 }
 
-// ─── Section title pill: teal-to-gold horizontal gradient, black text, 10sp bold, letter-spacing 2sp ───
-@Composable
-private fun ArenaSectionPill(
-    text: String,
-    gradient: List<Color> = GradientGreenGold,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .shadow(8.dp, RoundedCornerShape(100.dp), ambientColor = IslamicGreen.copy(alpha = 0.35f))
-            .background(Brush.horizontalGradient(gradient), RoundedCornerShape(100.dp))
-            .padding(horizontal = 14.dp, vertical = 5.dp)
-    ) {
-        Text(
-            text = text,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.Black,
-            letterSpacing = 2.sp
-        )
-    }
-}
-
 // ═══════════════════════════════════════════════════════════════
-// PROFILE HEADER CARD
-// Avatar with tier-progressive border system (TierProfileAvatar) + photo upload.
-// Border style & effects scale with tier (Warrior→Mythic Immortal).
+// 1. PROFILE HEADER CARD
+// Avatar (TierProfileAvatar, gradient border) + LVL badge bottom-right,
+// name uppercase + 🏆, rank gold-neon, XP row + bar.
 // ═══════════════════════════════════════════════════════════════
 @Composable
 fun ProfileHeaderCard(state: MuslimLevelingData, viewModel: GameViewModel) {
@@ -353,24 +174,20 @@ fun ProfileHeaderCard(state: MuslimLevelingData, viewModel: GameViewModel) {
     val tierName = viewModel.getTierName(levelInfo.level)
     val context = LocalContext.current
 
-    // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
-            // Decode + crop to square (center crop), downscale to max 512px
             viewModel.viewModelScope.launch(Dispatchers.IO) {
                 runCatching {
                     val inputStream = context.contentResolver.openInputStream(uri)
                     val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
                     inputStream?.close()
                     if (bitmap != null) {
-                        // Center crop to square
                         val size = minOf(bitmap.width, bitmap.height)
                         val startX = (bitmap.width - size) / 2
                         val startY = (bitmap.height - size) / 2
                         val cropped = android.graphics.Bitmap.createBitmap(bitmap, startX, startY, size, size)
-                        // Downscale if larger than 512
                         val finalBitmap = if (cropped.width > 512) {
                             android.graphics.Bitmap.createScaledBitmap(cropped, 512, 512, true)
                         } else {
@@ -383,329 +200,478 @@ fun ProfileHeaderCard(state: MuslimLevelingData, viewModel: GameViewModel) {
         }
     }
 
-    val headerShape = RoundedCornerShape(22.dp)
+    val headerShape = RoundedCornerShape(12.dp)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("profile_header_card")
             .shadow(
-                elevation = 22.dp,
+                elevation = 16.dp,
                 shape = headerShape,
-                ambientColor = IslamicGreen.copy(alpha = 0.28f),
-                spotColor = GoldAccent.copy(alpha = 0.18f)
+                ambientColor = IslamicGreen.copy(alpha = 0.20f),
+                spotColor = CyanAccent.copy(alpha = 0.12f)
             ),
         shape = headerShape,
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, ArenaBorder)
+        colors = CardDefaults.cardColors(containerColor = DarkSurface.copy(alpha = 0.85f)),
+        border = BorderStroke(1.dp, IslamicGreen.copy(alpha = 0.20f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    // Tertiary top-right glow per mockup
+                    drawCircle(
+                        color = CyanAccent.copy(alpha = 0.10f),
+                        radius = size.minDimension * 0.6f,
+                        center = Offset(size.width * 1.1f, -size.height * 0.3f)
+                    )
+                }
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Avatar + LVL badge
+                Box(
+                    contentAlignment = Alignment.BottomEnd,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clickable { imagePickerLauncher.launch("image/*") }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .shadow(12.dp, CircleShape, ambientColor = IslamicGreen.copy(alpha = 0.30f))
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(IslamicGreen, CyanAccent)))
+                            .padding(2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .border(2.dp, DarkSurface, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            TierProfileAvatar(
+                                profileImagePath = state.user.profileImagePath,
+                                tierName = tierName,
+                                sizeDp = 76.dp,
+                                showEditBadge = false
+                            )
+                        }
+                    }
+                    // LVL badge bottom-right
+                    Box(
+                        modifier = Modifier
+                            .padding(0.dp)
+                            .offset(x = 2.dp, y = 2.dp)
+                            .shadow(4.dp, RoundedCornerShape(100.dp))
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(DarkSurfaceElevated)
+                            .border(1.dp, IslamicGreen, RoundedCornerShape(100.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "LVL ${levelInfo.level}",
+                            color = IslamicGreen,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+
+                // Name + rank + XP
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = state.user.username.uppercase(),
+                            color = TextLight,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.sp,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(text = "🏆", fontSize = 18.sp)
+                    }
+                    Text(
+                        text = rankTitle.uppercase(),
+                        color = GoldAccent,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+                    )
+                    // XP row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "XP",
+                            color = TextMuted,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "${levelInfo.xpInCurrentLevel} / ${levelInfo.xpNeededForNextLevel}",
+                            color = IslamicGreen,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    NeonProgressBar(
+                        progress = levelInfo.progress,
+                        modifier = Modifier.fillMaxWidth(),
+                        height = 8.dp,
+                        brush = Brush.horizontalGradient(listOf(IslamicGreen, CyanAccent)),
+                        glowColor = IslamicGreen,
+                        trackColor = DarkSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 2. STATS 2x2 GRID
+// Centered: emoji (28sp) + value (title-lg) + label-caps (10sp muted)
+// Top border tint per stat (primary for 1-2, tertiary for 3, gold for 4)
+// ═══════════════════════════════════════════════════════════════
+@Composable
+private fun StatsGrid(state: MuslimLevelingData) {
+    val freezeCount = if (state.heroStreak.freezeAvailable) 1 else 0
+    val stats = listOf(
+        StatItem("🔥", "${state.heroStreak.current} Hari", "STREAK", IslamicGreen),
+        StatItem("📖", "${state.tilawahStreak.current} Juz", "TILAWAH", IslamicGreen),
+        StatItem("❄️", "$freezeCount", "STREAK FREEZE", CyanAccent),
+        StatItem("⭐", "${state.user.xp}", "TOTAL XP", GoldAccent)
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        stats.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                row.forEach { item ->
+                    StatCard(item = item, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+private data class StatItem(
+    val emoji: String,
+    val value: String,
+    val label: String,
+    val accent: Color
+)
+
+@Composable
+private fun StatCard(item: StatItem, modifier: Modifier = Modifier) {
+    val cardShape = RoundedCornerShape(8.dp)
+    Card(
+        modifier = modifier
+            .shadow(6.dp, cardShape, ambientColor = item.accent.copy(alpha = 0.12f)),
+        shape = cardShape,
+        colors = CardDefaults.cardColors(containerColor = DarkSurface.copy(alpha = 0.85f)),
+        border = BorderStroke(1.dp, GlassBorder)
     ) {
         Column(
             modifier = Modifier
-                .drawBehind {
-                    drawCircle(
-                        Brush.radialGradient(
-                            listOf(IslamicGreen.copy(alpha = 0.16f), Color.Transparent),
-                            center = center,
-                            radius = size.width / 1.5f
-                        )
-                    )
-                }
-                .padding(24.dp),
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // Tier Profile Avatar with progressive border
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .clickable { imagePickerLauncher.launch("image/*") }
-            ) {
-                com.example.ui.components.TierProfileAvatar(
-                    profileImagePath = state.user.profileImagePath,
-                    tierName = tierName,
-                    sizeDp = 120.dp,
-                    showEditBadge = true
-                )
-            }
-
-            // Long-press hint to remove photo
-            if (state.user.profileImagePath != null) {
-                Text(
-                    text = "tahan untuk hapus foto",
-                    fontSize = 9.sp,
-                    color = TextMuted,
-                    modifier = Modifier
-                        .padding(bottom = 4.dp)
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onLongPress = { viewModel.clearProfileImage() }
-                            )
-                        }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
+            Text(text = item.emoji, fontSize = 28.sp, textAlign = TextAlign.Center)
             Text(
-                text = state.user.username,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold,
+                text = item.value,
                 color = TextLight,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-            ) {
-                Text(
-                    text = rankTitle,
-                    fontSize = 14.sp,
-                    color = GoldAccent,
-                    fontWeight = FontWeight.Black
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Box(
-                    modifier = Modifier
-                        .shadow(6.dp, RoundedCornerShape(4.dp), ambientColor = IslamicGreen.copy(alpha = 0.4f))
-                        .background(Brush.horizontalGradient(GradientGreenGold), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "LV ${levelInfo.level}",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
-            }
-
-            // XP progress row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = "Level Progress".uppercase(), fontSize = 10.sp, color = TextMuted, letterSpacing = 1.sp, fontWeight = FontWeight.Medium)
-                Text(
-                    text = "${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel} XP",
-                    fontSize = 11.sp,
-                    color = TextLight,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            NeonProgressBar(
-                progress = levelInfo.progress,
-                modifier = Modifier.fillMaxWidth(),
-                height = 8.dp,
-                brush = Brush.horizontalGradient(listOf(IslamicGreen, IslamicGreenDim, GoldAccent)),
-                glowColor = IslamicGreen,
-                trackColor = DarkSurfaceVariant
+            Text(
+                text = item.label,
+                color = TextMuted,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                textAlign = TextAlign.Center
             )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "TOTAL XP".uppercase(), fontSize = 10.sp, color = TextMuted, letterSpacing = 1.sp)
-                    Text(text = "${state.user.xp}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = GoldAccent, fontFamily = FontFamily.Monospace)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "LOKASI".uppercase(), fontSize = 10.sp, color = TextMuted, letterSpacing = 1.sp)
-                    Text(text = state.user.kota, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                }
-            }
         }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SMALL STAT CARD
-// Left accent bar (2dp, colored per stat type), label (10sp uppercase muted),
-// value (24sp mono bold), sub (11sp muted).
+// 3. WEEKLY GRAPH SECTION
+// Pill badge "GRAFIK SHOLAT FARDHU", card with "Konsistensi Mingguan" / "85%"
+// trend line, line chart S S R K J S M, button "STATISTIK MINGGUAN ›"
 // ═══════════════════════════════════════════════════════════════
 @Composable
-fun SmallStatCard(
-    modifier: Modifier,
-    title: String,
-    value: String,
-    sub: String,
-    accentColor: Color = IslamicGreen,
-    iconEmoji: String = ""
+private fun WeeklyGraphSection(
+    consistencyPct: Int,
+    trendUp: Boolean,
+    trendDelta: Int,
+    weeklyConsistency: List<Float>,
+    onOpenStatistik: () -> Unit
 ) {
-    val cardShape = RoundedCornerShape(14.dp)
-    Card(
-        modifier = modifier
-            .shadow(8.dp, cardShape, ambientColor = accentColor.copy(alpha = 0.18f)),
-        shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, ArenaBorder)
-    ) {
-        Row(
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionPill(
+            emoji = "📈",
+            text = "GRAFIK SHOLAT FARDHU",
+            tint = IslamicGreen
+        )
+
+        val cardShape = RoundedCornerShape(12.dp)
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .testTag("consistency_chart_card")
+                .shadow(10.dp, cardShape, ambientColor = IslamicGreen.copy(alpha = 0.15f)),
+            shape = cardShape,
+            colors = CardDefaults.cardColors(containerColor = DarkSurface.copy(alpha = 0.85f)),
+            border = BorderStroke(1.dp, GlassBorder)
         ) {
-            // Left accent bar (2dp wide, full-height, colored per stat)
-            Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .fillMaxHeight()
-                    .background(accentColor, RoundedCornerShape(100.dp))
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (iconEmoji.isNotEmpty()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column {
                         Text(
-                            text = iconEmoji,
+                            text = "Konsistensi Mingguan",
+                            color = TextMuted,
                             fontSize = 14.sp
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Text(
+                                text = if (trendUp) "↗" else "↘",
+                                color = IslamicGreen,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = if (trendUp) "Naik $trendDelta% dari minggu lalu"
+                                       else "Turun $trendDelta% dari minggu lalu",
+                                color = IslamicGreen,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
                     Text(
-                        text = title.uppercase(),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextMuted,
-                        letterSpacing = 1.sp
+                        text = "$consistencyPct%",
+                        color = TextLight,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                WeeklyLineChart(
+                    stats = weeklyConsistency,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                )
+            }
+        }
+
+        // STATISTIK MINGGUAN button
+        val btnShape = RoundedCornerShape(12.dp)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("statistik_button_card")
+                .clickable { onOpenStatistik() }
+                .shadow(8.dp, btnShape, ambientColor = IslamicGreen.copy(alpha = 0.15f)),
+            shape = btnShape,
+            colors = CardDefaults.cardColors(containerColor = DarkSurface.copy(alpha = 0.85f)),
+            border = BorderStroke(1.dp, GlassBorder)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(DarkSurfaceElevated)
+                            .border(1.dp, OutlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "📊", fontSize = 18.sp)
+                    }
+                    Text(
+                        text = "STATISTIK MINGGUAN",
+                        color = TextLight,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.5.sp
                     )
                 }
                 Text(
-                    text = value,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black,
-                    color = accentColor,
-                    fontFamily = FontFamily.Monospace,
-                    lineHeight = 26.sp
-                )
-                Text(
-                    text = sub,
-                    fontSize = 11.sp,
-                    color = TextMuted
+                    text = "›",
+                    color = IslamicGreen,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CONSISTENCY CHART
-// Gradient dots with outer glow on a gradient line.
-// ═══════════════════════════════════════════════════════════════
+// ─── Section pill: emoji + caps label, tinted ───
 @Composable
-fun ConsistencyLineChartCanvas(
+private fun SectionPill(
+    emoji: String,
+    text: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .shadow(6.dp, RoundedCornerShape(100.dp), ambientColor = tint.copy(alpha = 0.20f))
+            .clip(RoundedCornerShape(100.dp))
+            .background(tint.copy(alpha = 0.10f))
+            .border(1.dp, tint.copy(alpha = 0.20f), RoundedCornerShape(100.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(text = emoji, fontSize = 12.sp)
+            Text(
+                text = text,
+                color = tint,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
+            )
+        }
+    }
+}
+
+// ─── Weekly line chart: gradient line + glowing dots + day labels S S R K J S M ───
+@Composable
+private fun WeeklyLineChart(
     stats: List<Float>,
     modifier: Modifier = Modifier
 ) {
+    // Mockup labels: S S R K J S M (Sen Sel Rab Kam Jum Sab Min — single-letter ID)
+    val dayLabels = listOf("S", "S", "R", "K", "J", "S", "M")
+
     Canvas(modifier = modifier) {
         val width = size.width
         val height = size.height
+        val padBottom = 18f
+        val chartHeight = height - padBottom
 
-        // Horizontal grid helper lines (very faint)
-        val linesCount = 4
-        for (i in 0 until linesCount) {
-            val y = height * (i.toFloat() / (linesCount - 1))
+        // Faint dashed grid lines (mockup uses 2 dashed lines)
+        for (i in 1..2) {
+            val y = chartHeight * (i / 3f)
             drawLine(
-                color = TextLight.copy(alpha = 0.05f),
+                color = OutlineVariant.copy(alpha = 0.30f),
                 start = Offset(0f, y),
                 end = Offset(width, y),
-                strokeWidth = 1f
+                strokeWidth = 1f,
+                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
             )
         }
 
-        val pointCount = stats.size
-        if (pointCount < 2) return@Canvas
+        if (stats.size < 2) return@Canvas
 
-        val paddingX = 40.dp.toPx()
-        val spacingX = (width - paddingX * 2) / (pointCount - 1)
-
-        val path = Path()
+        val padX = 24f
+        val spacingX = (width - padX * 2) / (stats.size - 1)
         val points = mutableListOf<Offset>()
+        val path = Path()
 
-        for (i in 0 until pointCount) {
-            val x = paddingX + i * spacingX
-            val y = height - (stats[i] / 100f) * (height * 0.8f) - (height * 0.1f)
+        stats.forEachIndexed { i, v ->
+            val x = padX + i * spacingX
+            val y = chartHeight - (v / 100f) * (chartHeight * 0.85f) - (chartHeight * 0.05f)
             points.add(Offset(x, y))
             if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
 
-        // Glowing gradient line
+        // Gradient line (cyan → emerald)
         drawPath(
             path = path,
-            brush = Brush.horizontalGradient(listOf(IslamicGreen, GoldAccent, IslamicGreen)),
-            style = Stroke(width = 7f, cap = StrokeCap.Round)
+            brush = Brush.horizontalGradient(listOf(CyanAccent, IslamicGreen)),
+            style = Stroke(width = 3f, cap = StrokeCap.Round)
         )
 
         // Under-fill gradient
         val fillPath = Path().apply {
             addPath(path)
-            lineTo(points.last().x, height)
-            lineTo(points.first().x, height)
+            lineTo(points.last().x, chartHeight)
+            lineTo(points.first().x, chartHeight)
             close()
         }
         drawPath(
             path = fillPath,
-            brush = Brush.verticalGradient(
-                listOf(IslamicGreen.copy(alpha = 0.18f), GoldAccent.copy(alpha = 0.08f), Color.Transparent)
-            )
+            color = IslamicGreen.copy(alpha = 0.12f)
         )
 
-        // Points with outer glow
+        // Data points: dark bg ring + gradient dot; last point solid + glow
         points.forEachIndexed { idx, offset ->
-            // Outer glow
-            drawCircle(
-                brush = Brush.radialGradient(
-                    listOf(IslamicGreen.copy(alpha = 0.35f), Color.Transparent),
-                    center = offset,
-                    radius = 18f
-                ),
-                radius = 18f,
-                center = offset
-            )
-            // Dark background ring
-            drawCircle(color = DarkBackground, radius = 12f, center = offset)
-            // Gradient inner dot
-            drawCircle(
-                brush = Brush.radialGradient(listOf(GoldAccent, IslamicGreen), center = offset, radius = 8f),
-                radius = 8f,
-                center = offset
-            )
-
-            // Score text
-            val scoreText = "${stats[idx].toInt()}%"
-            val textPaint = android.graphics.Paint().apply {
-                color = android.graphics.Color.WHITE
-                textSize = 9.dp.toPx()
-                isFakeBoldText = true
-                textAlign = android.graphics.Paint.Align.CENTER
-                setShadowLayer(8f, 0f, 0f, android.graphics.Color.argb(180, 20, 232, 200))
+            drawCircle(color = DarkBackground, radius = 5f, center = offset)
+            drawCircle(color = IslamicGreen, radius = 3f, center = offset)
+            if (idx == points.lastIndex) {
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        listOf(IslamicGreen.copy(alpha = 0.6f), Color.Transparent),
+                        center = offset,
+                        radius = 12f
+                    ),
+                    radius = 12f,
+                    center = offset
+                )
+                drawCircle(color = IslamicGreen, radius = 4f, center = offset)
             }
-            drawContext.canvas.nativeCanvas.drawText(
-                scoreText,
-                offset.x,
-                offset.y - 12.dp.toPx(),
-                textPaint
-            )
+        }
 
-            // Week label
-            val weekLabel = "Mng ${idx + 1}"
-            val labelPaint = android.graphics.Paint().apply {
-                color = android.graphics.Color.LTGRAY
-                textSize = 9.dp.toPx()
-                textAlign = android.graphics.Paint.Align.CENTER
-            }
+        // Day labels under chart (S S R K J S M)
+        val labelPaint = android.graphics.Paint().apply {
+            color = TextMuted.toArgb()
+            textSize = 9.dp.toPx()
+            isAntiAlias = true
+            textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        points.forEachIndexed { i, offset ->
             drawContext.canvas.nativeCanvas.drawText(
-                weekLabel,
+                dayLabels.getOrElse(i) { "" },
                 offset.x,
                 height - 4f,
                 labelPaint
@@ -715,227 +681,255 @@ fun ConsistencyLineChartCanvas(
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ACHIEVEMENTS GRID
-// X/N counter + teal progress bar; locked items muted.
+// 4. ACHIEVEMENTS SECTION
+// Pill badge + 3-col grid. Mockup badges shown literally:
+//   SUBUH WARRIOR (gold, unlocked) | TEPAT WAKTU (teal, unlocked) | JUMAT BERKAH (locked)
+//   KHATAM QURAN (locked) | QIYAMULLAIL (locked) | SEDEKAH SUBUH (locked)
+// Unlocked state is driven by state.badges IDs (best-effort mapping).
 // ═══════════════════════════════════════════════════════════════
 @Composable
-fun AchievementsGrid(unlockedBadges: List<String>) {
-    val badgesPool = listOf(
-        Badge("langkah_pertama", "Langkah Pertama", "Catat sholat pertama", "👣"),
-        Badge("subuh_warrior", "Subuh Warrior", "Streak Subuh 7 hari", "⏱️"),
-        Badge("subuh_legend", "Subuh Legend", "Streak Subuh 30 hari", "🏆"),
-        Badge("five_five_master", "5/5 Master", "Pertama kali 5/5!", "🥇"),
-        Badge("five_five_streak_7", "Streak x7", "Hero streak 7 hari", "🎖️"),
-        Badge("five_five_streak_30", "Streak x30", "Hero streak 30 hari", "👑"),
-        Badge("sultan_sunnah", "Sultan Sunnah", "Total 50 sholat sunnah", "☘️"),
-        Badge("tilawah_streak_14", "Tilawah Streak", "Streak Tilawah 14 hari", "📜"),
-        Badge("ramadan_champion", "Virtual Ramadan", "Aktif selama Ramadan 🌙", "🌙"),
-        Badge("comeback_king", "Comeback King", "Pernah break 3x tapi balik lagi! 💪", "🛡️"),
-        Badge("early_bird", "Early Bird", "20x Sholat tepat waktu", "🏹"),
-        Badge("mythic_reached", "Mythic Reached", "Level 80 tercapai! 🔮", "🔮"),
-        Badge("santri_digital", "Santri Digital", "Selesaikan semua 16 modul Belajar! 🎓", "🎓")
+private fun AchievementsSection(unlockedBadges: List<String>) {
+    // Mockup badge grid: id, title, emoji, accent when unlocked
+    val mockupBadges = listOf(
+        MockupBadge("subuh_warrior", "SUBUH WARRIOR", "🕌", GoldAccent),
+        MockupBadge("tepat_waktu", "TEPAT WAKTU", "⏱", IslamicGreen),
+        MockupBadge("jumat_berkah", "JUMAT BERKAH", "🤲", GoldAccent),
+        MockupBadge("khatam_quran", "KHATAM QURAN", "📖", GoldAccent),
+        MockupBadge("qiyamullail", "QIYAMULLAIL", "🌙", IslamicGreen),
+        MockupBadge("sedekah_subuh", "SEDEKAH SUBUH", "🤝", GoldAccent)
     )
 
-    val unlockedCount = badgesPool.count { unlockedBadges.contains(it.id) }
-    val progress = unlockedCount.toFloat() / badgesPool.size.toFloat()
-
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Unlocked: $unlockedCount/${badgesPool.size}",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = GoldAccent,
-                fontFamily = FontFamily.Monospace
-            )
-            Text(
-                text = "${(progress * 100).toInt()}%",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = if (progress == 1f) IslamicGreen else GoldAccent,
-                fontFamily = FontFamily.Monospace
-            )
-        }
-        // Teal progress bar
-        NeonProgressBar(
-            progress = progress,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            height = 6.dp,
-            brush = Brush.horizontalGradient(listOf(IslamicGreen, IslamicGreenDim, IslamicGreen)),
-            glowColor = IslamicGreen,
-            trackColor = DarkSurfaceVariant
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionPill(
+            emoji = "💡",
+            text = "PENCAPAIAN & BADGE",
+            tint = GoldAccent
         )
-
-        badgesPool.chunked(3).forEach { row ->
+        mockupBadges.chunked(3).forEach { row ->
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 row.forEach { badge ->
-                    val isUnlocked = unlockedBadges.contains(badge.id)
-                    BadgeItemView(badge, isUnlocked, modifier = Modifier.weight(1f))
-                }
-                if (row.size < 3) {
-                    repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
+                    MockupBadgeItem(
+                        badge = badge,
+                        isUnlocked = unlockedBadges.contains(badge.id),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
     }
 }
 
-@Composable
-fun BadgeItemView(badge: Badge, isUnlocked: Boolean, modifier: Modifier) {
-    val cardShape = RoundedCornerShape(14.dp)
-    val accentColor = if (isUnlocked) GoldAccent else TextMuted
+private data class MockupBadge(
+    val id: String,
+    val title: String,
+    val emoji: String,
+    val accent: Color
+)
 
+@Composable
+private fun MockupBadgeItem(
+    badge: MockupBadge,
+    isUnlocked: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val cardShape = RoundedCornerShape(12.dp)
+    val accent = if (isUnlocked) badge.accent else TextMuted
+    val container = if (isUnlocked) DarkSurface.copy(alpha = 0.85f) else DarkSurfaceVariant.copy(alpha = 0.4f)
     Card(
         modifier = modifier
-            .height(105.dp)
+            .height(110.dp)
             .then(
                 if (isUnlocked) Modifier.shadow(
-                    elevation = 12.dp,
+                    elevation = 10.dp,
                     shape = cardShape,
-                    ambientColor = GoldAccent.copy(alpha = 0.35f),
-                    spotColor = GoldAccent.copy(alpha = 0.2f)
-                ) else Modifier.shadow(
-                    elevation = 4.dp,
-                    shape = cardShape,
-                    ambientColor = Color.Black.copy(alpha = 0.15f)
-                )
+                    ambientColor = accent.copy(alpha = 0.20f),
+                    spotColor = accent.copy(alpha = 0.10f)
+                ) else Modifier
             ),
         shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = if (isUnlocked) DarkSurface else DarkSurface.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = container),
         border = BorderStroke(
             1.dp,
-            if (isUnlocked) Brush.linearGradient(listOf(GoldAccent.copy(alpha = 0.5f), GoldAccent.copy(alpha = 0.1f), GoldAccent.copy(alpha = 0.5f)))
-            else Brush.linearGradient(listOf(ArenaBorder, ArenaBorder))
+            if (isUnlocked) accent.copy(alpha = 0.50f) else OutlineVariant.copy(alpha = 0.30f)
         )
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp)
+                .then(if (!isUnlocked) Modifier.alpha(0.6f) else Modifier),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .then(
-                        if (isUnlocked) Modifier.shadow(10.dp, CircleShape, ambientColor = GoldAccent.copy(alpha = 0.5f)) else Modifier
-                    )
-                    .background(
-                        if (isUnlocked) Brush.radialGradient(listOf(GoldAccent.copy(alpha = 0.22f), Color.Transparent))
-                        else Brush.radialGradient(listOf(TextMuted.copy(alpha = 0.08f), Color.Transparent)),
-                        CircleShape
-                    )
-                    .border(
-                        BorderStroke(1.5.dp,
-                            if (isUnlocked) Brush.linearGradient(GradientGoldAmber)
-                            else Brush.linearGradient(listOf(TextMuted.copy(alpha = 0.18f), TextMuted.copy(alpha = 0.18f)))
-                        ),
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (isUnlocked) badge.icon else "🔒",
-                    fontSize = 22.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
+            Text(
+                text = if (isUnlocked) badge.emoji else "🔒",
+                fontSize = 30.sp,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = badge.title,
-                fontSize = 11.sp,
-                fontWeight = if (isUnlocked) FontWeight.Bold else FontWeight.Medium,
-                color = if (isUnlocked) TextLight else TextMuted.copy(alpha = 0.6f),
+                color = if (isUnlocked) TextLight else TextMuted,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
                 textAlign = TextAlign.Center,
-                maxLines = 1
-            )
-            Text(
-                text = badge.desc,
-                fontSize = 8.sp,
-                color = if (isUnlocked) TextMuted else TextMuted.copy(alpha = 0.5f),
-                textAlign = TextAlign.Center,
-                lineHeight = 10.sp,
                 maxLines = 2
             )
         }
     }
 }
 
-// Reward Collector Gallery removed — gacha system replaced by Daily Reward Chest
-// (rewards list tetap disimpan di data model, tapi tidak ditampilkan di ProfileScreen lagi)
-
 // ═══════════════════════════════════════════════════════════════
-// SETTINGS PANEL
-// Per-mode gradient selectors (santai/standar/sultan) with glow when selected.
-// Reset button: crimson glow + gradient border.
+// 5. SETTINGS SECTION
+// PENGATURAN header (collapsible), then:
+//   - "Lokasi Saat Ini" + UBAH button (opens city picker)
+//   - "Notifikasi Adzan" + toggle
+//   - "Reset Data Profil" red button
+// VM calls preserved: loadCitiesFromKemenag, kemenagCities, isLoadingCities,
+// updateProfileSettings, resetAllData.
 // ═══════════════════════════════════════════════════════════════
 @Composable
-fun SettingsPanelContent(
+private fun SettingsSection(
     state: MuslimLevelingData,
     viewModel: GameViewModel,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    notifEnabled: Boolean,
+    onToggleNotif: (Boolean) -> Unit,
+    onResetClick: () -> Unit
+) {
+    val cardShape = RoundedCornerShape(12.dp)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("settings_section"),
+        shape = cardShape,
+        colors = CardDefaults.cardColors(containerColor = DarkSurface.copy(alpha = 0.85f)),
+        border = BorderStroke(1.dp, GlassBorder)
+    ) {
+        Column {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggleExpand() }
+                    .background(DarkSurfaceElevated)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(text = "⚙️", fontSize = 18.sp)
+                    Text(
+                        text = "PENGATURAN",
+                        color = TextLight,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp
+                                  else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Toggle Settings",
+                    tint = TextMuted
+                )
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                SettingsContent(
+                    state = state,
+                    viewModel = viewModel,
+                    notifEnabled = notifEnabled,
+                    onToggleNotif = onToggleNotif,
+                    onResetClick = onResetClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsContent(
+    state: MuslimLevelingData,
+    viewModel: GameViewModel,
+    notifEnabled: Boolean,
+    onToggleNotif: (Boolean) -> Unit,
     onResetClick: () -> Unit
 ) {
     var username by remember { mutableStateOf(state.user.username) }
     var kota by remember { mutableStateOf(state.user.kota) }
     var kotaId by remember { mutableStateOf(state.user.kotaId) }
     var notifMode by remember { mutableStateOf(state.user.notifMode) }
+    var showCityPicker by remember { mutableStateOf(false) }
 
-    // Load daftar kota KEMENAG saat settings dibuka
     LaunchedEffect(Unit) {
         viewModel.loadCitiesFromKemenag()
     }
     val cities by viewModel.kemenagCities.collectAsState()
     val isLoadingCities by viewModel.isLoadingCities.collectAsState()
 
-    val context = LocalContext.current
-
-    val panelShape = RoundedCornerShape(16.dp)
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("settings_expanded_panel")
-            .shadow(8.dp, panelShape, ambientColor = IslamicGreen.copy(alpha = 0.15f)),
-        shape = panelShape,
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, ArenaBorder)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Edit Nickname Gamer:", fontSize = 12.sp, color = GoldAccent, fontWeight = FontWeight.Bold)
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = TextLight,
-                    unfocusedTextColor = TextLight,
-                    focusedBorderColor = IslamicGreen,
-                    unfocusedBorderColor = DarkSurfaceVariant,
-                    focusedContainerColor = DarkBackground,
-                    unfocusedContainerColor = DarkBackground
-                ),
-                shape = RoundedCornerShape(10.dp),
+    Column(modifier = Modifier.padding(16.dp)) {
+        // ─── Lokasi Saat Ini + UBAH button ───
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Lokasi Saat Ini",
+                    color = TextLight,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = if (state.user.kota.isNotBlank()) state.user.kota
+                           else "Jakarta, Indonesia",
+                    color = TextMuted,
+                    fontSize = 14.sp
+                )
+            }
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-                    .testTag("username_edit_field"),
-                singleLine = true
-            )
+                    .clip(RoundedCornerShape(4.dp))
+                    .border(1.dp, IslamicGreen.copy(alpha = 0.30f), RoundedCornerShape(4.dp))
+                    .clickable { showCityPicker = !showCityPicker }
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "UBAH",
+                    color = IslamicGreen,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
 
-            Spacer(modifier = Modifier.height(10.dp))
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 16.dp),
+            thickness = 1.dp,
+            color = OutlineVariant.copy(alpha = 0.30f)
+        )
 
-            Text("Kota/Kabupaten:", fontSize = 12.sp, color = GoldAccent, fontWeight = FontWeight.Bold)
+        // ─── City picker (collapsible when UBAH tapped) ───
+        if (showCityPicker) {
             CityDropdownPicker(
                 value = kota,
                 onValueChange = { newName ->
                     kota = newName
-                    // Lookup ID kota dari daftar KEMENAG
                     val match = cities.find { it.lokasi.equals(newName.trim(), ignoreCase = true) }
                     kotaId = match?.id ?: state.user.kotaId
                 },
@@ -943,62 +937,104 @@ fun SettingsPanelContent(
                 isLoading = isLoadingCities,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp)
+                    .padding(bottom = 16.dp)
                     .testTag("kota_edit_field")
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ─── Note: Notif mode & Adzan reminder dipindah ke tab Notif ───
-            Text(
-                text = "💡 Pengaturan notifikasi & adzan dipindah ke tab 'Notif' di bottom bar.",
-                fontSize = 11.sp,
-                color = TextMuted,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                modifier = Modifier.padding(vertical = 8.dp)
+            HorizontalDivider(
+                modifier = Modifier.padding(bottom = 16.dp),
+                thickness = 1.dp,
+                color = OutlineVariant.copy(alpha = 0.30f)
             )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ─── Save button (teal gradient + glow) ───
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(10.dp, RoundedCornerShape(12.dp), ambientColor = IslamicGreen.copy(alpha = 0.45f))
-                    .background(Brush.horizontalGradient(GradientGreenGold), RoundedCornerShape(12.dp))
-                    .clickable {
-                        // Validate kota: must match a KEMENAG city, fallback to existing
-                        val match = cities.find { it.lokasi.equals(kota.trim(), ignoreCase = true) }
-                        val validKota = match?.lokasi ?: state.user.kota
-                        val validKotaId = match?.id ?: state.user.kotaId
-                        viewModel.updateProfileSettings(
-                            username = username.trim(),
-                            kota = validKota,
-                            kotaId = validKotaId,
-                            notifMode = notifMode,
-                            theme = "dark"
-                        )
-                    }
-                    .padding(vertical = 14.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Simpan Perubahan 💾", fontWeight = FontWeight.Black, fontSize = 13.sp, color = Color.Black)
+        // ─── Notifikasi Adzan + toggle ───
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Notifikasi Adzan",
+                    color = TextLight,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = if (notifEnabled) "Aktif untuk 5 waktu" else "Nonaktif",
+                    color = TextMuted,
+                    fontSize = 14.sp
+                )
             }
+            Switch(
+                checked = notifEnabled,
+                onCheckedChange = { onToggleNotif(it) },
+                colors = SwitchDefaults.colors(
+                    checkedTrackColor = IslamicGreen,
+                    checkedThumbColor = DarkBackground,
+                    uncheckedTrackColor = DarkSurfaceVariant,
+                    uncheckedThumbColor = TextMuted
+                )
+            )
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 16.dp),
+            thickness = 1.dp,
+            color = OutlineVariant.copy(alpha = 0.30f)
+        )
 
-            // ─── Reset button: crimson glow + gradient border ───
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(12.dp, RoundedCornerShape(12.dp), ambientColor = RingRed.copy(alpha = 0.5f), spotColor = RingRed.copy(alpha = 0.3f))
-                    .background(Brush.verticalGradient(listOf(RingRed.copy(alpha = 0.15f), DarkSurface)), RoundedCornerShape(12.dp))
-                    .border(BorderStroke(1.5.dp, Brush.linearGradient(listOf(RingRed, RingRed.copy(alpha = 0.6f), RingRed))), RoundedCornerShape(12.dp))
-                    .clickable { onResetClick() }
-                    .padding(vertical = 14.dp),
-                contentAlignment = Alignment.Center
+        // ─── Save button (only meaningful if user changed name/kota) ───
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .shadow(8.dp, RoundedCornerShape(8.dp), ambientColor = IslamicGreen.copy(alpha = 0.30f))
+                .clip(RoundedCornerShape(8.dp))
+                .background(Brush.horizontalGradient(GradientGreenGold))
+                .clickable {
+                    val match = cities.find { it.lokasi.equals(kota.trim(), ignoreCase = true) }
+                    val validKota = match?.lokasi ?: state.user.kota
+                    val validKotaId = match?.id ?: state.user.kotaId
+                    viewModel.updateProfileSettings(
+                        username = username.trim(),
+                        kota = validKota,
+                        kotaId = validKotaId,
+                        notifMode = notifMode,
+                        theme = "dark"
+                    )
+                }
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Simpan Perubahan",
+                color = DarkBackground,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // ─── Reset Data Profil (red) ───
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .border(1.dp, RingRed.copy(alpha = 0.50f), RoundedCornerShape(8.dp))
+                .clickable { onResetClick() }
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("⚠️ Hapus Semua Data Karakter ⚠️", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = RingRed)
+                Text(text = "🗑️", fontSize = 16.sp)
+                Text(
+                    text = "Reset Data Profil",
+                    color = RingRed,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }

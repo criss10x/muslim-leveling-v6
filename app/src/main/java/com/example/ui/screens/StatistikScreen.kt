@@ -118,6 +118,31 @@ fun StatistikBottomSheet(
                 xp = xpThisMonth,
                 trendPct = xpTrendPct
             )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ─── Action button: "Lanjutkan Perjalanan" (teal gradient, on-primary text) ───
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        10.dp,
+                        RoundedCornerShape(12.dp),
+                        ambientColor = IslamicGreen.copy(alpha = 0.30f)
+                    )
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Brush.horizontalGradient(listOf(IslamicGreen, IslamicGreenDim)))
+                    .clickable { onDismiss() }
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Lanjutkan Perjalanan",
+                    color = Color(0xFF003828), // on-primary
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
