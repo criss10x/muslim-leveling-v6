@@ -51,7 +51,8 @@ class _HomeTabState extends State<HomeTab> {
       // Fetch timings if not cached today
       if (loc != null && GameService.current.timings.subuh == '04:42') {
         // ponytail: default timings — fetch real
-        final j = await PrayerService.fetchSchedule(cityId: loc.id);
+        final j = await PrayerService.fetchSchedule(cityId: loc.id).timeout(
+          const Duration(seconds: 5), onTimeout: () => null);
         if (j != null) {
           await GameService.setTimings(Timings(
             imsak: j['imsak'] ?? '04:30', subuh: j['subuh'] ?? '04:42',
