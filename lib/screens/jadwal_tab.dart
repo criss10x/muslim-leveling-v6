@@ -1,10 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../services/prayer_service.dart';
 
 /// Jadwal Sholat — hero icons edition. Next prayer + daily schedule list.
-class JadwalTab extends StatelessWidget {
+/// Live data from api.myquran.com (Kemenag proxy).
+class JadwalTab extends StatefulWidget {
   const JadwalTab({super.key});
+
+  @override
+  State<JadwalTab> createState() => _JadwalTabState();
+}
+
+class _JadwalTabState extends State<JadwalTab> {
+  Map<String, String>? _jadwal;
+  String _cityName = 'Jakarta';
+  String _cityId = '1301';
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAndFetch();
+  }
+
+  Future<void> _loadAndFetch() async {
+    final loc = await PrayerService.loadLocation();
+    if (loc != null) {
+      _cityId = loc.id;
+      _cityName = loc.name;
+    } else {
+      // ponytail: default Jakarta. User can change via Profil.
+      final p = await SharedPreferences.getInstance();
+      await p.setString('city_id', _cityId);
+      await p.setString('city_name', _cityName);
+    }
+    await _fetch();
+  }
+
+  Future<void> _fetch() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final j = await PrayerService.fetchSchedule(cityId: _cityId);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _jadwal = j;
+      if (j == null) {
+        _error = 'Gagal memuat jadwal. Periksa koneksi.';
+      } else if (j['lokasi']?.isNotEmpty == true) {
+        _cityName = j['lokasi']!;
+      }
+    });
+  }
+
+  String _todayLabel() {
+    final d = DateTime.now();
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    return '${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]} ${d.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,34 +72,39 @@ class JadwalTab extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: 100),
-          children: [
-            const SizedBox(height: AppSpacing.md),
-            _pill(),
-            const SizedBox(height: AppSpacing.xs),
-            _header(),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _qiblaButton(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _nextPrayerCard(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _schedule(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _monthlyTracker(),
-            ),
-          ],
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: _fetch,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 100),
+            children: [
+              const SizedBox(height: AppSpacing.md),
+              _pill(),
+              const SizedBox(height: AppSpacing.xs),
+              _header(),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _qiblaButton(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _nextPrayerCard(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _schedule(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _monthlyTracker(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -86,7 +151,7 @@ class JadwalTab extends StatelessWidget {
           Row(
             children: [
               Text(
-                '15 Ramadhan 1445H',
+                _todayLabel(),
                 style: AppText.bodyMd().copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -97,10 +162,14 @@ class JadwalTab extends StatelessWidget {
               ),
               const Icon(Icons.location_on, size: 14, color: AppColors.onSurfaceVariant),
               const SizedBox(width: 4),
-              Text(
-                'Jakarta, Indonesia',
-                style: AppText.bodyMd().copyWith(
-                  color: AppColors.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  _cityName,
+                  style: AppText.bodyMd().copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -154,6 +223,52 @@ class JadwalTab extends StatelessWidget {
   }
 
   Widget _nextPrayerCard() {
+    // Compute next prayer from live data
+    final j = _jadwal;
+    String nextName = 'Ashar';
+    String nextTime = '15:12';
+    String countdown = 'memuat...';
+
+    if (j != null && !_loading) {
+      final now = TimeOfDay.now();
+      final prayers = [
+        ('Subuh', j['subuh'] ?? ''),
+        ('Dzuhur', j['dzuhur'] ?? ''),
+        ('Ashar', j['ashar'] ?? ''),
+        ('Maghrib', j['maghrib'] ?? ''),
+        ('Isya', j['isya'] ?? ''),
+      ];
+      String? found;
+      for (final p in prayers) {
+        if (p.$2.isEmpty) continue;
+        final parts = p.$2.split(':');
+        if (parts.length != 2) continue;
+        final h = int.tryParse(parts[0]) ?? 0;
+        final m = int.tryParse(parts[1]) ?? 0;
+        final t = TimeOfDay(hour: h, minute: m);
+        final minsNow = now.hour * 60 + now.minute;
+        final minsP = t.hour * 60 + t.minute;
+        if (minsP > minsNow) {
+          found = '${p.$1}|${p.$2}|${minsP - minsNow}';
+          break;
+        }
+      }
+      if (found != null) {
+        final sp = found.split('|');
+        nextName = sp[0];
+        nextTime = sp[1];
+        final diff = int.tryParse(sp[2]) ?? 0;
+        final hh = diff ~/ 60;
+        final mm = diff % 60;
+        countdown = hh > 0 ? '${hh}j ${mm}m lagi' : '${mm}m lagi';
+      } else {
+        // All prayers passed — next is Subuh tomorrow
+        nextName = 'Subuh';
+        nextTime = j['subuh'] ?? '04:32';
+        countdown = 'besok';
+      }
+    }
+
     return NeonPulse(
       color: AppColors.primary,
       child: Container(
@@ -162,99 +277,146 @@ class JadwalTab extends StatelessWidget {
           color: AppColors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(AppRadius.xl),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SELANJUTNYA',
-                      style: AppText.labelCaps().copyWith(color: AppColors.primary),
-                    ),
-                    const SizedBox(height: 2),
-                    Text('Ashar', style: AppText.headlineLg()),
-                  ],
+        child: _loading
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceBright.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.secondaryContainer.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.timer,
-                        size: 14,
-                        color: AppColors.secondaryFixed,
+              )
+            : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.cloud_off, color: AppColors.error, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: _fetch,
+                            child: Text('Coba lagi', style: AppText.bodyMd().copyWith(color: AppColors.primary)),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '45m lagi',
-                        style: AppText.labelCaps().copyWith(
-                          color: AppColors.secondaryFixed,
-                        ),
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'SELANJUTNYA',
+                                style: AppText.labelCaps().copyWith(color: AppColors.primary),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(nextName, style: AppText.headlineLg()),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceBright.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppColors.secondaryContainer.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.timer,
+                                  size: 14,
+                                  color: AppColors.secondaryFixed,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  countdown,
+                                  style: AppText.labelCaps().copyWith(
+                                    color: AppColors.secondaryFixed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ShaderMask(
+                            shaderCallback: (rect) => const LinearGradient(
+                              colors: [AppColors.primary, AppColors.primaryFixed],
+                            ).createShader(rect),
+                            child: Text(
+                              nextTime,
+                              style: AppText.displayHero(40).copyWith(color: Colors.white),
+                            ),
+                          ),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryContainer.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.primaryContainer.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.notifications_active,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ShaderMask(
-                  shaderCallback: (rect) => const LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryFixed],
-                  ).createShader(rect),
-                  child: Text(
-                    '15:12',
-                    style: AppText.displayHero(40).copyWith(color: Colors.white),
-                  ),
-                ),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primaryContainer.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.notifications_active,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
 
   Widget _schedule() {
+    final j = _jadwal;
+    final now = TimeOfDay.now();
+
+    (String, String, IconData, bool, bool) row(String name, String time, IconData icon) {
+      if (time.isEmpty) return (name, '--:--', icon, false, false);
+      final parts = time.split(':');
+      if (parts.length != 2) return (name, time, icon, false, false);
+      final h = int.tryParse(parts[0]) ?? 0;
+      final m = int.tryParse(parts[1]) ?? 0;
+      final mins = h * 60 + m;
+      final minsNow = now.hour * 60 + now.minute;
+      final completed = mins < minsNow;
+      final active = !completed &&
+          (mins - minsNow) <= 30; // active if within next 30 min
+      return (name, time, icon, completed, active);
+    }
+
     final items = [
-      ('Subuh', '04:32', Icons.wb_twilight, true, false),
-      ('Dzuhur', '12:00', Icons.wb_sunny, true, false),
-      ('Ashar', '15:12', Icons.wb_cloudy, false, true),
-      ('Maghrib', '18:02', Icons.wb_twilight, false, false),
-      ('Isya', '19:15', Icons.nightlight, false, false),
+      row('Subuh', j?['subuh'] ?? '', Icons.wb_twilight),
+      row('Dzuhur', j?['dzuhur'] ?? '', Icons.wb_sunny),
+      row('Ashar', j?['ashar'] ?? '', Icons.wb_cloudy),
+      row('Maghrib', j?['maghrib'] ?? '', Icons.wb_twilight),
+      row('Isya', j?['isya'] ?? '', Icons.nightlight),
     ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

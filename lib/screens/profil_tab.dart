@@ -1,10 +1,186 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../services/prayer_service.dart';
 
 /// Profil Pejuang — hero header, stats grid, achievements, settings rows.
-class ProfilTab extends StatelessWidget {
+class ProfilTab extends StatefulWidget {
   const ProfilTab({super.key});
+
+  @override
+  State<ProfilTab> createState() => _ProfilTabState();
+}
+
+class _ProfilTabState extends State<ProfilTab> {
+  String _nickname = 'Pejuang';
+  String _cityName = 'Jakarta';
+  // ponytail: cityId kept for future "show on map" feature
+  // ignore: unused_field
+  String _cityId = '1301';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final p = await SharedPreferences.getInstance();
+    final loc = await PrayerService.loadLocation();
+    setState(() {
+      _nickname = p.getString('nickname') ?? 'Pejuang';
+      if (loc != null) {
+        _cityId = loc.id;
+        _cityName = loc.name;
+      }
+    });
+  }
+
+  Future<void> _editNickname() async {
+    final ctrl = TextEditingController(text: _nickname);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        title: Text('Edit Nama', style: AppText.titleLg()),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          style: AppText.bodyLg(),
+          decoration: InputDecoration(
+            hintText: 'Nama panggilan',
+            hintStyle: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Batal', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text('Simpan', style: AppText.bodyMd().copyWith(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+    if (result == null || result.isEmpty) return;
+    final p = await SharedPreferences.getInstance();
+    await p.setString('nickname', result);
+    setState(() => _nickname = result);
+  }
+
+  Future<void> _editLocation() async {
+    final ctrl = TextEditingController();
+    List<Map<String, dynamic>> results = const [];
+    bool loading = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          Future<void> search(String q) async {
+            if (q.trim().length < 3) {
+              setState(() => results = const []);
+              return;
+            }
+            setState(() => loading = true);
+            final r = await PrayerService.searchCities(q);
+            setState(() {
+              results = r;
+              loading = false;
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: AppColors.surfaceContainerHigh,
+            title: Text('Pilih Lokasi', style: AppText.titleLg()),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: ctrl,
+                    autofocus: true,
+                    style: AppText.bodyLg(),
+                    decoration: InputDecoration(
+                      hintText: 'Ketik nama kota/kab...',
+                      hintStyle: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 20),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.primary),
+                      ),
+                    ),
+                    onChanged: search,
+                  ),
+                  const SizedBox(height: 12),
+                  if (loading)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    )
+                  else if (results.isEmpty && ctrl.text.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Kota tidak ditemukan',
+                        style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: results.length,
+                        itemBuilder: (_, i) {
+                          final c = results[i];
+                          final name = c['lokasi'] as String? ?? '';
+                          final id = c['id']?.toString() ?? '';
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.location_on, color: AppColors.primary, size: 18),
+                            title: Text(name, style: AppText.bodyMd()),
+                            onTap: () async {
+                              await PrayerService.saveLocation(id, name);
+                              if (!ctx.mounted) return;
+                              Navigator.pop(ctx);
+                              setState2() {
+                                this.setState(() {
+                                  _cityId = id;
+                                  _cityName = name;
+                                });
+                              }
+                              setState2();
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Tutup', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +239,7 @@ class ProfilTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'PejuangSunnah',
+                      _nickname,
                       style: AppText.headlineMd().copyWith(fontSize: 20),
                     ),
                     Text(
@@ -84,20 +260,54 @@ class ProfilTab extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.edit, color: AppColors.primary),
-                onPressed: () {},
+                onPressed: _editNickname,
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           const Divider(color: AppColors.outlineVariant),
           const SizedBox(height: AppSpacing.md),
+          // Location row — editable
+          InkWell(
+            onTap: _editLocation,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.sm),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: AppColors.primary, size: 18),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'LOKASI',
+                          style: AppText.labelCaps().copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: 10,
+                          ),
+                        ),
+                        Text(
+                          _cityName,
+                          style: AppText.bodyLg().copyWith(color: AppColors.onSurface),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant, size: 20),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _miniStat('Lvl', '12', AppColors.primary),
-              _miniStat('XP', '750', AppColors.tertiary),
-              _miniStat('Streak', '7', AppColors.secondaryFixed),
-              _miniStat('Badge', '14', AppColors.secondaryContainer),
+              _miniStat('Level', '7'),
+              _miniStat('XP', '750'),
+              _miniStat('Streak', '7🔥'),
+              _miniStat('Rank', '#42'),
             ],
           ),
         ],
@@ -105,10 +315,13 @@ class ProfilTab extends StatelessWidget {
     );
   }
 
-  Widget _miniStat(String label, String value, Color color) {
+  Widget _miniStat(String label, String value) {
     return Column(
       children: [
-        Text(value, style: AppText.headlineMd().copyWith(color: color, fontSize: 22)),
+        Text(
+          value,
+          style: AppText.titleLg().copyWith(color: AppColors.primary),
+        ),
         Text(
           label,
           style: AppText.labelCaps().copyWith(
@@ -162,13 +375,17 @@ class ProfilTab extends StatelessWidget {
                     color: AppColors.onSurfaceVariant,
                     fontSize: 10,
                   ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(value, style: AppText.headlineMd().copyWith(color: color, fontSize: 20)),
+          Text(
+            value,
+            style: AppText.titleLg().copyWith(color: color, fontSize: 20),
+          ),
           Text(
             sub,
             style: AppText.bodyMd().copyWith(
@@ -183,10 +400,10 @@ class ProfilTab extends StatelessWidget {
 
   Widget _badges() {
     final badges = [
-      ('7-Day Streak', Icons.local_fire_department, AppColors.secondaryFixed, true),
-      ('Quran Reader', Icons.menu_book, AppColors.primary, true),
-      ('Early Bird', Icons.wb_twilight, AppColors.tertiary, true),
-      ('Generous', Icons.volunteer_activism, AppColors.secondaryContainer, false),
+      ('First Wudu', Icons.water_drop, AppColors.primary, true),
+      ('7 Day Streak', Icons.local_fire_department, AppColors.secondaryFixed, true),
+      ('Quran Reader', Icons.menu_book, AppColors.tertiary, false),
+      ('Dawn Patrol', Icons.wb_twilight, AppColors.primaryFixed, false),
     ];
     return GlassPanel(
       child: Column(
