@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import 'welcome_pejuang.dart';
+import 'dashboard_shell.dart';
 
 /// Splash screen — pulsing shield + animated loading bar.
 /// Mirrors splash_screen_animated_loading_sequence.
@@ -35,13 +37,17 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _navTimer = Timer(const Duration(milliseconds: 2400), () {
+    _navTimer = Timer(const Duration(milliseconds: 2400), () async {
       if (mounted) {
+        final prefs = await SharedPreferences.getInstance();
+        final done = prefs.getBool('onboarding_done') ?? false;
         _fadeCtl.forward().then((_) {
           if (mounted) {
             Navigator.of(context).pushReplacement(
               PageRouteBuilder(
-                pageBuilder: (_, __, ___) => const WelcomePejuangScreen(),
+                pageBuilder: (_, __, ___) => done
+                    ? const DashboardShell()
+                    : const WelcomePejuangScreen(),
                 transitionsBuilder: (_, anim, __, child) =>
                     FadeTransition(opacity: anim, child: child),
                 transitionDuration: const Duration(milliseconds: 400),

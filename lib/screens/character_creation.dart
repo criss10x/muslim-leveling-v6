@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import 'dashboard_shell.dart';
@@ -108,7 +109,14 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                       trailingIcon: Icons.arrow_forward,
                       onPressed: _city == null || _nickname.text.isEmpty
                           ? null
-                          : () {
+                          : () async {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.setBool('onboarding_done', true);
+                              await prefs.setString(
+                                  'nickname', _nickname.text.trim());
+                              await prefs.setString('city', _city!);
+                              if (!context.mounted) return;
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(
                                   builder: (_) => const DashboardShell(),
