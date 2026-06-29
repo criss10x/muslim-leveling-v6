@@ -47,6 +47,11 @@ class StreakState {
   final int current, best;
   final String lastDate;
   StreakState({this.current = 0, this.best = 0, this.lastDate = ''});
+  StreakState copyWith({int? current, int? best, String? lastDate}) => StreakState(
+        current: current ?? this.current,
+        best: best ?? this.best,
+        lastDate: lastDate ?? this.lastDate,
+      );
   factory StreakState.fromMap(Map<String, dynamic> m) => StreakState(
         current: m['current'] ?? 0, best: m['best'] ?? 0, lastDate: m['lastDate'] ?? '');
   Map<String, dynamic> toMap() => {'current': current, 'best': best, 'lastDate': lastDate};
@@ -224,15 +229,21 @@ class GameService {
   }
 
   // ─── Sunnah time-window (port V3) ───
+  static bool _isTimeBetweenWrap(String now, String start, String end) {
+    final n = _toMin(now), s = _toMin(start), e = _toMin(end);
+    if (s <= e) return n >= s && n <= e;
+    return n >= s || n <= e;
+  }
+
   static bool isSunnahOnTime(String prayer, Timings t) {
     final now = nowHHmm();
     switch (prayer) {
       case 'dhuha': return isAfter(now, addMin(t.terbit, 15)) && isBefore(now, t.dzuhur);
-      case 'tahajjud': return isAfter(now, t.isya) || isBefore(now, t.imsak);
+      case 'tahajjud': return _isTimeBetweenWrap(now, t.isya, t.imsak);
       case 'rawatib_subuh_qobliyah': return isAfter(now, t.subuh) && isBefore(now, t.terbit);
-      case 'rawatib_dzuhur_qobliyah': return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
+      case 'rawatib_dzuhur_qobliyah': return isAfter(now, t.subuh) && isBefore(now, t.dzuhur);
       case "rawatib_dzuhur_ba'diyyah": return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
-      case 'rawatib_ashar_qobliyah': return isAfter(now, t.ashar) && isBefore(now, t.maghrib);
+      case 'rawatib_ashar_qobliyah': return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
       case "rawatib_maghrib_ba'diyyah": return isAfter(now, t.maghrib) && isBefore(now, t.isya);
       case "rawatib_isya_ba'diyyah": return isAfter(now, t.isya) && isBefore(now, addMin(t.isya, 300));
       default: return true;
@@ -241,11 +252,11 @@ class GameService {
 
   static String sunnahHint(String prayer) => switch (prayer) {
     'dhuha' => 'Dhuha bisa setelah matahari naik (±15 min setelah terbit) sampai sebelum Dzuhur.',
-    'tahajjud' => 'Tahajjud waktu setelah Isya sampai sebelum Imsak (utamanya sepertiga malam terakhir).',
+    'tahajjud' => 'Tahajjud waktu setelah Isya sampai sebelum Imsak.',
     'rawatib_subuh_qobliyah' => 'Qobliyah Subuh waktunya sama dengan sholat Subuh (dari Subuh sampai Terbit).',
-    'rawatib_dzuhur_qobliyah' => 'Qobliyah Dzuhur waktunya dari Dzuhur sampai Ashar.',
+    'rawatib_dzuhur_qobliyah' => 'Qobliyah Dzuhur waktunya setelah Subuh sampai sebelum adzan Dzuhur.',
     "rawatib_dzuhur_ba'diyyah" => "Ba'diyah Dzuhur waktunya setelah Dzuhur sampai sebelum Ashar.",
-    'rawatib_ashar_qobliyah' => 'Qobliyah Ashar waktunya setelah adzan Ashar sampai adzan Maghrib.',
+    'rawatib_ashar_qobliyah' => 'Qobliyah Ashar waktunya setelah Dzuhur sampai sebelum adzan Ashar.',
     "rawatib_maghrib_ba'diyyah" => "Ba'diyah Maghrib waktunya setelah Maghrib sampai sebelum Isya.",
     "rawatib_isya_ba'diyyah" => "Ba'diyah Isya waktunya setelah Isya sampai tengah malam.",
     _ => 'Coba lagi nanti ya.',
@@ -277,6 +288,75 @@ class GameService {
     if (s.lastDate == today) return s;
     final cur = s.lastDate == yest ? s.current + 1 : 1;
     return StreakState(current: cur, best: cur > s.best ? cur : s.best, lastDate: today);
+  }
+
+  static String _adzanFor(String prayer, Timings t) => switch (prayer) {
+    'subuh' => t.subuh, 'dzuhur' => t.dzuhur, 'ashar' => t.ashar,
+    'maghrib' => t.maghrib, 'isya' => t.isya, _ => '',
+  };
+
+  /// Re-evaluate daily quest progress from today's prayer logs.
+  /// Preserves claimed quests (they stay as-is).
+  static List<Quest> _reevaluateQuests(
+      List<Quest> current, List<PrayerLog> logs, StreakState hero, Timings t) {
+    final today = todayStr();
+    final todayLogs = logs.where((l) => l.date == today).toList();
+    final wajibLogs = todayLogs
+        .where((l) => wajibList.contains(l.prayer))
+        .toList();
+
+    PrayerLog? findLog(String prayer) {
+      for (final l in todayLogs) {
+        if (l.prayer == prayer) return l;
+      }
+      return null;
+    }
+
+    return current.map((q) {
+      if (q.claimed) return q;
+      var prog = 0;
+      var done = false;
+      switch (q.id) {
+        case 'quest_subuh_tepat':
+          final subuhLog = findLog('subuh');
+          if (subuhLog != null && t.subuh.isNotEmpty &&
+              minDiff(subuhLog.time, t.subuh) <= 30) {
+            prog = 1;
+            done = true;
+          }
+        case 'quest_five_rings':
+          if (wajibList.every((p) =>
+              todayLogs.any((l) => l.prayer == p))) {
+            prog = 1;
+            done = true;
+          }
+        case 'quest_timely_prayers':
+          prog = wajibLogs.where((l) {
+            final adzan = _adzanFor(l.prayer, t);
+            return adzan.isNotEmpty && minDiff(l.time, adzan) <= 10;
+          }).length.clamp(0, 3);
+          done = prog >= 3;
+        case 'quest_dhuha_before_dzuhur':
+          final dhuhaLog = findLog('dhuha');
+          if (dhuhaLog != null && isBefore(dhuhaLog.time, t.dzuhur)) {
+            prog = 1;
+            done = true;
+          }
+        case 'quest_tilawah_today':
+          if (todayLogs.any((l) => l.prayer == 'tilawah')) {
+            prog = 1;
+            done = true;
+          }
+        case 'quest_rawatib_two':
+          final cnt = todayLogs.where((l) => l.prayer.startsWith('rawatib')).length;
+          prog = cnt.clamp(0, 2);
+          done = cnt >= 2;
+        case 'quest_hero_streak_7':
+          prog = hero.current.clamp(0, 7);
+          done = hero.current >= 7;
+      }
+      return q.copyWith(progress: prog, completed: done);
+    }).toList();
   }
 
   // ─── Log prayer (core V3 logic) ───
@@ -377,15 +457,63 @@ class GameService {
 
   static Future<GameState> unlogPrayer(String prayer) async {
     final today = todayStr();
-    final log = _cache.prayerLog.where((l) => l.date == today && l.prayer == prayer);
-    if (log.isEmpty) return _cache;
+    final logItem = _cache.prayerLog
+        .where((l) => l.date == today && l.prayer == prayer)
+        .firstOrNull;
+    if (logItem == null) return _cache;
+
     var xpLost = switch (prayer) {
-      'subuh' => 30, 'dzuhur' => 20, 'ashar' => 20, 'maghrib' => 25, 'isya' => 25, _ => 15,
+      'subuh' => 30, 'dzuhur' => 20, 'ashar' => 20,
+      'maghrib' => 25, 'isya' => 25, _ => 15,
     };
-    // ponytail: simple XP deduction, no quest re-eval
+
+    // Apakah sebelum unlog ini 5/5 sudah lengkap? Kalau iya, prayer ini yang
+    // memicu hero bonus +50 XP.
+    final wasFullBefore = wajibList.every((p) =>
+        _cache.prayerLog.any((l) => l.date == today && l.prayer == p));
+    if (wasFullBefore) xpLost += 50;
+
+    // Kembalikan timely bonus +15 XP kalau wajib dan masih ≤30 menit setelah adzan.
+    if (logItem.type == 'wajib') {
+      final adzan = _adzanFor(prayer, _cache.timings);
+      if (adzan.isNotEmpty && minDiff(logItem.time, adzan) <= 30) xpLost += 15;
+    }
+
+    final newXp = (_cache.xp - xpLost).clamp(0, 999999);
+    final newInfo = getLevelInfo(newXp);
+    final updatedLogs = _cache.prayerLog
+        .where((l) => !(l.date == today && l.prayer == prayer))
+        .toList();
+
+    // Revert streaks (hanya untuk hari ini, karena unlogPrayer V1 hanya hari ini)
+    var hero = _cache.heroStreak;
+    var pstr = Map<String, StreakState>.from(_cache.perPrayerStreaks);
+    var tilawah = _cache.tilawahStreak;
+
+    if (logItem.type == 'wajib' && wajibList.contains(prayer)) {
+      final s = pstr[prayer] ?? StreakState();
+      pstr[prayer] = s.copyWith(
+          current: (s.current - 1).clamp(0, 999999), lastDate: '');
+    }
+    if (wasFullBefore) {
+      hero = hero.copyWith(
+          current: (hero.current - 1).clamp(0, 999999), lastDate: '');
+    }
+    if (prayer == 'tilawah') {
+      tilawah = tilawah.copyWith(
+          current: (tilawah.current - 1).clamp(0, 999999), lastDate: '');
+    }
+
+    final quests = _reevaluateQuests(_cache.quests, updatedLogs, hero, _cache.timings);
+
     final newState = _cache.copyWith(
-      xp: (_cache.xp - xpLost).clamp(0, 999999),
-      prayerLog: _cache.prayerLog.where((l) => !(l.date == today && l.prayer == prayer)).toList(),
+      xp: newXp,
+      level: newInfo.level,
+      prayerLog: updatedLogs,
+      heroStreak: hero,
+      perPrayerStreaks: pstr,
+      tilawahStreak: tilawah,
+      quests: quests,
     );
     await _save(newState);
     return newState;
