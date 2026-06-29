@@ -5,8 +5,9 @@ import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
 
-/// Jadwal Sholat — hero icons edition. Next prayer + daily schedule list.
-/// Live data from api.myquran.com (Kemenag proxy).
+/// Jadwal Sholat — V3 logic ported to V1 design.
+/// Shows next prayer countdown, 5 daily prayers with logged status,
+/// and info card about data source.
 class JadwalTab extends StatefulWidget {
   const JadwalTab({super.key});
 
@@ -33,7 +34,6 @@ class _JadwalTabState extends State<JadwalTab> {
       _cityId = loc.id;
       _cityName = loc.name;
     } else {
-      // ponytail: default Jakarta. User can change via Profil.
       final p = await SharedPreferences.getInstance();
       await p.setString('city_id', _cityId);
       await p.setString('city_name', _cityName);
@@ -48,13 +48,16 @@ class _JadwalTabState extends State<JadwalTab> {
     });
     final j = await PrayerService.fetchSchedule(cityId: _cityId);
     if (!mounted) return;
-    // ponytail: save timings to GameService so Home tab can use live prayer logic
     if (j != null) {
       await GameService.setTimings(Timings(
-        imsak: j['imsak'] ?? '04:30', subuh: j['subuh'] ?? '04:42',
-        terbit: j['terbit'] ?? '05:55', dhuha: j['dhuha'] ?? '06:20',
-        dzuhur: j['dzuhur'] ?? '12:01', ashar: j['ashar'] ?? '15:20',
-        maghrib: j['maghrib'] ?? '17:55', isya: j['isya'] ?? '19:08',
+        imsak: j['imsak'] ?? '04:30',
+        subuh: j['subuh'] ?? '04:42',
+        terbit: j['terbit'] ?? '05:55',
+        dhuha: j['dhuha'] ?? '06:20',
+        dzuhur: j['dzuhur'] ?? '12:01',
+        ashar: j['ashar'] ?? '15:20',
+        maghrib: j['maghrib'] ?? '17:55',
+        isya: j['isya'] ?? '19:08',
       ));
     }
     setState(() {
@@ -70,10 +73,47 @@ class _JadwalTabState extends State<JadwalTab> {
 
   String _todayLabel() {
     final d = DateTime.now();
-    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
     return '${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  /// Compute next prayer name, time, and countdown (port V3 logic).
+  ({String name, String time, String countdown}) _nextPrayer() {
+    final j = _jadwal;
+    if (j == null || _loading) {
+      return (name: '—', time: '--:--', countdown: 'memuat...');
+    }
+
+    final now = TimeOfDay.now();
+    final prayers = [
+      ('Subuh', j['subuh'] ?? ''),
+      ('Dzuhur', j['dzuhur'] ?? ''),
+      ('Ashar', j['ashar'] ?? ''),
+      ('Maghrib', j['maghrib'] ?? ''),
+      ('Isya', j['isya'] ?? ''),
+    ];
+
+    final minsNow = now.hour * 60 + now.minute;
+
+    for (final p in prayers) {
+      if (p.$2.isEmpty) continue;
+      final parts = p.$2.split(':');
+      if (parts.length != 2) continue;
+      final h = int.tryParse(parts[0]) ?? 0;
+      final m = int.tryParse(parts[1]) ?? 0;
+      final minsP = h * 60 + m;
+      if (minsP > minsNow) {
+        final diff = minsP - minsNow;
+        final hh = diff ~/ 60;
+        final mm = diff % 60;
+        final countdown = hh > 0 ? '${hh}j ${mm}m lagi' : '${mm}m lagi';
+        return (name: p.$1, time: p.$2, countdown: countdown);
+      }
+    }
+
+    // All passed → Subuh tomorrow
+    return (name: 'Subuh', time: j['subuh'] ?? '04:42', countdown: 'besok');
   }
 
   @override
@@ -111,7 +151,7 @@ class _JadwalTabState extends State<JadwalTab> {
               const SizedBox(height: AppSpacing.lg),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: _monthlyTracker(),
+                child: _infoCard(),
               ),
             ],
           ),
@@ -123,23 +163,13 @@ class _JadwalTabState extends State<JadwalTab> {
   Widget _pill() {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 4,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.secondaryContainer.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.secondaryContainer.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: AppColors.secondaryContainer.withValues(alpha: 0.3)),
         ),
-        child: Text(
-          'JADWAL SHOLAT',
-          style: AppText.labelCaps().copyWith(
-            color: AppColors.secondaryContainer,
-          ),
-        ),
+        child: Text('JADWAL SHOLAT', style: AppText.labelCaps().copyWith(color: AppColors.secondaryContainer)),
       ),
     );
   }
@@ -160,12 +190,7 @@ class _JadwalTabState extends State<JadwalTab> {
           const SizedBox(height: 4),
           Row(
             children: [
-              Text(
-                _todayLabel(),
-                style: AppText.bodyMd().copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-              ),
+              Text(_todayLabel(), style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6),
                 child: Text('•', style: TextStyle(color: AppColors.outlineVariant)),
@@ -175,9 +200,7 @@ class _JadwalTabState extends State<JadwalTab> {
               Expanded(
                 child: Text(
                   _cityName,
-                  style: AppText.bodyMd().copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
+                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -192,9 +215,7 @@ class _JadwalTabState extends State<JadwalTab> {
   Widget _qiblaButton() {
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.secondaryContainer, AppColors.secondaryFixed],
-        ),
+        gradient: const LinearGradient(colors: [AppColors.secondaryContainer, AppColors.secondaryFixed]),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
           BoxShadow(
@@ -206,10 +227,7 @@ class _JadwalTabState extends State<JadwalTab> {
       ),
       padding: const EdgeInsets.all(2),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.secondaryContainer,
           borderRadius: BorderRadius.circular(AppRadius.xl - 2),
@@ -218,12 +236,7 @@ class _JadwalTabState extends State<JadwalTab> {
           children: [
             const Icon(Icons.explore, size: 24, color: AppColors.onSecondaryContainer),
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Kompas Kiblat',
-              style: AppText.titleLg().copyWith(
-                color: AppColors.onSecondaryContainer,
-              ),
-            ),
+            Text('Kompas Kiblat', style: AppText.titleLg().copyWith(color: AppColors.onSecondaryContainer)),
             const Spacer(),
             const Icon(Icons.arrow_forward, color: AppColors.onSecondaryContainer),
           ],
@@ -233,51 +246,7 @@ class _JadwalTabState extends State<JadwalTab> {
   }
 
   Widget _nextPrayerCard() {
-    // Compute next prayer from live data
-    final j = _jadwal;
-    String nextName = 'Ashar';
-    String nextTime = '15:12';
-    String countdown = 'memuat...';
-
-    if (j != null && !_loading) {
-      final now = TimeOfDay.now();
-      final prayers = [
-        ('Subuh', j['subuh'] ?? ''),
-        ('Dzuhur', j['dzuhur'] ?? ''),
-        ('Ashar', j['ashar'] ?? ''),
-        ('Maghrib', j['maghrib'] ?? ''),
-        ('Isya', j['isya'] ?? ''),
-      ];
-      String? found;
-      for (final p in prayers) {
-        if (p.$2.isEmpty) continue;
-        final parts = p.$2.split(':');
-        if (parts.length != 2) continue;
-        final h = int.tryParse(parts[0]) ?? 0;
-        final m = int.tryParse(parts[1]) ?? 0;
-        final t = TimeOfDay(hour: h, minute: m);
-        final minsNow = now.hour * 60 + now.minute;
-        final minsP = t.hour * 60 + t.minute;
-        if (minsP > minsNow) {
-          found = '${p.$1}|${p.$2}|${minsP - minsNow}';
-          break;
-        }
-      }
-      if (found != null) {
-        final sp = found.split('|');
-        nextName = sp[0];
-        nextTime = sp[1];
-        final diff = int.tryParse(sp[2]) ?? 0;
-        final hh = diff ~/ 60;
-        final mm = diff % 60;
-        countdown = hh > 0 ? '${hh}j ${mm}m lagi' : '${mm}m lagi';
-      } else {
-        // All prayers passed — next is Subuh tomorrow
-        nextName = 'Subuh';
-        nextTime = j['subuh'] ?? '04:32';
-        countdown = 'besok';
-      }
-    }
+    final next = _nextPrayer();
 
     return NeonPulse(
       color: AppColors.primary,
@@ -325,40 +294,23 @@ class _JadwalTabState extends State<JadwalTab> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'SELANJUTNYA',
-                                style: AppText.labelCaps().copyWith(color: AppColors.primary),
-                              ),
+                              Text('SHOLAT BERIKUTNYA', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
                               const SizedBox(height: 2),
-                              Text(nextName, style: AppText.headlineLg()),
+                              Text(next.name, style: AppText.headlineLg()),
                             ],
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: 6,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceBright.withValues(alpha: 0.8),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: AppColors.secondaryContainer.withValues(alpha: 0.5),
-                              ),
+                              border: Border.all(color: AppColors.secondaryContainer.withValues(alpha: 0.5)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(
-                                  Icons.timer,
-                                  size: 14,
-                                  color: AppColors.secondaryFixed,
-                                ),
+                                const Icon(Icons.timer, size: 14, color: AppColors.secondaryFixed),
                                 const SizedBox(width: 4),
-                                Text(
-                                  countdown,
-                                  style: AppText.labelCaps().copyWith(
-                                    color: AppColors.secondaryFixed,
-                                  ),
-                                ),
+                                Text(next.countdown, style: AppText.labelCaps().copyWith(color: AppColors.secondaryFixed)),
                               ],
                             ),
                           ),
@@ -373,7 +325,7 @@ class _JadwalTabState extends State<JadwalTab> {
                               colors: [AppColors.primary, AppColors.primaryFixed],
                             ).createShader(rect),
                             child: Text(
-                              nextTime,
+                              next.time,
                               style: AppText.displayHero(40).copyWith(color: Colors.white),
                             ),
                           ),
@@ -383,15 +335,9 @@ class _JadwalTabState extends State<JadwalTab> {
                             decoration: BoxDecoration(
                               color: AppColors.primaryContainer.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.primaryContainer.withValues(alpha: 0.5),
-                              ),
+                              border: Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.5)),
                             ),
-                            child: const Icon(
-                              Icons.notifications_active,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
+                            child: const Icon(Icons.notifications_active, color: AppColors.primary, size: 20),
                           ),
                         ],
                       ),
@@ -404,140 +350,152 @@ class _JadwalTabState extends State<JadwalTab> {
   Widget _schedule() {
     final j = _jadwal;
     final now = TimeOfDay.now();
+    final next = _nextPrayer();
+    final minsNow = now.hour * 60 + now.minute;
 
-    (String, String, IconData, bool, bool) row(String name, String time, IconData icon) {
-      if (time.isEmpty) return (name, '--:--', icon, false, false);
+    ({String name, String id, String time, IconData icon, bool isNext, bool isLogged}) row(
+      String name,
+      String id,
+      String time,
+      IconData icon,
+    ) {
+      if (time.isEmpty) return (name: name, id: id, time: '--:--', icon: icon, isNext: false, isLogged: false);
       final parts = time.split(':');
-      if (parts.length != 2) return (name, time, icon, false, false);
+      if (parts.length != 2) return (name: name, id: id, time: time, icon: icon, isNext: false, isLogged: false);
       final h = int.tryParse(parts[0]) ?? 0;
       final m = int.tryParse(parts[1]) ?? 0;
       final mins = h * 60 + m;
-      final minsNow = now.hour * 60 + now.minute;
-      final completed = mins < minsNow;
-      final active = !completed &&
-          (mins - minsNow) <= 30; // active if within next 30 min
-      return (name, time, icon, completed, active);
+      final isNext = name == next.name && mins > minsNow;
+      final isLogged = GameService.isPrayerCheckedToday(id);
+      return (name: name, id: id, time: time, icon: icon, isNext: isNext, isLogged: isLogged);
     }
 
     final items = [
-      row('Subuh', j?['subuh'] ?? '', Icons.wb_twilight),
-      row('Dzuhur', j?['dzuhur'] ?? '', Icons.wb_sunny),
-      row('Ashar', j?['ashar'] ?? '', Icons.wb_cloudy),
-      row('Maghrib', j?['maghrib'] ?? '', Icons.wb_twilight),
-      row('Isya', j?['isya'] ?? '', Icons.nightlight),
+      row('Subuh', 'subuh', j?['subuh'] ?? '', Icons.wb_twilight),
+      row('Dzuhur', 'dzuhur', j?['dzuhur'] ?? '', Icons.wb_sunny),
+      row('Ashar', 'ashar', j?['ashar'] ?? '', Icons.wb_cloudy),
+      row('Maghrib', 'maghrib', j?['maghrib'] ?? '', Icons.wb_twilight),
+      row('Isya', 'isya', j?['isya'] ?? '', Icons.nightlight),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'JADWAL HARI INI',
-          style: AppText.labelCaps().copyWith(color: AppColors.primary),
-        ),
+        Text('5 WAKTU SHOLAT', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
         const SizedBox(height: AppSpacing.sm),
         ...items.map((it) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: _scheduleRow(it.$1, it.$2, it.$3, it.$4, it.$5),
+              child: _scheduleRow(it.name, it.time, it.icon, it.isNext, it.isLogged),
             )),
       ],
     );
   }
 
-  Widget _scheduleRow(
-    String name,
-    String time,
-    IconData icon,
-    bool completed,
-    bool active,
-  ) {
-    final color = active
+  Widget _scheduleRow(String name, String time, IconData icon, bool isNext, bool isLogged) {
+    final accentColor = isNext
         ? AppColors.primary
-        : (completed ? AppColors.onSurfaceVariant : AppColors.onSurface);
-    return Opacity(
-      opacity: completed ? 0.75 : 1.0,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.primary.withValues(alpha: 0.1)
-              : AppColors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: active
-              ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
-              : Border.all(
-                  color: AppColors.outlineVariant.withValues(alpha: 0.2),
+        : isLogged
+            ? AppColors.secondaryFixed
+            : AppColors.onSurface;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isNext
+            ? AppColors.primary.withValues(alpha: 0.1)
+            : isLogged
+                ? AppColors.secondaryContainer.withValues(alpha: 0.06)
+                : AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: isNext
+            ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
+            : isLogged
+                ? Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.3))
+                : Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+              border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+            ),
+            child: Icon(icon, color: accentColor, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: AppText.titleLg().copyWith(color: accentColor),
                 ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 20),
+                if (isNext)
+                  Text(
+                    'Berikutnya',
+                    style: AppText.labelCaps().copyWith(
+                      color: AppColors.primary.withValues(alpha: 0.8),
+                      fontSize: 9,
+                    ),
+                  )
+                else if (isLogged)
+                  Text(
+                    '✓ Sudah dilog',
+                    style: AppText.labelCaps().copyWith(
+                      color: AppColors.secondaryFixed.withValues(alpha: 0.8),
+                      fontSize: 9,
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              name,
-              style: AppText.titleLg().copyWith(
-                color: color,
-                decoration: completed ? TextDecoration.lineThrough : null,
-              ),
+          ),
+          Text(
+            time,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: accentColor,
             ),
-            const Spacer(),
-            Text(
-              time,
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            if (completed) ...[
-              const SizedBox(width: AppSpacing.xs),
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
-            ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _monthlyTracker() {
+  Widget _infoCard() {
     return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'STREAK BULANAN',
-            style: AppText.labelCaps().copyWith(color: AppColors.primary),
+          Row(
+            children: [
+              const Icon(Icons.info_outline, color: AppColors.secondaryFixed, size: 16),
+              const SizedBox(width: 4),
+              Text('Info', style: AppText.titleLg().copyWith(color: AppColors.secondaryFixed, fontSize: 13)),
+            ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: List.generate(28, (i) {
-              final filled = i < 12;
-              return Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: filled
-                      ? AppColors.primary.withValues(alpha: 0.6)
-                      : AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(4),
+          Text(
+            'Jadwal sholat diambil dari data KEMENAG (Kementerian Agama RI) via api.myquran.com, berdasarkan kota yang dipilih di profil. Data otomatis ter-update saat tab dibuka.',
+            style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 11, height: 1.5),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              const Icon(Icons.lightbulb_outline, color: AppColors.primary, size: 14),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'Untuk ganti kota, buka tab Profil → pilih lokasi.',
+                  style: AppText.bodyMd().copyWith(color: AppColors.primary, fontSize: 11, height: 1.5),
                 ),
-              );
-            }),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            '12/28 hari istiqomah',
-            style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+              ),
+            ],
           ),
         ],
       ),
