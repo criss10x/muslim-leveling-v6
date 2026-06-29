@@ -66,7 +66,6 @@ class _HomeTabState extends State<HomeTab> {
 
   Future<void> _fetchTimingsSilently() async {
     try {
-      if (GameService.current.timings.subuh != '04:42') return;
       final loc = await PrayerService.loadLocation();
       if (loc == null) return;
       final j = await PrayerService.fetchSchedule(cityId: loc.id).timeout(
@@ -826,7 +825,7 @@ class _HomeTabState extends State<HomeTab> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (_) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -887,11 +886,11 @@ class _RingsPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 8
           ..strokeCap = StrokeCap.round;
-        final sweep = 2 * 3.14159 * (1 - progresses[i]);
+        final sweep = 2 * 3.14159 * progresses[i];
         canvas.drawArc(
           Rect.fromCircle(center: center, radius: radii[i]),
           -3.14159 / 2,
-          2 * 3.14159 - sweep,
+          sweep,
           false,
           paintFg,
         );
