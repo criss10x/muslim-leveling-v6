@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
+import 'qibla_screen.dart';
 
 /// Jadwal Sholat — V3 logic ported to V1 design.
 /// Shows next prayer countdown, 5 daily prayers with logged status,
@@ -213,33 +214,43 @@ class _JadwalTabState extends State<JadwalTab> {
   }
 
   Widget _qiblaButton() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppColors.secondaryContainer, AppColors.secondaryFixed]),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondaryContainer.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QiblaScreen(cityName: _cityName),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(2),
+        );
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.secondaryContainer,
-          borderRadius: BorderRadius.circular(AppRadius.xl - 2),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.explore, size: 24, color: AppColors.onSecondaryContainer),
-            const SizedBox(width: AppSpacing.sm),
-            Text('Kompas Kiblat', style: AppText.titleLg().copyWith(color: AppColors.onSecondaryContainer)),
-            const Spacer(),
-            const Icon(Icons.arrow_forward, color: AppColors.onSecondaryContainer),
+          gradient: const LinearGradient(colors: [AppColors.secondaryContainer, AppColors.secondaryFixed]),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.secondaryContainer.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
           ],
+        ),
+        padding: const EdgeInsets.all(2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.secondaryContainer,
+            borderRadius: BorderRadius.circular(AppRadius.xl - 2),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.explore, size: 24, color: AppColors.onSecondaryContainer),
+              const SizedBox(width: AppSpacing.sm),
+              Text('Kompas Kiblat', style: AppText.titleLg().copyWith(color: AppColors.onSecondaryContainer)),
+              const Spacer(),
+              const Icon(Icons.arrow_forward, color: AppColors.onSecondaryContainer),
+            ],
+          ),
         ),
       ),
     );
