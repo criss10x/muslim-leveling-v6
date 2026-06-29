@@ -130,9 +130,9 @@ class _HomeTabState extends State<HomeTab> {
         return _errorScaffold(_error);
       }
       if (_isLoading) {
-        return const Scaffold(
-          backgroundColor: AppColors.background,
-          body: SafeArea(
+        return Container(
+          color: AppColors.background,
+          child: const SafeArea(
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -147,9 +147,9 @@ class _HomeTabState extends State<HomeTab> {
         );
       }
       final info = GameService.getLevelInfo(_state.xp);
-      return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+      return Container(
+      color: AppColors.background,
+      child: SafeArea(
         bottom: false,
         child: RefreshIndicator(
           color: AppColors.primary,
@@ -219,9 +219,9 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _errorScaffold(String message) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+    return Container(
+      color: AppColors.background,
+      child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
