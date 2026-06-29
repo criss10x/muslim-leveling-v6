@@ -4,7 +4,7 @@ import 'home_tab.dart';
 import 'jadwal_tab.dart';
 import 'belajar_tab.dart';
 import 'profil_tab.dart';
-import 'statistik_sheet.dart';
+
 
 /// Main shell — bottom nav with 4 tabs and the persistent top app bar.
 class DashboardShell extends StatefulWidget {
@@ -30,16 +30,7 @@ class _DashboardShellState extends State<DashboardShell> {
           ProfilTab(),
         ],
       ),
-      floatingActionButton: _tab == 0
-          ? FloatingActionButton(
-              onPressed: () => StatistikSheet.show(context),
-              backgroundColor: AppColors.surfaceContainerHigh,
-              child: const Icon(
-                Icons.bar_chart,
-                color: AppColors.primary,
-              ),
-            )
-          : null,
+      floatingActionButton: null,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.background.withValues(alpha: 0.95),

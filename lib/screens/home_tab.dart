@@ -124,10 +124,11 @@ class _HomeTabState extends State<HomeTab> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(child: _countdownCard()),
                     const SizedBox(width: AppSpacing.md),
-                    Flexible(child: _streakCard()),
+                    Expanded(child: _streakCard()),
                   ],
                 ),
               ),
@@ -223,25 +224,31 @@ class _HomeTabState extends State<HomeTab> {
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('CURRENT RANK', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
-                      const SizedBox(height: 4),
-                      Text(
-                        GameService.getRankTitle(info.level),
-                        style: AppText.headlineMd().copyWith(
-                          color: AppColors.primary,
-                          shadows: [Shadow(color: AppColors.primary.withValues(alpha: 0.5), blurRadius: 12)],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('CURRENT RANK', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
+                        const SizedBox(height: 4),
+                        Text(
+                          GameService.getRankTitle(info.level),
+                          style: AppText.headlineMd().copyWith(
+                            color: AppColors.primary,
+                            shadows: [Shadow(color: AppColors.primary.withValues(alpha: 0.5), blurRadius: 12)],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        '$_nickname • Lv ${info.level}',
-                        style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
-                      ),
-                    ],
+                        Text(
+                          '$_nickname • Lv ${info.level}',
+                          style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
                     decoration: BoxDecoration(
@@ -250,6 +257,7 @@ class _HomeTabState extends State<HomeTab> {
                       border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.local_fire_department, size: 16, color: AppColors.secondaryContainer),
                         const SizedBox(width: 4),
@@ -262,11 +270,23 @@ class _HomeTabState extends State<HomeTab> {
               const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text('XP PROGRESS', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
-                  Text(
-                    '${info.xpInCurrentLevel} / ${info.xpNeededForNextLevel}',
-                    style: AppText.bodyMd().copyWith(color: AppColors.primary),
+                  Expanded(
+                    child: Text(
+                      'XP PROGRESS',
+                      style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Flexible(
+                    child: Text(
+                      '${info.xpInCurrentLevel} / ${info.xpNeededForNextLevel}',
+                      style: AppText.bodyMd().copyWith(color: AppColors.primary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -278,6 +298,8 @@ class _HomeTabState extends State<HomeTab> {
                 child: Text(
                   '${info.xpNeededForNextLevel - info.xpInCurrentLevel} XP to Next Rank',
                   style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -321,17 +343,37 @@ class _HomeTabState extends State<HomeTab> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withValues(alpha: 0.6),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.surfaceContainer.withValues(alpha: 0.8),
+            AppColors.surfaceContainer.withValues(alpha: 0.4),
+          ],
+        ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border(left: BorderSide(color: AppColors.secondaryFixed, width: 4)),
-        boxShadow: [BoxShadow(color: AppColors.secondaryFixed.withValues(alpha: 0.2), blurRadius: 12)],
+        border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.3)),
+        boxShadow: [BoxShadow(color: AppColors.secondaryFixed.withValues(alpha: 0.15), blurRadius: 16, offset: const Offset(0, 6))],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(Icons.local_fire_department, color: AppColors.secondaryFixed),
-          const SizedBox(height: 4),
-          Text('${_state.heroStreak.current}', style: AppText.headlineMd().copyWith(color: AppColors.secondaryFixed)),
-          Text('HARI\nSTREAK', textAlign: TextAlign.center,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.secondaryFixed.withValues(alpha: 0.15),
+              border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.4)),
+              boxShadow: [BoxShadow(color: AppColors.secondaryFixed.withValues(alpha: 0.3), blurRadius: 12)],
+            ),
+            child: const Icon(Icons.local_fire_department, color: AppColors.secondaryFixed, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text('${_state.heroStreak.current}', style: AppText.displayHero(28).copyWith(color: AppColors.secondaryFixed, height: 1.0)),
+          const SizedBox(height: 2),
+          Text('HARI STREAK', textAlign: TextAlign.center,
               style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
         ],
       ),

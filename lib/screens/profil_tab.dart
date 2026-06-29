@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
+import 'statistik_sheet.dart';
+
 
 /// Profil Pejuang — hero header, stats grid, achievements, settings rows.
 class ProfilTab extends StatefulWidget {
@@ -194,7 +196,13 @@ class _ProfilTabState extends State<ProfilTab> {
             _hero(context),
             const SizedBox(height: AppSpacing.lg),
             _stats(),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.md),
+            HeroButton(
+              label: 'Lihat Statistik',
+              trailingIcon: Icons.bar_chart,
+              onPressed: () => StatistikSheet.show(context),
+            ),
+            const SizedBox(height: AppSpacing.md),
             _badges(),
             const SizedBox(height: AppSpacing.lg),
             _settings(),
