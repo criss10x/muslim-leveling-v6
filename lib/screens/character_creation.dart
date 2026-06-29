@@ -56,6 +56,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(vertical: 16),
                         ),
+                        onChanged: (_) => setState(() {}),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -107,7 +108,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                     HeroButton(
                       label: 'SIMPAN & LANJUT',
                       trailingIcon: Icons.arrow_forward,
-                      onPressed: _city == null || _nickname.text.isEmpty
+                      onPressed: _city == null || _nickname.text.trim().isEmpty
                           ? null
                           : () async {
                               final prefs =

@@ -586,8 +586,15 @@ class _HomeTabState extends State<HomeTab> {
                   ],
                 ),
               ),
-              Icon(completed ? Icons.check_circle : Icons.lock_clock,
-                  color: completed ? AppColors.primary : AppColors.outline, size: 20),
+              Icon(
+                completed
+                    ? Icons.check_circle
+                    : locked
+                        ? Icons.lock_clock
+                        : Icons.radio_button_unchecked,
+                color: completed ? AppColors.primary : (locked ? AppColors.outline : color),
+                size: 20,
+              ),
             ],
           ),
         ),
