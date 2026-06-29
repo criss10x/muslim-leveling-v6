@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
+import '../../services/game_service.dart';
 
 /// Jadwal Sholat — hero icons edition. Next prayer + daily schedule list.
 /// Live data from api.myquran.com (Kemenag proxy).
@@ -47,6 +48,15 @@ class _JadwalTabState extends State<JadwalTab> {
     });
     final j = await PrayerService.fetchSchedule(cityId: _cityId);
     if (!mounted) return;
+    // ponytail: save timings to GameService so Home tab can use live prayer logic
+    if (j != null) {
+      await GameService.setTimings(Timings(
+        imsak: j['imsak'] ?? '04:30', subuh: j['subuh'] ?? '04:42',
+        terbit: j['terbit'] ?? '05:55', dhuha: j['dhuha'] ?? '06:20',
+        dzuhur: j['dzuhur'] ?? '12:01', ashar: j['ashar'] ?? '15:20',
+        maghrib: j['maghrib'] ?? '17:55', isya: j['isya'] ?? '19:08',
+      ));
+    }
     setState(() {
       _loading = false;
       _jadwal = j;

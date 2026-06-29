@@ -1,69 +1,169 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../services/game_service.dart';
+import '../../services/prayer_service.dart';
 import 'naik_level_screen.dart';
 
-/// Home / Dashboard Utama — rank, XP, ritual rings, daily quests, side quest.
-class HomeTab extends StatelessWidget {
+/// Home / Dashboard Utama — live game logic (port V3), design preserved.
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  GameState _state = GameState();
+  String _nickname = 'Pejuang';
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    // ponytail: refresh every 60s so countdown/active prayer updates
+    _tick = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    await GameService.load();
+    await GameService.ensureDailyQuests();
+    final p = await SharedPreferences.getInstance();
+    final loc = await PrayerService.loadLocation();
+    // Fetch timings if not cached today
+    if (loc != null && _state.timings.subuh == '04:42') {
+      // ponytail: default timings — fetch real
+      final j = await PrayerService.fetchSchedule(cityId: loc.id);
+      if (j != null) {
+        await GameService.setTimings(Timings(
+          imsak: j['imsak'] ?? '04:30', subuh: j['subuh'] ?? '04:42',
+          terbit: j['terbit'] ?? '05:55', dhuha: j['dhuha'] ?? '06:20',
+          dzuhur: j['dzuhur'] ?? '12:01', ashar: j['ashar'] ?? '15:20',
+          maghrib: j['maghrib'] ?? '17:55', isya: j['isya'] ?? '19:08',
+        ));
+      }
+    }
+    setState(() {
+      _state = GameService.current;
+      _nickname = p.getString('nickname') ?? 'Pejuang';
+    });
+  }
+
+  Future<void> _togglePrayer(String prayer, String type) async {
+    final isLogged = GameService.isPrayerCheckedToday(prayer);
+    if (isLogged) {
+      // unlog
+      final s = await GameService.unlogPrayer(prayer);
+      setState(() => _state = s);
+      return;
+    }
+    if (type == 'sunnah' && !GameService.isSunnahOnTime(prayer, _state.timings)) {
+      _toast('⏰ ${GameService.sunnahHint(prayer)}');
+      return;
+    }
+    final res = GameService.logPrayer(_state, prayer, type);
+    if (res == null) {
+      _toast('Sholat ini udah dicatat hari ini!');
+      return;
+    }
+    await GameService.logPrayerAsync(prayer, type);
+    setState(() => _state = GameService.current);
+    final (_, xp, levelUp) = res;
+    _toast('+$xp XP!${levelUp ? " 🎉 LEVEL UP!" : ""}');
+    if (levelUp && mounted) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NaikLevelScreen()));
+    }
+  }
+
+  Future<void> _claimQuest(Quest q) async {
+    if (!q.completed || q.claimed) return;
+    final s = await GameService.claimQuest(q.id);
+    setState(() => _state = s);
+    _toast('+${q.xpReward} XP dari quest!');
+  }
+
+  void _toast(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: AppText.bodyMd().copyWith(color: Colors.white)),
+      backgroundColor: AppColors.surfaceContainerHigh,
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 3),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
+    final info = GameService.getLevelInfo(_state.xp);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: 100),
-          children: [
-            _appBar(context),
-            const SizedBox(height: AppSpacing.md),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _heroRank(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Row(
-                children: [
-                  Expanded(child: _countdownCard()),
-                  const SizedBox(width: AppSpacing.md),
-                  Flexible(child: _streakCard()),
-                ],
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: _load,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: 100),
+            children: [
+              _appBar(context),
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _heroRank(info),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _ritualRings(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _prayerQuests(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _bonusQuest(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _sideQuest(context),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _dailyBento(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _levelUpCTA(context),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(child: _countdownCard()),
+                    const SizedBox(width: AppSpacing.md),
+                    Flexible(child: _streakCard()),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _ritualRings(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _prayerQuests(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _bonusQuest(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _questList(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _sideQuest(context),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _dailyBento(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -75,18 +175,13 @@ class HomeTab extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 40, height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.surfaceContainer,
               border: Border.all(color: AppColors.primary, width: 2),
             ),
-            child: const Icon(
-              Icons.shield,
-              size: 20,
-              color: AppColors.primary,
-            ),
+            child: const Icon(Icons.shield, size: 20, color: AppColors.primary),
           ),
           const SizedBox(width: AppSpacing.sm),
           ShaderMask(
@@ -95,11 +190,7 @@ class HomeTab extends StatelessWidget {
             ).createShader(rect),
             child: Text(
               'MUSLIM LEVELING',
-              style: AppText.headlineMd().copyWith(
-                color: Colors.white,
-                fontSize: 18,
-                height: 1.0,
-              ),
+              style: AppText.headlineMd().copyWith(color: Colors.white, fontSize: 18, height: 1.0),
             ),
           ),
           const Spacer(),
@@ -112,26 +203,19 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _heroRank() {
+  Widget _heroRank(LevelInfo info) {
     return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Stack(
         children: [
           Positioned(
-            top: -40,
-            right: -40,
+            top: -40, right: -40,
             child: Container(
-              width: 160,
-              height: 160,
+              width: 160, height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.primary.withValues(alpha: 0.1),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    blurRadius: 60,
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 60)],
               ),
             ),
           ),
@@ -144,51 +228,33 @@ class HomeTab extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'CURRENT RANK',
-                        style: AppText.labelCaps().copyWith(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
+                      Text('CURRENT RANK', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
                       const SizedBox(height: 4),
                       Text(
-                        'Muslim Warrior III',
+                        GameService.getRankTitle(info.level),
                         style: AppText.headlineMd().copyWith(
                           color: AppColors.primary,
-                          shadows: [
-                            Shadow(
-                              color: AppColors.primary.withValues(alpha: 0.5),
-                              blurRadius: 12,
-                            ),
-                          ],
+                          shadows: [Shadow(color: AppColors.primary.withValues(alpha: 0.5), blurRadius: 12)],
                         ),
+                      ),
+                      Text(
+                        '$_nickname • Lv ${info.level}',
+                        style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
                       ),
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: 6,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.outlineVariant.withValues(alpha: 0.5),
-                      ),
+                      border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.local_fire_department,
-                          size: 16,
-                          color: AppColors.secondaryContainer,
-                        ),
+                        const Icon(Icons.local_fire_department, size: 16, color: AppColors.secondaryContainer),
                         const SizedBox(width: 4),
-                        Text(
-                          '7 Hari',
-                          style: AppText.labelCaps(),
-                        ),
+                        Text('${_state.heroStreak.current} Hari', style: AppText.labelCaps()),
                       ],
                     ),
                   ),
@@ -198,28 +264,21 @@ class HomeTab extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Text('XP PROGRESS', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
                   Text(
-                    'XP PROGRESS',
-                    style: AppText.labelCaps().copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                  Text(
-                    '750 / 1000',
+                    '${info.xpInCurrentLevel} / ${info.xpNeededForNextLevel}',
                     style: AppText.bodyMd().copyWith(color: AppColors.primary),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),
-              const NeonProgressBar(progress: 0.75),
+              NeonProgressBar(progress: info.progress),
               const SizedBox(height: 6),
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  '250 XP to Next Rank',
-                  style: AppText.labelCaps().copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
+                  '${info.xpNeededForNextLevel - info.xpInCurrentLevel} XP to Next Rank',
+                  style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant),
                 ),
               ),
             ],
@@ -230,6 +289,11 @@ class HomeTab extends StatelessWidget {
   }
 
   Widget _countdownCard() {
+    final np = GameService.nextPrayerInfo(_state.timings);
+    final parts = np.split('|');
+    final name = parts[0];
+    final time = parts.length > 1 ? parts[1] : '--:--';
+    final countdown = parts.length > 2 ? parts[2] : '';
     return NeonPulse(
       color: AppColors.primary,
       child: Container(
@@ -241,28 +305,13 @@ class HomeTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'NEXT MATCH',
-              style: AppText.labelCaps().copyWith(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 10,
-              ),
-            ),
+            Text('NEXT MATCH', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              'ASHAR',
-              style: AppText.headlineMd().copyWith(color: AppColors.tertiary),
-            ),
+            Text(name.toUpperCase(), style: AppText.headlineMd().copyWith(color: AppColors.tertiary)),
             const SizedBox(height: 4),
-            const Text(
-              '00:42:15',
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 18,
-                color: AppColors.onBackground,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(time, style: const TextStyle(fontFamily: 'monospace', fontSize: 18, color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(countdown, style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
           ],
         ),
       ),
@@ -275,46 +324,28 @@ class HomeTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainer.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border(
-          left: BorderSide(
-            color: AppColors.secondaryFixed,
-            width: 4,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondaryFixed.withValues(alpha: 0.2),
-            blurRadius: 12,
-          ),
-        ],
+        border: Border(left: BorderSide(color: AppColors.secondaryFixed, width: 4)),
+        boxShadow: [BoxShadow(color: AppColors.secondaryFixed.withValues(alpha: 0.2), blurRadius: 12)],
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.local_fire_department,
-            color: AppColors.secondaryFixed,
-          ),
+          const Icon(Icons.local_fire_department, color: AppColors.secondaryFixed),
           const SizedBox(height: 4),
-          Text(
-            '7',
-            style: AppText.headlineMd().copyWith(
-              color: AppColors.secondaryFixed,
-            ),
-          ),
-          Text(
-            'HARI\nSTREAK',
-            textAlign: TextAlign.center,
-            style: AppText.labelCaps().copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 10,
-            ),
-          ),
+          Text('${_state.heroStreak.current}', style: AppText.headlineMd().copyWith(color: AppColors.secondaryFixed)),
+          Text('HARI\nSTREAK', textAlign: TextAlign.center,
+              style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
         ],
       ),
     );
   }
 
   Widget _ritualRings() {
+    final wajib = GameService.checkedWajibToday;
+    final sunnah = GameService.sunnahCountToday;
+    final tilawah = GameService.tilawahDoneToday;
+    final wProgress = (wajib / 5).clamp(0.0, 1.0);
+    final sProgress = (sunnah / 8).clamp(0.0, 1.0);
+    final tProgress = tilawah ? 1.0 : 0.0;
     return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -322,37 +353,27 @@ class HomeTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.track_changes,
-                color: AppColors.primary,
-                size: 16,
-              ),
+              const Icon(Icons.track_changes, color: AppColors.primary, size: 16),
               const SizedBox(width: AppSpacing.xs),
-              Text(
-                'RITUAL RINGS',
-                style: AppText.labelCaps().copyWith(color: AppColors.primary),
-              ),
+              Text('RITUAL RINGS', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               SizedBox(
-                width: 130,
-                height: 130,
-                child: CustomPaint(
-                  painter: _RingsPainter(),
-                ),
+                width: 130, height: 130,
+                child: CustomPaint(painter: _RingsPainter(wProgress, sProgress, tProgress)),
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   children: [
-                    _ringStat('WAJIB', '3/5', AppColors.primary),
+                    _ringStat('WAJIB', '$wajib/5', AppColors.primary),
                     const SizedBox(height: AppSpacing.sm),
-                    _ringStat('SUNNAH', '2/8', AppColors.secondaryFixed),
+                    _ringStat('SUNNAH', '$sunnah/8', AppColors.secondaryFixed),
                     const SizedBox(height: AppSpacing.sm),
-                    _ringStat('TILAWAH', 'Belum', AppColors.tertiary),
+                    _ringStat('TILAWAH', tilawah ? 'Lengkap' : 'Belum', AppColors.tertiary),
                   ],
                 ),
               ),
@@ -367,27 +388,17 @@ class HomeTab extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 12, height: 12,
           decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6),
-            ],
+            color: color, shape: BoxShape.circle,
+            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6)],
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: AppText.labelCaps().copyWith(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 11,
-              ),
-            ),
+            Text(label, style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 11)),
             Text(value, style: AppText.titleLg().copyWith(color: color)),
           ],
         ),
@@ -396,6 +407,14 @@ class HomeTab extends StatelessWidget {
   }
 
   Widget _prayerQuests() {
+    final t = _state.timings;
+    final prayers = [
+      ('Subuh', 'subuh', t.subuh, Icons.wb_twilight),
+      ('Dzuhur', 'dzuhur', t.dzuhur, Icons.wb_sunny),
+      ('Ashar', 'ashar', t.ashar, Icons.wb_cloudy),
+      ('Maghrib', 'maghrib', t.maghrib, Icons.wb_twilight),
+      ('Isya', 'isya', t.isya, Icons.nightlight),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -403,75 +422,68 @@ class HomeTab extends StatelessWidget {
           children: [
             const Icon(Icons.verified, color: AppColors.primary, size: 16),
             const SizedBox(width: AppSpacing.xs),
-            Text(
-              'QUEST SHOLAT HARI INI',
-              style: AppText.labelCaps().copyWith(color: AppColors.primary),
-            ),
+            Text('QUEST SHOLAT HARI INI', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        _prayerRow('Subuh', Icons.check_circle, 'COMPLETED', AppColors.primary, completed: true),
-        const SizedBox(height: AppSpacing.xs),
-        _prayerRow('Dzuhur', Icons.check_circle, 'COMPLETED', AppColors.primary, completed: true),
-        const SizedBox(height: AppSpacing.xs),
-        _prayerRow('Ashar', Icons.radio_button_checked, 'ACTIVE NOW', AppColors.primary, active: true),
-        const SizedBox(height: AppSpacing.xs),
-        _prayerRow('Maghrib', Icons.lock, 'LOCKED', AppColors.onSurfaceVariant, locked: true),
-        const SizedBox(height: AppSpacing.xs),
-        _prayerRow('Isya', Icons.lock, 'LOCKED', AppColors.onSurfaceVariant, locked: true),
+        ...prayers.map((p) {
+          final checked = GameService.isPrayerCheckedToday(p.$2);
+          final active = GameService.isCurrentOrUpcoming(p.$2, t) && !checked;
+          final locked = !checked && !GameService.isPrayerWindowOpen(p.$2, t);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: _prayerRow(p.$1, p.$3, checked, active, locked, () => _togglePrayer(p.$2, 'wajib')),
+          );
+        }),
       ],
     );
   }
 
-  Widget _prayerRow(
-    String name,
-    IconData icon,
-    String status,
-    Color color, {
-    bool completed = false,
-    bool active = false,
-    bool locked = false,
-  }) {
+  Widget _prayerRow(String name, String time, bool completed, bool active, bool locked, VoidCallback onTap) {
+    final color = completed ? AppColors.primary : (active ? AppColors.primary : AppColors.onSurfaceVariant);
     return Opacity(
       opacity: locked ? 0.4 : 1.0,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: active
-              ? AppColors.primary.withValues(alpha: 0.1)
-              : AppColors.surfaceContainer.withValues(alpha: 0.6),
+          color: active ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surfaceContainer.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: active
               ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
               : Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              name,
-              style: AppText.titleLg().copyWith(
-                color: active
-                    ? AppColors.primary
-                    : (locked ? AppColors.onSurfaceVariant : AppColors.onBackground),
-              ),
-            ),
-            const Spacer(),
-            Text(
-              status,
-              style: AppText.labelCaps().copyWith(
-                color: color,
-                fontSize: 10,
-              ),
-            ),
-          ],
+        child: InkWell(
+          onTap: locked ? null : onTap,
+          child: Row(
+            children: [
+              Icon(completed ? Icons.check_circle : (active ? Icons.radio_button_checked : Icons.lock),
+                  color: color, size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Text(name, style: AppText.titleLg().copyWith(color: color)),
+              const Spacer(),
+              Text(time, style: TextStyle(fontFamily: 'monospace', fontSize: 14, color: color, fontWeight: FontWeight.bold)),
+              const SizedBox(width: AppSpacing.sm),
+              Text(completed ? 'DONE' : (active ? 'NOW' : (locked ? 'LOCKED' : 'OPEN')),
+                  style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _bonusQuest() {
+    final t = _state.timings;
+    final items = [
+      ('Sholat Dhuha', 'dhuha', 'Sunnah pagi', Icons.wb_sunny),
+      ('Sholat Tahajjud', 'tahajjud', 'Sunnah malam', Icons.nightlight),
+      ('Qobliyah Subuh', 'rawatib_subuh_qobliyah', '2 rakaat sebelum Subuh', Icons.history),
+      ('Qobliyah Dzuhur', 'rawatib_dzuhur_qobliyah', '2-4 rakaat sebelum Dzuhur', Icons.history),
+      ("Ba'diyah Dzuhur", "rawatib_dzuhur_ba'diyyah", '2 rakaat sesudah Dzuhur', Icons.history),
+      ('Qobliyah Ashar', 'rawatib_ashar_qobliyah', '2-4 rakaat sebelum Ashar', Icons.history),
+      ("Ba'diyah Maghrib", "rawatib_maghrib_ba'diyyah", '2 rakaat sesudah Maghrib', Icons.history),
+      ("Ba'diyah Isya", "rawatib_isya_ba'diyyah", '2 rakaat sesudah Isya', Icons.history),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -479,28 +491,26 @@ class HomeTab extends StatelessWidget {
           children: [
             const Icon(Icons.stars, color: AppColors.secondaryFixed, size: 16),
             const SizedBox(width: AppSpacing.xs),
-            Text(
-              'BONUS QUEST — SUNNAH',
-              style: AppText.labelCaps().copyWith(color: AppColors.secondaryFixed),
-            ),
+            Text('BONUS QUEST — SUNNAH', style: AppText.labelCaps().copyWith(color: AppColors.secondaryFixed)),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        _bonusRow('Dhuha', 'Window: 08:00 - 11:00', Icons.wb_sunny, AppColors.secondaryFixed, locked: true),
-        const SizedBox(height: AppSpacing.xs),
-        _bonusRow('Rawatib Qobliyah Dzuhur', '4 Rakaat', Icons.history, AppColors.secondaryFixed, completed: true),
+        ...items.map((it) {
+          final checked = GameService.isPrayerCheckedToday(it.$2);
+          final onTime = GameService.isSunnahOnTime(it.$2, t);
+          final locked = !checked && !onTime;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: _bonusRow(it.$1, it.$3, it.$4, AppColors.secondaryFixed,
+                completed: checked, locked: locked, onTap: () => _togglePrayer(it.$2, 'sunnah')),
+          );
+        }),
       ],
     );
   }
 
-  Widget _bonusRow(
-    String name,
-    String sub,
-    IconData icon,
-    Color color, {
-    bool locked = false,
-    bool completed = false,
-  }) {
+  Widget _bonusRow(String name, String sub, IconData icon, Color color,
+      {bool locked = false, bool completed = false, VoidCallback? onTap}) {
     return Opacity(
       opacity: locked ? 0.5 : 1.0,
       child: Container(
@@ -508,33 +518,96 @@ class HomeTab extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surfaceContainer.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border(
-            left: BorderSide(color: color, width: 4),
+          border: Border(left: BorderSide(color: color, width: 4)),
+        ),
+        child: InkWell(
+          onTap: locked ? null : onTap,
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, style: AppText.bodyLg()),
+                    Text(sub, style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
+                  ],
+                ),
+              ),
+              Icon(completed ? Icons.check_circle : Icons.lock_clock,
+                  color: completed ? AppColors.primary : AppColors.outline, size: 20),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _questList() {
+    if (_state.quests.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.military_tech, color: AppColors.primary, size: 16),
+            const SizedBox(width: AppSpacing.xs),
+            Text('QUEST HARIAN', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        ..._state.quests.map((q) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: _questCard(q),
+            )),
+      ],
+    );
+  }
+
+  Widget _questCard(Quest q) {
+    final claimable = q.completed && !q.claimed;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: q.claimed
+            ? AppColors.surfaceContainer.withValues(alpha: 0.3)
+            : (claimable ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surfaceContainer.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: claimable ? AppColors.primary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2),
+        ),
+      ),
+      child: InkWell(
+        onTap: claimable ? () => _claimQuest(q) : null,
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: AppSpacing.sm),
+            Icon(q.claimed ? Icons.check_circle : (q.completed ? Icons.card_giftcard : Icons.radio_button_unchecked),
+                color: q.claimed ? AppColors.onSurfaceVariant : AppColors.primary, size: 22),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: AppText.bodyLg()),
-                  Text(
-                    sub,
-                    style: AppText.labelCaps().copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 9,
-                    ),
-                  ),
+                  Text(q.desc, style: AppText.bodyMd().copyWith(
+                      color: q.claimed ? AppColors.onSurfaceVariant : AppColors.onBackground,
+                      decoration: q.claimed ? TextDecoration.lineThrough : null)),
+                  Text('${q.progress}/${q.target} • +${q.xpReward} XP',
+                      style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
                 ],
               ),
             ),
-            if (completed)
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 20)
-            else
-              const Icon(Icons.lock_clock, color: AppColors.outline, size: 18),
+            if (claimable)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text('CLAIM', style: AppText.labelCaps().copyWith(color: AppColors.onPrimary, fontSize: 10)),
+              )
+            else if (q.claimed)
+              const Icon(Icons.check, color: AppColors.onSurfaceVariant, size: 18),
           ],
         ),
       ),
@@ -542,6 +615,7 @@ class HomeTab extends StatelessWidget {
   }
 
   Widget _sideQuest(BuildContext context) {
+    final done = GameService.tilawahDoneToday;
     return Column(
       children: [
         Row(
@@ -549,12 +623,7 @@ class HomeTab extends StatelessWidget {
             const Expanded(child: Divider(color: AppColors.outlineVariant)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text(
-                '📜 SIDE QUEST',
-                style: AppText.labelCaps().copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-              ),
+              child: Text('📜 SIDE QUEST', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
             ),
             const Expanded(child: Divider(color: AppColors.outlineVariant)),
           ],
@@ -563,78 +632,49 @@ class HomeTab extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.tertiary.withValues(alpha: 0.2),
-                AppColors.primary.withValues(alpha: 0.1),
-              ],
-            ),
+            gradient: LinearGradient(colors: [
+              AppColors.tertiary.withValues(alpha: 0.2),
+              AppColors.primary.withValues(alpha: 0.1),
+            ]),
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.tertiary.withValues(alpha: 0.4)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.tertiary.withValues(alpha: 0.15),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.15), blurRadius: 32, offset: const Offset(0, 8))],
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.tertiary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(
-                    color: AppColors.tertiary.withValues(alpha: 0.3),
+          child: InkWell(
+            onTap: () => _togglePrayer('tilawah', 'tilawah'),
+            child: Row(
+              children: [
+                Container(
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.tertiary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.tertiary.withValues(alpha: 0.3)),
+                  ),
+                  child: const Icon(Icons.menu_book, color: AppColors.tertiary, size: 32),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Tilawah & Dzikir', style: AppText.headlineMd().copyWith(fontSize: 18)),
+                      Text(done ? 'Selesai hari ini ✓' : 'Baca Al-Qur\'an / Dzikir',
+                          style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12)),
+                    ],
                   ),
                 ),
-                child: const Icon(
-                  Icons.menu_book,
-                  color: AppColors.tertiary,
-                  size: 32,
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: done ? AppColors.onSurfaceVariant : AppColors.tertiary,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.6), blurRadius: 12)],
+                  ),
+                  child: Icon(done ? Icons.check : Icons.play_arrow, color: AppColors.onTertiary),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tilawah & Dzikir',
-                      style: AppText.headlineMd().copyWith(fontSize: 18),
-                    ),
-                    Text(
-                      'Selesaikan juz harianmu',
-                      style: AppText.bodyMd().copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.tertiary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.tertiary.withValues(alpha: 0.6),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.play_arrow,
-                  color: AppColors.onTertiary,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -668,18 +708,9 @@ class HomeTab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            label,
-            style: AppText.labelCaps().copyWith(
-              color: color,
-              fontSize: 10,
-            ),
-          ),
+          Text(label, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
           const SizedBox(height: 4),
-          Text(
-            count,
-            style: AppText.displayHero(32).copyWith(color: color),
-          ),
+          Text(count, style: AppText.displayHero(32).copyWith(color: color)),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -693,27 +724,18 @@ class HomeTab extends StatelessWidget {
       ),
     );
   }
-
-  Widget _levelUpCTA(BuildContext context) {
-    return HeroButton(
-      label: 'TRIGGER LEVEL UP',
-      trailingIcon: Icons.auto_awesome,
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NaikLevelScreen()),
-        );
-      },
-    );
-  }
 }
 
 class _RingsPainter extends CustomPainter {
+  final double wajib, sunnah, tilawah;
+  _RingsPainter(this.wajib, this.sunnah, this.tilawah);
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radii = [56.0, 42.0, 28.0];
     final colors = [AppColors.primary, AppColors.secondaryFixed, AppColors.tertiary];
-    final progresses = [0.6, 0.25, 0.0];
+    final progresses = [wajib, sunnah, tilawah];
 
     for (var i = 0; i < radii.length; i++) {
       final paintBg = Paint()
@@ -742,5 +764,6 @@ class _RingsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  bool shouldRepaint(covariant _RingsPainter old) =>
+      old.wajib != wajib || old.sunnah != sunnah || old.tilawah != tilawah;
 }
