@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
+import '../../services/game_service.dart';
 import 'statistik_sheet.dart';
 
 
@@ -196,6 +197,8 @@ class _ProfilTabState extends State<ProfilTab> {
             _hero(context),
             const SizedBox(height: AppSpacing.lg),
             _stats(),
+            const SizedBox(height: AppSpacing.md),
+            _prayerStreaks(),
             const SizedBox(height: AppSpacing.md),
             HeroButton(
               label: 'Lihat Statistik',
@@ -399,6 +402,91 @@ class _ProfilTabState extends State<ProfilTab> {
             style: AppText.bodyMd().copyWith(
               color: AppColors.onSurfaceVariant,
               fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _prayerStreaks() {
+    final prayers = [
+      ('Subuh', 'subuh'),
+      ('Dzuhur', 'dzuhur'),
+      ('Ashar', 'ashar'),
+      ('Maghrib', 'maghrib'),
+      ('Isya', 'isya'),
+    ];
+    final streaks = GameService.current.perPrayerStreaks;
+
+    return GlassPanel(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      borderColor: AppColors.primary.withValues(alpha: 0.2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Streak per Sholat',
+            style: AppText.titleLg().copyWith(color: AppColors.onSurface),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: prayers.map((p) {
+                final label = p.$1;
+                final key = p.$2;
+                final count = streaks[key]?.current ?? 0;
+                final active = count > 0;
+                return Container(
+                  margin: const EdgeInsets.only(right: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? AppColors.primary.withValues(alpha: 0.15)
+                        : AppColors.surfaceContainerLow.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(
+                      color: active
+                          ? AppColors.primary.withValues(alpha: 0.4)
+                          : AppColors.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: AppText.bodyMd().copyWith(
+                          color: active
+                              ? AppColors.primaryFixed
+                              : AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.local_fire_department,
+                            size: 14,
+                            color: active ? AppColors.secondaryFixed : AppColors.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '$count',
+                            style: AppText.bodyLg().copyWith(
+                              color: active ? AppColors.onSurface : AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
           ),
         ],
