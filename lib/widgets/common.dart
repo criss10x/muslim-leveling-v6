@@ -80,19 +80,22 @@ class HeroButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: AppText.headlineMd().copyWith(color: AppColors.onPrimary),
-              ),
-              if (trailingIcon != null) ...[
-                const SizedBox(width: AppSpacing.xs),
-                Icon(trailingIcon, color: AppColors.onPrimary),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: AppText.headlineMd().copyWith(color: AppColors.onPrimary),
+                ),
+                if (trailingIcon != null) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Icon(trailingIcon, color: AppColors.onPrimary),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

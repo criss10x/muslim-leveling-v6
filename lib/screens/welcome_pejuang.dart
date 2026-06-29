@@ -13,9 +13,10 @@ class WelcomePejuangScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: AmbientBackground(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: AppSpacing.lg),
                 _header(),
@@ -23,21 +24,27 @@ class WelcomePejuangScreen extends StatelessWidget {
                 _featureCard(
                   icon: Icons.mosque_outlined,
                   title: 'Quest Sholat',
+                  description:
+                      'Selesaikan quest sholat wajib & sunnah setiap hari untuk dapat XP dan menjaga streak.',
                   accent: AppColors.primary,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _featureCard(
                   icon: Icons.menu_book_outlined,
                   title: 'Belajar yang Fun',
+                  description:
+                      'Pelajari materi Islam melalui artikel & quiz interaktif yang menyenangkan.',
                   accent: AppColors.tertiary,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _featureCard(
                   icon: Icons.military_tech_outlined,
                   title: 'Badge & Achievement',
+                  description:
+                      'Kumpulkan badge dan capai rank tertinggi sebagai pejuang muslim.',
                   accent: AppColors.secondaryContainer,
                 ),
-                const Spacer(),
+                const SizedBox(height: AppSpacing.xl),
                 HeroButton(
                   label: 'MULAI PETUALANGAN',
                   trailingIcon: Icons.arrow_forward,
@@ -124,6 +131,7 @@ class WelcomePejuangScreen extends StatelessWidget {
   Widget _featureCard({
     required IconData icon,
     required String title,
+    required String description,
     required Color accent,
   }) {
     return Container(
@@ -134,6 +142,7 @@ class WelcomePejuangScreen extends StatelessWidget {
         border: Border.all(color: accent.withValues(alpha: 0.2)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 4,
@@ -160,11 +169,19 @@ class WelcomePejuangScreen extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Text(title, style: AppText.titleLg()),
-          ),
-          const Icon(
-            Icons.chevron_right,
-            color: AppColors.onSurfaceVariant,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppText.titleLg()),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  description,
+                  style: AppText.bodyMd().copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
