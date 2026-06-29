@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
@@ -21,6 +25,7 @@ class _ProfilTabState extends State<ProfilTab> {
   // ponytail: cityId kept for future "show on map" feature
   // ignore: unused_field
   String _cityId = '1301';
+  String? _avatarPath;
 
   @override
   void initState() {
@@ -33,6 +38,7 @@ class _ProfilTabState extends State<ProfilTab> {
     final loc = await PrayerService.loadLocation();
     setState(() {
       _nickname = p.getString('nickname') ?? 'Pejuang';
+      _avatarPath = p.getString('avatar_path');
       if (loc != null) {
         _cityId = loc.id;
         _cityName = loc.name;
@@ -185,6 +191,63 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
+  Future<void> _pickAvatar() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/avatar.jpg');
+    await file.writeAsBytes(bytes);
+    final p = await SharedPreferences.getInstance();
+    await p.setString('avatar_path', file.path);
+    setState(() => _avatarPath = file.path);
+  }
+
+  Future<void> _removeAvatar() async {
+    final p = await SharedPreferences.getInstance();
+    await p.remove('avatar_path');
+    if (_avatarPath != null) {
+      try {
+        await File(_avatarPath!).delete();
+      } catch (_) {}
+    }
+    setState(() => _avatarPath = null);
+  }
+
+  void _showAvatarOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.primary),
+              title: Text('Ganti Foto', style: AppText.bodyLg()),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAvatar();
+              },
+            ),
+            if (_avatarPath != null)
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppColors.error),
+                title: Text('Hapus Foto', style: AppText.bodyLg().copyWith(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _removeAvatar();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,59 +285,77 @@ class _ProfilTabState extends State<ProfilTab> {
       child: Column(
         children: [
           Row(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [AppColors.secondaryContainer, AppColors.secondaryFixed],
+              children: [
+                GestureDetector(
+                  onTap: _showAvatarOptions,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppColors.secondaryContainer, AppColors.secondaryFixed],
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.secondaryFixed.withValues(alpha: 0.4),
+                                blurRadius: 15,
+                              ),
+                            ],
+                          ),
+                          child: _avatarPath != null && File(_avatarPath!).existsSync()
+                              ? Image.file(
+                                  File(_avatarPath!),
+                                  fit: BoxFit.cover,
+                                )
+                              : const Icon(
+                                  Icons.shield,
+                                  color: AppColors.onSecondaryContainer,
+                                  size: 32,
+                                ),
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt, color: AppColors.onPrimary, size: 12),
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.secondaryFixed.withValues(alpha: 0.4),
-                      blurRadius: 15,
-                    ),
-                  ],
                 ),
-                child: const Icon(
-                  Icons.shield,
-                  color: AppColors.onSecondaryContainer,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _nickname,
-                      style: AppText.headlineMd().copyWith(fontSize: 20),
-                    ),
-                    Text(
-                      'Muslim Warrior III',
-                      style: AppText.labelCaps().copyWith(
-                        color: AppColors.secondaryFixed,
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _nickname,
+                        style: AppText.headlineMd().copyWith(fontSize: 20),
                       ),
-                    ),
-                    Text(
-                      'Bergabung sejak Maret 2024',
-                      style: AppText.bodyMd().copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
+                      Text(
+                        'Muslim Warrior III',
+                        style: AppText.labelCaps().copyWith(
+                          color: AppColors.secondaryFixed,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit, color: AppColors.primary),
-                onPressed: _editNickname,
-              ),
-            ],
-          ),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AppColors.primary),
+                  onPressed: _editNickname,
+                ),
+              ],
+            ),
           const SizedBox(height: AppSpacing.md),
           const Divider(color: AppColors.outlineVariant),
           const SizedBox(height: AppSpacing.md),

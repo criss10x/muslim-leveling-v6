@@ -23,7 +23,6 @@ class _HomeTabState extends State<HomeTab> {
   String _nickname = 'Pejuang';
   Timer? _tick;
   String _claimingQuestId = '';
-  bool _isLoading = false;
   String _error = '';
 
   @override
@@ -43,7 +42,6 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _load({bool showLoading = true}) async {
-    if (showLoading && mounted) setState(() => _isLoading = true);
     _error = '';
     try {
       await GameService.load();
@@ -61,7 +59,7 @@ class _HomeTabState extends State<HomeTab> {
       print('HOME_LOAD_ERROR: $e\n$st');
       if (mounted) setState(() => _error = e.toString());
     } finally {
-      if (mounted && showLoading) setState(() => _isLoading = false);
+      // ponytail: no loading flag to reset
     }
   }
 
