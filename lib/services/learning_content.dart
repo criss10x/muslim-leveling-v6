@@ -1,6 +1,7 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'dart:convert';
+import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Auto-generated from V3 BelajarScreen.kt — do not edit manually.
@@ -52,10 +53,10 @@ class ModuleProgress {
       ModuleProgress(moduleId: moduleId, completed: completed ?? this.completed,
           quizScore: quizScore ?? this.quizScore, xpClaimed: xpClaimed ?? this.xpClaimed);
   factory ModuleProgress.fromMap(Map<String, dynamic> m) => ModuleProgress(
-      moduleId: m['moduleId\'], completed: m[\'completed'] ?? false,
-      quizScore: m['quizScore\'] ?? 0, xpClaimed: m[\'xpClaimed'] ?? false);
+      moduleId: m['moduleId'] ?? '', completed: m['completed'] ?? false,
+      quizScore: m['quizScore'] ?? 0, xpClaimed: m['xpClaimed'] ?? false);
   Map<String, dynamic> toMap() =>
-      {'moduleId\': moduleId, \'completed\': completed, \'quizScore\': quizScore, \'xpClaimed': xpClaimed};
+      {'moduleId': moduleId, 'completed': completed, 'quizScore': quizScore, 'xpClaimed': xpClaimed};
 }
 
 class LearningState {

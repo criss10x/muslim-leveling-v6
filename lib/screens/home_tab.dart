@@ -41,7 +41,7 @@ class _HomeTabState extends State<HomeTab> {
     final p = await SharedPreferences.getInstance();
     final loc = await PrayerService.loadLocation();
     // Fetch timings if not cached today
-    if (loc != null && _state.timings.subuh == '04:42') {
+    if (loc != null && GameService.current.timings.subuh == '04:42') {
       // ponytail: default timings — fetch real
       final j = await PrayerService.fetchSchedule(cityId: loc.id);
       if (j != null) {
@@ -71,13 +71,12 @@ class _HomeTabState extends State<HomeTab> {
       _toast('⏰ ${GameService.sunnahHint(prayer)}');
       return;
     }
-    final res = GameService.logPrayer(_state, prayer, type);
+    final res = await GameService.logPrayerAsync(prayer, type);
     if (res == null) {
       _toast('Sholat ini udah dicatat hari ini!');
       return;
     }
-    await GameService.logPrayerAsync(prayer, type);
-    setState(() => _state = GameService.current);
+    setState(() => _state = res.$1);
     final (_, xp, levelUp) = res;
     _toast('+$xp XP!${levelUp ? " 🎉 LEVEL UP!" : ""}');
     if (levelUp && mounted) {

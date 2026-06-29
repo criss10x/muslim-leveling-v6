@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ponytail: single-file game state. No riverpod, no bloc.
@@ -274,7 +275,7 @@ class GameService {
 
   static StreakState _updStreak(StreakState s, String today, String yest) {
     if (s.lastDate == today) return s;
-    final cur = s.lastDate == yest ? s.current + 1 : (s.current == 0 ? 1 : s.current + 1);
+    final cur = s.lastDate == yest ? s.current + 1 : 1;
     return StreakState(current: cur, best: cur > s.best ? cur : s.best, lastDate: today);
   }
 
@@ -367,11 +368,11 @@ class GameService {
     return (newState, xpGained, didLevelUp);
   }
 
-  static Future<GameState> logPrayerAsync(String prayer, String type) async {
+  static Future<(GameState, int, bool)?> logPrayerAsync(String prayer, String type) async {
     final res = logPrayer(_cache, prayer, type);
-    if (res == null) return _cache;
+    if (res == null) return null;
     await _save(res.$1);
-    return res.$1;
+    return res;
   }
 
   static Future<GameState> unlogPrayer(String prayer) async {
