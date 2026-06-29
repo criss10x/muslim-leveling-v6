@@ -145,7 +145,7 @@ class _BelajarResultScreenState extends State<BelajarResultScreen> {
 
     if (didLevelUp && mounted) {
       Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => const NaikLevelScreen(),
+        builder: (_) => NaikLevelScreen(xpGained: _module.xpReward),
       ));
     }
   }

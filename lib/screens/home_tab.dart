@@ -81,7 +81,7 @@ class _HomeTabState extends State<HomeTab> {
     final (_, xp, levelUp) = res;
     _toast('+$xp XP!${levelUp ? " 🎉 LEVEL UP!" : ""}');
     if (levelUp && mounted) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NaikLevelScreen()));
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaikLevelScreen(xpGained: xp)));
     }
   }
 
@@ -96,7 +96,7 @@ class _HomeTabState extends State<HomeTab> {
     });
     _toast('+${q.xpReward} XP dari quest!');
     if (didLevelUp && mounted) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NaikLevelScreen()));
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaikLevelScreen(xpGained: q.xpReward)));
     }
   }
 

@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../services/game_service.dart';
 import 'dashboard_shell.dart';
 
 /// Naik Level — victory celebration, rank-up screen, full-bleed reward.
+/// Reads the latest game state so the displayed rank/level is always live.
 class NaikLevelScreen extends StatelessWidget {
-  const NaikLevelScreen({super.key});
+  final int? xpGained;
+
+  const NaikLevelScreen({super.key, this.xpGained});
 
   @override
   Widget build(BuildContext context) {
+    final state = GameService.current;
+    final info = GameService.getLevelInfo(state.xp);
+    final rankTitle = GameService.getRankTitle(info.level);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -50,16 +58,16 @@ class NaikLevelScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Kamu mencapai Muslim Warrior IV',
+                    'Kamu mencapai $rankTitle — Level ${info.level}',
                     textAlign: TextAlign.center,
                     style: AppText.bodyLg().copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  _rewards(),
+                  _rewards(info, rankTitle),
                   const SizedBox(height: AppSpacing.xl),
-                  _unlocked(),
+                  _unlocked(info),
                   const Spacer(),
                   HeroButton(
                     label: 'KEMBALI KE DASHBOARD',
@@ -113,13 +121,13 @@ class NaikLevelScreen extends StatelessWidget {
     );
   }
 
-  Widget _rewards() {
+  Widget _rewards(LevelInfo info, String rankTitle) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _rewardChip('+500', 'XP', AppColors.primary, Icons.bolt),
-        _rewardChip('+1', 'Badge', AppColors.secondaryFixed, Icons.workspace_premium),
-        _rewardChip('NEW', 'Title', AppColors.tertiary, Icons.auto_awesome),
+        _rewardChip('+${xpGained ?? 0}', 'XP', AppColors.primary, Icons.bolt),
+        _rewardChip('Lv ${info.level}', 'Level', AppColors.secondaryFixed, Icons.trending_up),
+        _rewardChip('NEW', rankTitle, AppColors.tertiary, Icons.auto_awesome),
       ],
     );
   }
@@ -142,7 +150,13 @@ class NaikLevelScreen extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 4),
-          Text(value, style: AppText.headlineMd().copyWith(color: color, fontSize: 20)),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 80),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value, style: AppText.headlineMd().copyWith(color: color, fontSize: 20)),
+            ),
+          ),
           Text(
             label,
             style: AppText.labelCaps().copyWith(
@@ -155,19 +169,20 @@ class NaikLevelScreen extends StatelessWidget {
     );
   }
 
-  Widget _unlocked() {
+  Widget _unlocked(LevelInfo info) {
+    final xpToNext = info.xpNeededForNextLevel - info.xpInCurrentLevel;
     return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
           Text(
-            'YANG BARU TERBUKA',
+            'STATUS TERBARU',
             style: AppText.labelCaps().copyWith(color: AppColors.primary),
           ),
           const SizedBox(height: AppSpacing.sm),
-          _unlockRow('Modul Premium', 'Pelajaran lanjutan tier Mythic', AppColors.tertiary),
-          _unlockRow('Avatar Mythic', 'Skin karakter eksklusif', AppColors.secondaryFixed),
-          _unlockRow('Challenge Mingguan', 'Misi khusus rank Warrior IV', AppColors.primary),
+          _unlockRow('Total XP', '${GameService.current.xp}', AppColors.primary),
+          _unlockRow('XP di Level ${info.level}', '${info.xpInCurrentLevel} / ${info.xpNeededForNextLevel}', AppColors.tertiary),
+          _unlockRow('Menuju Level ${info.level + 1}', '$xpToNext XP', AppColors.secondaryFixed),
         ],
       ),
     );
