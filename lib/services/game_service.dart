@@ -324,36 +324,43 @@ class GameService {
             prog = 1;
             done = true;
           }
+          break;
         case 'quest_five_rings':
           if (wajibList.every((p) =>
               todayLogs.any((l) => l.prayer == p))) {
             prog = 1;
             done = true;
           }
+          break;
         case 'quest_timely_prayers':
           prog = wajibLogs.where((l) {
             final adzan = _adzanFor(l.prayer, t);
             return adzan.isNotEmpty && minDiff(l.time, adzan) <= 10;
           }).length.clamp(0, 3);
           done = prog >= 3;
+          break;
         case 'quest_dhuha_before_dzuhur':
           final dhuhaLog = findLog('dhuha');
           if (dhuhaLog != null && isBefore(dhuhaLog.time, t.dzuhur)) {
             prog = 1;
             done = true;
           }
+          break;
         case 'quest_tilawah_today':
           if (todayLogs.any((l) => l.prayer == 'tilawah')) {
             prog = 1;
             done = true;
           }
+          break;
         case 'quest_rawatib_two':
           final cnt = todayLogs.where((l) => l.prayer.startsWith('rawatib')).length;
           prog = cnt.clamp(0, 2);
           done = cnt >= 2;
+          break;
         case 'quest_hero_streak_7':
           prog = hero.current.clamp(0, 7);
           done = hero.current >= 7;
+          break;
       }
       return q.copyWith(progress: prog, completed: done);
     }).toList();
@@ -411,15 +418,20 @@ class GameService {
       switch (q.id) {
         case 'quest_subuh_tepat':
           if (prayer == 'subuh' && minDiff(now, state.timings.subuh) <= 30) { prog = 1; done = true; }
+          break;
         case 'quest_five_rings':
           if (isHeroCompletor) { prog = 1; done = true; }
+          break;
         case 'quest_dhuha_before_dzuhur':
           if (prayer == 'dhuha' && isBefore(now, state.timings.dzuhur)) { prog = 1; done = true; }
+          break;
         case 'quest_tilawah_today':
           if (prayer == 'tilawah') { prog = 1; done = true; }
+          break;
         case 'quest_hero_streak_7':
           prog = hero.current;
           if (hero.current >= 7) done = true;
+          break;
         case 'quest_timely_prayers':
           final adzan = switch (prayer) {
             'subuh' => state.timings.subuh, 'dzuhur' => state.timings.dzuhur,
@@ -430,12 +442,14 @@ class GameService {
             prog = (prog + 1).clamp(0, 3);
             if (prog >= 3) done = true;
           }
+          break;
         case 'quest_rawatib_two':
           if (prayer.startsWith('rawatib')) {
             final cnt = updatedLogs.where((l) => l.date == today && l.prayer.startsWith('rawatib')).length;
             prog = cnt.clamp(0, 2);
             if (cnt >= 2) done = true;
           }
+          break;
       }
       return q.copyWith(progress: prog, completed: done);
     }).toList();

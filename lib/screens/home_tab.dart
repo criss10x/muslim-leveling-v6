@@ -158,7 +158,7 @@ class _HomeTabState extends State<HomeTab> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(child: _countdownCard()),
                     const SizedBox(width: AppSpacing.md),
