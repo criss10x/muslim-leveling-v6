@@ -34,6 +34,7 @@ class _ProfilTabState extends State<ProfilTab> {
   }
 
   Future<void> _loadProfile() async {
+    await GameService.load();
     final p = await SharedPreferences.getInstance();
     final loc = await PrayerService.loadLocation();
     setState(() {
@@ -44,6 +45,10 @@ class _ProfilTabState extends State<ProfilTab> {
         _cityName = loc.name;
       }
     });
+  }
+
+  Future<void> _refresh() async {
+    await _loadProfile();
   }
 
   Future<void> _editNickname() async {
@@ -254,25 +259,30 @@ class _ProfilTabState extends State<ProfilTab> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md).copyWith(top: AppSpacing.md, bottom: 100),
-          children: [
-            _hero(context),
-            const SizedBox(height: AppSpacing.lg),
-            _stats(),
-            const SizedBox(height: AppSpacing.md),
-            _prayerStreaks(),
-            const SizedBox(height: AppSpacing.md),
-            HeroButton(
-              label: 'Lihat Statistik',
-              trailingIcon: Icons.bar_chart,
-              onPressed: () => StatistikSheet.show(context),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _badges(),
-            const SizedBox(height: AppSpacing.lg),
-            _settings(),
-          ],
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          color: AppColors.primary,
+          backgroundColor: AppColors.surfaceContainerHigh,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md).copyWith(top: AppSpacing.md, bottom: 100),
+            children: [
+              _hero(context),
+              const SizedBox(height: AppSpacing.lg),
+              _stats(),
+              const SizedBox(height: AppSpacing.md),
+              _prayerStreaks(),
+              const SizedBox(height: AppSpacing.md),
+              HeroButton(
+                label: 'Lihat Statistik',
+                trailingIcon: Icons.bar_chart,
+                onPressed: () => StatistikSheet.show(context),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _badges(),
+              const SizedBox(height: AppSpacing.lg),
+              _settings(),
+            ],
+          ),
         ),
       ),
     );
@@ -342,7 +352,7 @@ class _ProfilTabState extends State<ProfilTab> {
                         style: AppText.headlineMd().copyWith(fontSize: 20),
                       ),
                       Text(
-                        'Muslim Warrior III',
+                        GameService.getRankTitle(GameService.current.level),
                         style: AppText.labelCaps().copyWith(
                           color: AppColors.secondaryFixed,
                         ),
@@ -396,10 +406,10 @@ class _ProfilTabState extends State<ProfilTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _miniStat('Level', '7'),
-              _miniStat('XP', '750'),
-              _miniStat('Streak', '7🔥'),
-              _miniStat('Rank', '#42'),
+              _miniStat('Level', '${GameService.current.level}'),
+              _miniStat('XP', '${GameService.current.xp}'),
+              _miniStat('Streak', '${GameService.current.heroStreak.current}🔥'),
+              _miniStat('Rank', GameService.getRankTitle(GameService.current.level)),
             ],
           ),
         ],
@@ -410,9 +420,12 @@ class _ProfilTabState extends State<ProfilTab> {
   Widget _miniStat(String label, String value) {
     return Column(
       children: [
-        Text(
-          value,
-          style: AppText.titleLg().copyWith(color: AppColors.primary),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: AppText.titleLg().copyWith(color: AppColors.primary),
+          ),
         ),
         Text(
           label,
@@ -426,6 +439,11 @@ class _ProfilTabState extends State<ProfilTab> {
   }
 
   Widget _stats() {
+    final logs = GameService.current.prayerLog;
+    final wajibTotal = logs.where((l) => GameService.wajibList.contains(l.prayer)).length;
+    final sunnahTotal = logs.where((l) => l.type == 'sunnah' || l.prayer.startsWith('rawatib')).length;
+    final tilawahTotal = logs.where((l) => l.prayer == 'tilawah').length;
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -434,10 +452,10 @@ class _ProfilTabState extends State<ProfilTab> {
       crossAxisSpacing: AppSpacing.sm,
       childAspectRatio: 1.6,
       children: [
-        _statCard('Sholat Selesai', '127', 'dari 150', Icons.mosque, AppColors.primary),
-        _statCard('Tilawah', '8.5', 'juz', Icons.menu_book, AppColors.tertiary),
-        _statCard('Sedekah', 'Rp 850K', 'bulan ini', Icons.volunteer_activism, AppColors.secondaryFixed),
-        _statCard('Puasa Sunnah', '12', 'hari', Icons.nightlight, AppColors.tertiaryContainer),
+        _statCard('Sholat Selesai', '$wajibTotal', 'total', Icons.mosque, AppColors.primary),
+        _statCard('Tilawah', '$tilawahTotal', 'kali', Icons.menu_book, AppColors.tertiary),
+        _statCard('Sunnah', '$sunnahTotal', 'total', Icons.volunteer_activism, AppColors.secondaryFixed),
+        _statCard('Hero Streak', '${GameService.current.heroStreak.current}', 'hari', Icons.local_fire_department, AppColors.tertiaryContainer),
       ],
     );
   }
@@ -576,11 +594,17 @@ class _ProfilTabState extends State<ProfilTab> {
   }
 
   Widget _badges() {
+    final logs = GameService.current.prayerLog;
+    final hero = GameService.current.heroStreak;
+    final subuhStreak = GameService.current.perPrayerStreaks['subuh']?.current ?? 0;
+    final wajibTotal = logs.where((l) => GameService.wajibList.contains(l.prayer)).length;
+    final tilawahTotal = logs.where((l) => l.prayer == 'tilawah').length;
+
     final badges = [
-      ('First Wudu', Icons.water_drop, AppColors.primary, true),
-      ('7 Day Streak', Icons.local_fire_department, AppColors.secondaryFixed, true),
-      ('Quran Reader', Icons.menu_book, AppColors.tertiary, false),
-      ('Dawn Patrol', Icons.wb_twilight, AppColors.primaryFixed, false),
+      ('First Step', Icons.directions_run, AppColors.primary, wajibTotal > 0),
+      ('7 Day Streak', Icons.local_fire_department, AppColors.secondaryFixed, hero.best >= 7),
+      ('Quran Reader', Icons.menu_book, AppColors.tertiary, tilawahTotal > 0),
+      ('Dawn Patrol', Icons.wb_twilight, AppColors.primaryFixed, subuhStreak >= 7),
     ];
     return GlassPanel(
       child: Column(

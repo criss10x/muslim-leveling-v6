@@ -23,11 +23,11 @@ class _DashboardShellState extends State<DashboardShell> {
       backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _tab,
-        children: const [
-          HomeTab(),
-          JadwalTab(),
-          BelajarTab(),
-          ProfilTab(),
+        children: [
+          HomeTab(onSettingsPressed: () => setState(() => _tab = 3)),
+          const JadwalTab(),
+          const BelajarTab(),
+          const ProfilTab(),
         ],
       ),
       floatingActionButton: null,

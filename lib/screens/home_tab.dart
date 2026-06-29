@@ -13,7 +13,8 @@ extension _StringExt on String {
 
 /// Home / Dashboard Utama — live game logic (port V3), design preserved.
 class HomeTab extends StatefulWidget {
-  const HomeTab({super.key});
+  final VoidCallback? onSettingsPressed;
+  const HomeTab({super.key, this.onSettingsPressed});
   @override
   State<HomeTab> createState() => _HomeTabState();
 }
@@ -217,7 +218,7 @@ class _HomeTabState extends State<HomeTab> {
         const Spacer(),
         IconButton(
           icon: const Icon(Icons.settings, color: AppColors.primary),
-          onPressed: () {},
+          onPressed: widget.onSettingsPressed,
         ),
       ],
     );
@@ -762,37 +763,100 @@ class _HomeTabState extends State<HomeTab> {
       crossAxisSpacing: AppSpacing.sm,
       childAspectRatio: 0.95,
       children: [
-        _zikirTile('SUBHANALLAH', '33', AppColors.primary, '+1 XP', Icons.refresh),
-        _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '+1 XP', Icons.refresh),
-        _zikirTile('ALLAHU AKBAR', '34', AppColors.secondaryFixed, '+1 XP', Icons.refresh),
-        _zikirTile('DZIKIR PAGI', '5/8', AppColors.primary, 'MENU', Icons.arrow_forward),
+        _zikirTile('SUBHANALLAH', '33', AppColors.primary, '+1 XP', Icons.refresh,
+            onTap: () => _showDzikir('Subhanallah',
+                'سُبْحَانَ اللهِ',
+                'Subhanallah',
+                'Maha Suci Allah, sering diucapkan sebagai dzikir penghapus dosa.')),
+        _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '+1 XP', Icons.refresh,
+            onTap: () => _showDzikir('Alhamdulillah',
+                'الْحَمْدُ لِلَّهِ',
+                'Alhamdulillah',
+                'Segala puji bagi Allah, dzikir yang mengisi timbangan amal di hari kiamat.')),
+        _zikirTile('ALLAHU AKBAR', '34', AppColors.secondaryFixed, '+1 XP', Icons.refresh,
+            onTap: () => _showDzikir('Allahu Akbar',
+                'اللَّهُ أَكْبَرُ',
+                'Allahu Akbar',
+                'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
+        _zikirTile('DZIKIR PAGI', '5/8', AppColors.primary, 'MENU', Icons.arrow_forward,
+            onTap: () => _showDzikir('Dzikir Pagi',
+                'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ',
+                'Asbahna wa asbaha al-mulku lillah',
+                'Kami memasuki waktu pagi dan kerajaan hanya bagi Allah.')),
       ],
     );
   }
 
-  Widget _zikirTile(String label, String count, Color color, String cta, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
+  Widget _zikirTile(String label, String count, Color color, String cta, IconData icon, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainer.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(label, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
+            const SizedBox(height: 4),
+            Text(count, style: AppText.displayHero(32).copyWith(color: color)),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 12),
+                const SizedBox(width: 4),
+                Text(cta, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
+              ],
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(label, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
-          const SizedBox(height: 4),
-          Text(count, style: AppText.displayHero(32).copyWith(color: color)),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    );
+  }
+
+  void _showDzikir(String title, String arabic, String translit, String meaning) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: color, size: 12),
-              const SizedBox(width: 4),
-              Text(cta, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(title, style: AppText.headlineLg().copyWith(color: AppColors.primary)),
+              const SizedBox(height: AppSpacing.md),
+              Text(arabic,
+                  style: AppText.headlineMd().copyWith(color: AppColors.onSurface, height: 1.6),
+                  textAlign: TextAlign.right),
+              const SizedBox(height: AppSpacing.sm),
+              Text(translit,
+                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontStyle: FontStyle.italic)),
+              const SizedBox(height: AppSpacing.sm),
+              Text(meaning, style: AppText.bodyMd().copyWith(color: AppColors.onSurface)),
+              const SizedBox(height: AppSpacing.lg),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
