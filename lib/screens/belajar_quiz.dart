@@ -246,7 +246,6 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
   }
 
   Widget _bottomBar() {
-    final wasCorrect = _selected == _questions[_current].correctIndex;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),

@@ -14,7 +14,6 @@ class BelajarTab extends StatefulWidget {
 
 class _BelajarTabState extends State<BelajarTab> {
   int _selectedCat = 0;
-  LearningState _state = const LearningState();
 
   @override
   void initState() {
@@ -23,8 +22,8 @@ class _BelajarTabState extends State<BelajarTab> {
   }
 
   Future<void> _load() async {
-    final s = await LearningService.load();
-    if (mounted) setState(() => _state = s);
+    await LearningService.load();
+    if (mounted) setState(() {});
   }
 
   @override
