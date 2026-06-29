@@ -18,6 +18,7 @@ class _HomeTabState extends State<HomeTab> {
   GameState _state = GameState();
   String _nickname = 'Pejuang';
   Timer? _tick;
+  String _claimingQuestId = '';
 
   @override
   void initState() {
@@ -85,10 +86,18 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _claimQuest(Quest q) async {
-    if (!q.completed || q.claimed) return;
-    final s = await GameService.claimQuest(q.id);
-    setState(() => _state = s);
+    if (!q.completed || q.claimed || _claimingQuestId.isNotEmpty) return;
+    setState(() => _claimingQuestId = q.id);
+    final (s, didLevelUp) = await GameService.claimQuest(q.id);
+    if (!mounted) return;
+    setState(() {
+      _state = s;
+      _claimingQuestId = '';
+    });
     _toast('+${q.xpReward} XP dari quest!');
+    if (didLevelUp && mounted) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NaikLevelScreen()));
+    }
   }
 
   void _toast(String msg) {
@@ -608,48 +617,60 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _questCard(Quest q) {
     final claimable = q.completed && !q.claimed;
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: q.claimed
-            ? AppColors.surfaceContainer.withValues(alpha: 0.3)
-            : (claimable ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surfaceContainer.withValues(alpha: 0.6)),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: claimable ? AppColors.primary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2),
+    final isClaiming = _claimingQuestId == q.id;
+    return AnimatedScale(
+      scale: isClaiming ? 1.04 : 1.0,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.elasticOut,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: q.claimed
+              ? AppColors.surfaceContainer.withValues(alpha: 0.3)
+              : (claimable ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surfaceContainer.withValues(alpha: 0.6)),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: isClaiming
+                ? AppColors.primary
+                : (claimable ? AppColors.primary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
+            width: isClaiming ? 2 : 1,
+          ),
+          boxShadow: isClaiming
+              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, spreadRadius: 1)]
+              : null,
         ),
-      ),
-      child: InkWell(
-        onTap: claimable ? () => _claimQuest(q) : null,
-        child: Row(
-          children: [
-            Icon(q.claimed ? Icons.check_circle : (q.completed ? Icons.card_giftcard : Icons.radio_button_unchecked),
-                color: q.claimed ? AppColors.onSurfaceVariant : AppColors.primary, size: 22),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(q.desc, style: AppText.bodyMd().copyWith(
-                      color: q.claimed ? AppColors.onSurfaceVariant : AppColors.onBackground,
-                      decoration: q.claimed ? TextDecoration.lineThrough : null)),
-                  Text('${q.progress}/${q.target} • +${q.xpReward} XP',
-                      style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
-                ],
-              ),
-            ),
-            if (claimable)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: claimable ? () => _claimQuest(q) : null,
+          child: Row(
+            children: [
+              Icon(q.claimed ? Icons.check_circle : (q.completed ? Icons.card_giftcard : Icons.radio_button_unchecked),
+                  color: q.claimed ? AppColors.onSurfaceVariant : AppColors.primary, size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(q.desc, style: AppText.bodyMd().copyWith(
+                        color: q.claimed ? AppColors.onSurfaceVariant : AppColors.onBackground,
+                        decoration: q.claimed ? TextDecoration.lineThrough : null)),
+                    Text('${q.progress}/${q.target} • +${q.xpReward} XP',
+                        style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
+                  ],
                 ),
-                child: Text('CLAIM', style: AppText.labelCaps().copyWith(color: AppColors.onPrimary, fontSize: 10)),
-              )
-            else if (q.claimed)
-              const Icon(Icons.check, color: AppColors.onSurfaceVariant, size: 18),
-          ],
+              ),
+              if (claimable)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text('CLAIM', style: AppText.labelCaps().copyWith(color: AppColors.onPrimary, fontSize: 10)),
+                )
+              else if (q.claimed)
+                const Icon(Icons.check, color: AppColors.onSurfaceVariant, size: 18),
+            ],
+          ),
         ),
       ),
     );

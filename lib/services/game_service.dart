@@ -391,15 +391,18 @@ class GameService {
     return newState;
   }
 
-  static Future<GameState> claimQuest(String questId) async {
+  /// Claim a completed quest. Returns new state and whether the user leveled up.
+  static Future<(GameState, bool)> claimQuest(String questId) async {
     final q = _cache.quests.where((x) => x.id == questId).firstOrNull;
-    if (q == null || !q.completed || q.claimed) return _cache;
+    if (q == null || !q.completed || q.claimed) return (_cache, false);
+    final oldInfo = getLevelInfo(_cache.xp);
     final quests = _cache.quests.map((x) => x.id == questId ? x.copyWith(claimed: true) : x).toList();
-    final newInfo = getLevelInfo(_cache.xp + q.xpReward);
+    final newXp = _cache.xp + q.xpReward;
+    final newInfo = getLevelInfo(newXp);
     final newState = _cache.copyWith(
-      xp: _cache.xp + q.xpReward, level: newInfo.level, quests: quests);
+      xp: newXp, level: newInfo.level, quests: quests);
     await _save(newState);
-    return newState;
+    return (newState, newInfo.level > oldInfo.level);
   }
 
   /// Add arbitrary XP (e.g. from learning modules). Returns new state + didLevelUp.
