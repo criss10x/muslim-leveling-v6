@@ -9,6 +9,7 @@ import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
 import 'statistik_sheet.dart';
+import 'welcome_pejuang.dart';
 
 
 /// Profil Pejuang — hero header, stats grid, achievements, settings rows.
@@ -250,6 +251,92 @@ class _ProfilTabState extends State<ProfilTab> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSettingSnackbar(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text, style: AppText.bodyMd().copyWith(color: AppColors.onSurface)),
+        backgroundColor: AppColors.surfaceContainerHigh,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      ),
+    );
+  }
+
+  void _showPrivacyDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        title: Text('Privasi & Data', style: AppText.titleLg()),
+        content: Text(
+          'Data sholat, lokasi, dan profil kamu disimpan hanya di perangkat ini. '
+          'Kami tidak mengirim data pribadi ke server pihak ketiga.',
+          style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Oke', style: AppText.bodyMd().copyWith(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        title: Text('Tentang Aplikasi', style: AppText.titleLg()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Muslim Leveling', style: AppText.headlineMd().copyWith(color: AppColors.primary)),
+            const SizedBox(height: 8),
+            Text('Versi 1.0.0\nDibangun untuk membantu menjaga ibadah harian dengan gamifikasi.', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Tutup', style: AppText.bodyMd().copyWith(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        title: Text('Keluar', style: AppText.titleLg()),
+        content: Text('Hapus data lokal dan kembali ke layar awal?', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Batal', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Keluar', style: AppText.bodyMd().copyWith(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final p = await SharedPreferences.getInstance();
+    await p.clear();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomePejuangScreen()),
+      (route) => false,
     );
   }
 
@@ -662,12 +749,12 @@ class _ProfilTabState extends State<ProfilTab> {
 
   Widget _settings() {
     final rows = <_SettingRow>[
-      _SettingRow('Pengaturan Akun', Icons.person_outline),
-      _SettingRow('Notifikasi', Icons.notifications_outlined),
-      _SettingRow('Tema & Tampilan', Icons.palette_outlined),
-      _SettingRow('Privasi & Data', Icons.lock_outline),
-      _SettingRow('Tentang Aplikasi', Icons.info_outline),
-      _SettingRow('Keluar', Icons.logout, color: AppColors.error),
+      _SettingRow('Pengaturan Akun', Icons.person_outline, onTap: _editNickname),
+      _SettingRow('Notifikasi', Icons.notifications_outlined, onTap: () => _showSettingSnackbar('Pengaturan notifikasi akan datang di update berikutnya')),
+      _SettingRow('Tema & Tampilan', Icons.palette_outlined, onTap: () => _showSettingSnackbar('Saat ini hanya tema gelap yang tersedia')),
+      _SettingRow('Privasi & Data', Icons.lock_outline, onTap: _showPrivacyDialog),
+      _SettingRow('Tentang Aplikasi', Icons.info_outline, onTap: _showAboutDialog),
+      _SettingRow('Keluar', Icons.logout, color: AppColors.error, onTap: _confirmLogout),
     ];
     return GlassPanel(
       padding: EdgeInsets.zero,
@@ -681,7 +768,7 @@ class _ProfilTabState extends State<ProfilTab> {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {},
+                  onTap: r.onTap,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
@@ -732,5 +819,6 @@ class _SettingRow {
   final String title;
   final IconData icon;
   final Color? color;
-  _SettingRow(this.title, this.icon, {this.color});
+  final VoidCallback? onTap;
+  _SettingRow(this.title, this.icon, {this.color, this.onTap});
 }
