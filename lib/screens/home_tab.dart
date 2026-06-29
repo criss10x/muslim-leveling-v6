@@ -19,7 +19,7 @@ class _HomeTabState extends State<HomeTab> {
   String _nickname = 'Pejuang';
   Timer? _tick;
   String _claimingQuestId = '';
-  bool _isLoading = true;
+  bool _isLoading = false;
   String _error = '';
 
   @override
