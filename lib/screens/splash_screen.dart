@@ -116,6 +116,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ).createShader(rect),
                   child: Text(
                     'MUSLIM LEVELING',
+                    textAlign: TextAlign.center,
                     style: AppText.displayHero(40).copyWith(
                       color: Colors.white,
                       letterSpacing: -0.5,
@@ -124,10 +125,10 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Nur Quest',
+                  'Level Up iman, Level Up Kehidupanmu',
+                  textAlign: TextAlign.center,
                   style: AppText.bodyMd().copyWith(
                     color: AppColors.onSurfaceVariant,
-                    letterSpacing: 4,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
