@@ -19,6 +19,8 @@ class _HomeTabState extends State<HomeTab> {
   String _nickname = 'Pejuang';
   Timer? _tick;
   String _claimingQuestId = '';
+  bool _isLoading = true;
+  String _error = '';
 
   @override
   void initState() {
@@ -37,27 +39,39 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _load() async {
-    await GameService.load();
-    await GameService.ensureDailyQuests();
-    final p = await SharedPreferences.getInstance();
-    final loc = await PrayerService.loadLocation();
-    // Fetch timings if not cached today
-    if (loc != null && GameService.current.timings.subuh == '04:42') {
-      // ponytail: default timings — fetch real
-      final j = await PrayerService.fetchSchedule(cityId: loc.id);
-      if (j != null) {
-        await GameService.setTimings(Timings(
-          imsak: j['imsak'] ?? '04:30', subuh: j['subuh'] ?? '04:42',
-          terbit: j['terbit'] ?? '05:55', dhuha: j['dhuha'] ?? '06:20',
-          dzuhur: j['dzuhur'] ?? '12:01', ashar: j['ashar'] ?? '15:20',
-          maghrib: j['maghrib'] ?? '17:55', isya: j['isya'] ?? '19:08',
-        ));
-      }
-    }
     setState(() {
-      _state = GameService.current;
-      _nickname = p.getString('nickname') ?? 'Pejuang';
+      _isLoading = true;
+      _error = '';
     });
+    try {
+      await GameService.load();
+      await GameService.ensureDailyQuests();
+      final p = await SharedPreferences.getInstance();
+      final loc = await PrayerService.loadLocation();
+      // Fetch timings if not cached today
+      if (loc != null && GameService.current.timings.subuh == '04:42') {
+        // ponytail: default timings — fetch real
+        final j = await PrayerService.fetchSchedule(cityId: loc.id);
+        if (j != null) {
+          await GameService.setTimings(Timings(
+            imsak: j['imsak'] ?? '04:30', subuh: j['subuh'] ?? '04:42',
+            terbit: j['terbit'] ?? '05:55', dhuha: j['dhuha'] ?? '06:20',
+            dzuhur: j['dzuhur'] ?? '12:01', ashar: j['ashar'] ?? '15:20',
+            maghrib: j['maghrib'] ?? '17:55', isya: j['isya'] ?? '19:08',
+          ));
+        }
+      }
+      setState(() {
+        _state = GameService.current;
+        _nickname = p.getString('nickname') ?? 'Pejuang';
+      });
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('HOME_LOAD_ERROR: $e\n$st');
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _togglePrayer(String prayer, String type) async {
@@ -111,8 +125,29 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    final info = GameService.getLevelInfo(_state.xp);
-    return Scaffold(
+    try {
+      if (_error.isNotEmpty) {
+        return _errorScaffold(_error);
+      }
+      if (_isLoading) {
+        return const Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: AppColors.primary),
+                  SizedBox(height: AppSpacing.md),
+                  Text('Memuat data...', style: TextStyle(color: AppColors.onSurface)),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+      final info = GameService.getLevelInfo(_state.xp);
+      return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
@@ -170,6 +205,38 @@ class _HomeTabState extends State<HomeTab> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: _dailyBento(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('HOME_BUILD_ERROR: $e\n$st');
+      return _errorScaffold(e.toString());
+    }
+  }
+
+  Widget _errorScaffold(String message) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+              const SizedBox(height: AppSpacing.md),
+              Text('Terjadi kesalahan saat memuat Home', style: AppText.headlineMd().copyWith(color: AppColors.onSurface), textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.sm),
+              Text(message, style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton(
+                onPressed: _load,
+                child: const Text('Coba lagi'),
               ),
             ],
           ),
