@@ -1,208 +1,206 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../services/learning_content.dart';
 import 'belajar_quiz.dart';
 
-/// Belajar Article — long-form reading view with hero + body + start-quiz CTA.
-class BelajarArticleScreen extends StatelessWidget {
-  const BelajarArticleScreen({super.key});
+/// Article reader — renders ArticleBlock content from V3 LearningContent.
+class BelajarArticleScreen extends StatefulWidget {
+  final String moduleId;
+  const BelajarArticleScreen({super.key, required this.moduleId});
+  @override
+  State<BelajarArticleScreen> createState() => _BelajarArticleScreenState();
+}
+
+class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
+  late final LearningModule _module;
+  late final List<ArticleBlock> _blocks;
+  double _scrollProgress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _module = LearningContent.getAllModulesOrdered()
+        .where((m) => m.id == widget.moduleId)
+        .first;
+    _blocks = LearningContent.getArticle(widget.moduleId);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: AppColors.background.withValues(alpha: 0.9),
-            elevation: 0,
-            pinned: true,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
-              onPressed: () => Navigator.of(context).pop(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _appBar(context),
+            // Reading progress bar
+            LinearProgressIndicator(
+              value: _scrollProgress,
+              minHeight: 2,
+              backgroundColor: AppColors.surfaceContainer,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             ),
-            title: Text(
-              'MODUL 1',
-              style: AppText.labelCaps().copyWith(color: AppColors.primary),
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  if (n is ScrollUpdateNotification && n.metrics.maxScrollExtent > 0) {
+                    setState(() {
+                      _scrollProgress = n.metrics.pixels / n.metrics.maxScrollExtent;
+                    });
+                  }
+                  return false;
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.md).copyWith(bottom: 120),
+                  itemCount: _blocks.length,
+                  itemBuilder: (_, i) => _renderBlock(_blocks[i]),
+                ),
+              ),
             ),
-            centerTitle: true,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                Text(
-                  'Mengenal Allah',
-                  style: AppText.displayHero(32).copyWith(
-                    color: AppColors.onSurface,
-                    fontSize: 32,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'AKIDAH',
-                        style: AppText.labelCaps().copyWith(
-                          color: AppColors.primary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      '10 menit baca',
-                      style: AppText.bodyMd().copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(
-                      Icons.bookmark_border,
-                      color: AppColors.onSurfaceVariant,
-                      size: 20,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _heroImage(),
-                const SizedBox(height: AppSpacing.lg),
-                _section(
-                  'Pendahuluan',
-                  'Mengenal Allah adalah fondasi utama dalam beragama Islam. '
-                  'Seorang Muslim yang bertaqwa harus memiliki pemahaman yang kuat '
-                  'mengenai siapa Allah, bagaimana sifat-sifat-Nya, dan bagaimana '
-                  'cara berinteraksi dengan-Nya.',
-                ),
-                _section(
-                  'Sifat Wajib Allah',
-                  'Sifat wajib bagi Allah adalah sifat yang pasti ada pada-Nya. '
-                  'Ada 20 sifat wajib Allah yang harus kita imani, di antaranya: '
-                  'Wujud (Ada), Qidam (Terdahulu), Baqa\' (Kekal), Mukhalafatu '
-                  'lil hawaditsi (Berbeda dengan makhluk), Qiyamuhu binafsihi '
-                  '(Berdiri sendiri), dan Wahdaniyyah (Maha Esa).',
-                ),
-                _quoteBox(
-                  '"Tidak ada Tuhan yang berhak disembah selain Allah, '
-                  'dan Muhammad adalah utusan Allah."',
-                  '— Syahadat',
-                ),
-                _section(
-                  'Sifat Mustahil Allah',
-                  'Sebaliknya, sifat mustahil adalah sifat yang tidak mungkin '
-                  'ada pada Allah. Ini adalah kebalikan dari sifat wajib, '
-                  'misalnya: Tidak ada, Baru, Musnah, dan Berlebih-lebihan.',
-                ),
-                const SizedBox(height: AppSpacing.xl),
-              ]),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: HeroButton(
-            label: 'MULAI QUIZ',
-            trailingIcon: Icons.play_arrow,
-            onPressed: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const BelajarQuizScreen()),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _heroImage() {
-    return Container(
-      height: 160,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary.withValues(alpha: 0.3),
-            AppColors.tertiary.withValues(alpha: 0.2),
           ],
         ),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
-        ),
       ),
-      child: const Center(
-        child: Icon(
-          Icons.auto_stories,
-          size: 80,
-          color: AppColors.primary,
-        ),
-      ),
+      bottomNavigationBar: _bottomCta(context),
     );
   }
 
-  Widget _section(String title, String body) {
+  Widget _appBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+      child: Row(
         children: [
-          Text(title, style: AppText.titleLg()),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            body,
-            style: AppText.bodyLg().copyWith(color: AppColors.onSurface),
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${_module.icon}  ${_module.title}',
+                    style: AppText.titleLg().copyWith(fontSize: 16),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text('${_module.estimatedMinutes} min baca • +${_module.xpReward} XP',
+                    style: AppText.labelCaps().copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 10)),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _quoteBox(String quote, String source) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.secondaryContainer.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border(
-          left: BorderSide(
-            color: AppColors.secondaryFixed,
-            width: 3,
-          ),
+  Widget _renderBlock(ArticleBlock block) {
+    if (block is Heading) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
+        child: Text(block.text,
+            style: AppText.headlineLg().copyWith(fontSize: 22, color: AppColors.primary)),
+      );
+    }
+    if (block is Subheading) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+        child: Text(block.text,
+            style: AppText.titleLg().copyWith(fontSize: 16, color: AppColors.tertiary)),
+      );
+    }
+    if (block is Paragraph) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: Text(block.text,
+            style: AppText.bodyMd().copyWith(height: 1.6, color: AppColors.onBackground)),
+      );
+    }
+    if (block is Highlight) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border(left: BorderSide(color: AppColors.primary, width: 4)),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            quote,
+        child: Text(block.text,
+            style: AppText.bodyMd().copyWith(
+                height: 1.5, color: AppColors.primary, fontWeight: FontWeight.w600)),
+      );
+    }
+    if (block is EducatorNote) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.tertiary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.tertiary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.school, color: AppColors.tertiary, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(block.text,
+                  style: AppText.bodyMd().copyWith(
+                      height: 1.6, color: AppColors.tertiary, fontFamily: 'serif')),
+            ),
+          ],
+        ),
+      );
+    }
+    if (block is Cta) {
+      return Container(
+        margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [
+            AppColors.primary.withValues(alpha: 0.15),
+            AppColors.tertiary.withValues(alpha: 0.1),
+          ]),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: Text(block.text,
             style: AppText.bodyLg().copyWith(
-              color: AppColors.secondaryFixed,
-              fontStyle: FontStyle.italic,
+                color: AppColors.primary, fontWeight: FontWeight.w700),
+            textAlign: TextAlign.center),
+      );
+    }
+    if (block is DividerBlock) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            const Expanded(child: Divider(color: AppColors.outlineVariant)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              child: Text('✦', style: AppText.labelCaps().copyWith(color: AppColors.outlineVariant)),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            source,
-            style: AppText.labelCaps().copyWith(
-              color: AppColors.secondaryContainer,
-              fontSize: 10,
-            ),
-          ),
-        ],
+            const Expanded(child: Divider(color: AppColors.outlineVariant)),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _bottomCta(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: HeroButton(
+          label: 'LANJUT KE QUIZ',
+          trailingIcon: Icons.quiz,
+          onPressed: () {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => BelajarQuizScreen(moduleId: widget.moduleId),
+            )).then((_) {
+              if (mounted) Navigator.pop(context); // return to hub after quiz
+            });
+          },
+        ),
       ),
     );
   }

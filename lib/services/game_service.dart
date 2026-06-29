@@ -401,6 +401,16 @@ class GameService {
     return newState;
   }
 
+  /// Add arbitrary XP (e.g. from learning modules). Returns new state + didLevelUp.
+  static Future<(GameState, bool)> addXp(int amount) async {
+    final oldInfo = getLevelInfo(_cache.xp);
+    final newInfo = getLevelInfo(_cache.xp + amount);
+    final newState = _cache.copyWith(
+      xp: _cache.xp + amount, level: newInfo.level);
+    await _save(newState);
+    return (newState, newInfo.level > oldInfo.level);
+  }
+
   // ─── Quest generation (V3 pool, pick 5 random) ───
   static List<Quest> generateQuestPool() {
     final pool = [

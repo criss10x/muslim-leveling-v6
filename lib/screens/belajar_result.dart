@@ -1,237 +1,222 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
-import 'belajar_tab.dart';
+import '../../services/learning_content.dart';
+import '../../services/game_service.dart';
+import 'naik_level_screen.dart';
 
-/// Belajar Result — victory screen, big score, rewards, back-to-hub CTA.
-class BelajarResultScreen extends StatelessWidget {
+/// Quiz result — score, XP claim, next module unlock, level-up check.
+class BelajarResultScreen extends StatefulWidget {
+  final String moduleId;
+  final int score;
   final int correct;
   final int total;
+
   const BelajarResultScreen({
     super.key,
+    required this.moduleId,
+    required this.score,
     required this.correct,
     required this.total,
   });
 
   @override
+  State<BelajarResultScreen> createState() => _BelajarResultScreenState();
+}
+
+class _BelajarResultScreenState extends State<BelajarResultScreen> {
+  bool _xpClaimed = false;
+  bool _processing = false;
+
+  LearningModule get _module => LearningContent.getAllModulesOrdered()
+      .where((m) => m.id == widget.moduleId)
+      .first;
+
+  bool get _passed => widget.score >= 70;
+
+  @override
   Widget build(BuildContext context) {
-    final pct = (correct / total * 100).round();
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      blurRadius: 100,
-                    ),
-                  ],
-                ),
-              ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _trophy(),
+                const SizedBox(height: AppSpacing.lg),
+                _scoreCard(),
+                const SizedBox(height: AppSpacing.lg),
+                if (_passed && !_xpClaimed) _claimButton(),
+                if (_passed && _xpClaimed) _claimedBadge(),
+                if (!_passed) _retryHint(),
+                const SizedBox(height: AppSpacing.lg),
+                _actions(context),
+              ],
             ),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _badge(),
-                  const SizedBox(height: AppSpacing.lg),
-                  ShaderMask(
-                    shaderCallback: (rect) => const LinearGradient(
-                      colors: [AppColors.primary, AppColors.tertiary],
-                    ).createShader(rect),
-                    child: Text(
-                      'Modul Selesai!',
-                      style: AppText.displayHero(40).copyWith(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Pengetahuanmu semakin bertambah.',
-                    style: AppText.bodyLg().copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.xl),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          blurRadius: 40,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'HASIL QUIZ',
-                          style: AppText.labelCaps().copyWith(
-                            color: AppColors.secondaryFixed,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          '$pct%',
-                          style: AppText.displayHero(40).copyWith(
-                            color: AppColors.secondaryFixed,
-                            shadows: [
-                              Shadow(
-                                color: AppColors.secondaryFixed.withValues(alpha: 0.6),
-                                blurRadius: 25,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.sm,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.verified,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: AppSpacing.xs),
-                              Text(
-                                '$correct/$total Benar',
-                                style: AppText.titleLg().copyWith(
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xl,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerHighest.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: AppColors.tertiaryContainer.withValues(alpha: 0.3),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.bolt,
-                          color: AppColors.tertiaryContainer,
-                          size: 24,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          '+200 XP',
-                          style: AppText.headlineMd(),
-                        ),
-                        const SizedBox(width: 4),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            'Diperoleh',
-                            style: AppText.labelCaps().copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  HeroButton(
-                    label: 'KEMBALI KE HUB',
-                    trailingIcon: Icons.arrow_forward,
-                    onPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const BelajarTab()),
-                        (route) => false,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  GhostButton(
-                    label: 'Coba Lagi',
-                    icon: Icons.replay,
-                    color: AppColors.tertiaryContainer,
-                  ),
-                ],
-              ),
-            ),
+        ),
+      ),
+    );
+  }
+
+  Widget _trophy() {
+    final passed = _passed;
+    return Container(
+      width: 100, height: 100,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: (passed ? AppColors.primary : AppColors.tertiary).withValues(alpha: 0.15),
+        border: Border.all(
+            color: (passed ? AppColors.primary : AppColors.tertiary).withValues(alpha: 0.4),
+            width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: (passed ? AppColors.primary : AppColors.tertiary).withValues(alpha: 0.3),
+            blurRadius: 32,
+          ),
+        ],
+      ),
+      child: Icon(
+        passed ? Icons.emoji_events : Icons.refresh,
+        size: 48,
+        color: passed ? AppColors.primary : AppColors.tertiary,
+      ),
+    );
+  }
+
+  Widget _scoreCard() {
+    final passed = _passed;
+    final color = passed ? AppColors.primary : AppColors.tertiary;
+    return GlassPanel(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        children: [
+          Text(passed ? 'SELAMAT!' : 'BELUM LULUS',
+              style: AppText.headlineLg().copyWith(fontSize: 24, color: color)),
+          const SizedBox(height: AppSpacing.sm),
+          Text('${widget.correct}/${widget.total} Benar',
+              style: AppText.titleLg().copyWith(color: AppColors.onBackground)),
+          const SizedBox(height: AppSpacing.md),
+          Text('${widget.score}%',
+              style: AppText.displayHero(48).copyWith(
+                  color: color,
+                  shadows: [Shadow(color: color.withValues(alpha: 0.5), blurRadius: 20)])),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            passed
+                ? 'Kamu lulus quiz ${_module.title}!'
+                : 'Minimal 70% untuk lulus. Coba lagi ya!',
+            style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _badge() {
+  Widget _claimButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: HeroButton(
+        label: 'KLAIM +${_module.xpReward} XP',
+        trailingIcon: Icons.stars,
+        onPressed: _processing ? null : _claimXp,
+      ),
+    );
+  }
+
+  Future<void> _claimXp() async {
+    if (_processing) return;
+    setState(() => _processing = true);
+
+    // Claim learning XP (mark as claimed in learning state)
+    await LearningService.claimXp(widget.moduleId);
+
+    // Add XP to game state + check level up
+    final (_, didLevelUp) = await GameService.addXp(_module.xpReward);
+
+    setState(() {
+      _xpClaimed = true;
+      _processing = false;
+    });
+
+    if (didLevelUp && mounted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => const NaikLevelScreen(),
+      ));
+    }
+  }
+
+  Widget _claimedBadge() {
     return Container(
-      width: 96,
-      height: 96,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.secondaryFixed, AppColors.secondaryContainer],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondaryFixed.withValues(alpha: 0.5),
-            blurRadius: 40,
-          ),
+        color: AppColors.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+          const SizedBox(width: AppSpacing.sm),
+          Text('+${_module.xpReward} XP diklaim!',
+              style: AppText.titleLg().copyWith(color: AppColors.primary, fontSize: 16)),
         ],
       ),
-      child: const Icon(
-        Icons.workspace_premium,
-        color: AppColors.onSecondary,
-        size: 56,
+    );
+  }
+
+  Widget _retryHint() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.tertiary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
+      child: Text(
+        '💡 Tip: Baca lagi artikelnya, lalu coba quiz lagi. Kamu pasti bisa!',
+        style: AppText.bodyMd().copyWith(color: AppColors.tertiary),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _actions(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              // Back to learning hub
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.onSurfaceVariant,
+              side: BorderSide(color: AppColors.outlineVariant),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.xl)),
+            ),
+            child: Text('KE BELAJAR', style: AppText.labelCaps()),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        if (!_passed)
+          Expanded(
+            child: HeroButton(
+              label: 'COBA LAGI',
+              trailingIcon: Icons.refresh,
+              onPressed: () {
+                Navigator.of(context).pop(); // pop result
+                Navigator.of(context).pop(); // pop quiz
+              },
+            ),
+          ),
+      ],
     );
   }
 }
