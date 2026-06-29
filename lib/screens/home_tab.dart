@@ -348,7 +348,7 @@ class _HomeTabState extends State<HomeTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('NEXT MATCH', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
+            Text('NEXT PRAYER', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
             const SizedBox(height: AppSpacing.xs),
             Text(name.toUpperCase(), style: AppText.headlineMd().copyWith(color: AppColors.tertiary)),
             const SizedBox(height: 4),

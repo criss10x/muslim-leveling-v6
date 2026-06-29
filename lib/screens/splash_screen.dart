@@ -41,11 +41,13 @@ class _SplashScreenState extends State<SplashScreen>
       if (mounted) {
         final prefs = await SharedPreferences.getInstance();
         final done = prefs.getBool('onboarding_done') ?? false;
+        final nickname = prefs.getString('nickname');
+        final hasProfile = done && nickname != null && nickname.isNotEmpty;
         _fadeCtl.forward().then((_) {
           if (mounted) {
             Navigator.of(context).pushReplacement(
               PageRouteBuilder(
-                pageBuilder: (_, __, ___) => done
+                pageBuilder: (_, __, ___) => hasProfile
                     ? const DashboardShell()
                     : const WelcomePejuangScreen(),
                 transitionsBuilder: (_, anim, __, child) =>
