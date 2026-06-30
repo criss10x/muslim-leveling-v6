@@ -1483,3 +1483,43 @@ fun DailyChestOverlay(
         }
     }
 }
+
+// Helper: draw a rotating neon glow ring (used in celebration overlays)
+private fun DrawScope.drawRotatingGlowRing(
+    center: Offset,
+    radius: Float,
+    teal: Color,
+    gold: Color,
+    strokeWidth: Float = 3.dp.toPx()
+) {
+    // Outer teal arc
+    drawArc(
+        color = teal.copy(alpha = 0.6f),
+        startAngle = 0f,
+        sweepAngle = 120f,
+        useCenter = false,
+        topLeft = Offset(center.x - radius, center.y - radius),
+        size = Size(radius * 2f, radius * 2f),
+        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+    )
+    // Middle gold arc
+    drawArc(
+        color = gold.copy(alpha = 0.8f),
+        startAngle = 120f,
+        sweepAngle = 120f,
+        useCenter = false,
+        topLeft = Offset(center.x - radius, center.y - radius),
+        size = Size(radius * 2f, radius * 2f),
+        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+    )
+    // Inner teal arc
+    drawArc(
+        color = teal.copy(alpha = 0.6f),
+        startAngle = 240f,
+        sweepAngle = 120f,
+        useCenter = false,
+        topLeft = Offset(center.x - radius, center.y - radius),
+        size = Size(radius * 2f, radius * 2f),
+        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+    )
+}

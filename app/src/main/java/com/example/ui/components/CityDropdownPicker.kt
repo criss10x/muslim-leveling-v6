@@ -6,7 +6,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +21,7 @@ import com.example.data.KemenagCity
 import com.example.ui.theme.*
 
 /**
- * A searchable dropdown picker for Indonesian cities (KEMENAG data source).
+ * A searchable dropdown picker for Indonesian cities (api.myquran.com v3).
  *
  * Uses Material3 [ExposedDropdownMenuBox].
  *
@@ -31,8 +30,9 @@ import com.example.ui.theme.*
  * `DropdownMenu` measure content dengan unbounded maxHeight. Solusi: hapus
  * `verticalScroll` — `DropdownMenu` sudah punya internal scroll sendiri.
  *
- * Sekarang menerima [KemenagCity] (id + lokasi) bukan plain String, supaya
- * bisa langsung query API KEMENAG dengan city ID numeric.
+ * v3: city IDs are MD5 strings, not numeric. The picker exposes both the
+ * selected city name (via [value]/[onValueChange]) and the full [KemenagCity]
+ * object (via [onCitySelected]) so callers can obtain the city ID.
  *
  * Design (Arena Hikmah):
  * - DarkBackground container, IslamicGreen (teal) border on focus
@@ -45,6 +45,7 @@ import com.example.ui.theme.*
 fun CityDropdownPicker(
     value: String,
     onValueChange: (String) -> Unit,
+    onCitySelected: (KemenagCity) -> Unit = {},
     cities: List<KemenagCity> = emptyList(),
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
@@ -127,6 +128,7 @@ fun CityDropdownPicker(
                 if (match != null) {
                     query = match.lokasi
                     onValueChange(match.lokasi)
+                    onCitySelected(match)
                 } else if (query.isNotBlank()) {
                     query = ""
                     onValueChange("")
@@ -192,6 +194,7 @@ fun CityDropdownPicker(
                         onClick = {
                             query = city.lokasi
                             onValueChange(city.lokasi)
+                            onCitySelected(city)
                             expanded = false
                             keyboard?.hide()
                         }
@@ -224,6 +227,7 @@ fun CityDropdownPicker(
     CityDropdownPicker(
         value = value,
         onValueChange = onValueChange,
+        onCitySelected = { _ -> },
         cities = IndonesianCities.fallbackCities.map { KemenagCity(id = it.id, lokasi = it.name) },
         isLoading = false,
         modifier = modifier

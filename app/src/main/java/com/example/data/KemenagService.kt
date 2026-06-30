@@ -11,25 +11,20 @@ import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 
 /**
- * Kemenag Prayer Time Service
+ * Kemenag Prayer Time Service (api.myquran.com v3)
  *
- * Menggunakan api.myquran.com — mirror JSON resmi data KEMENAG (Kementerian Agama RI).
- * Site resmi KEMENAG (jadwalsholat.org) hanya menyediakan HTML, jadi kita pakai
- * mirror JSON ini yang berisi data yang sama persis (imsak, subuh, terbit, dhuha,
- * dzuhur, ashar, maghrib, isya).
+ * Data source: api.myquran.com v3 — mirror KEMENAG (Kementerian Agama RI).
+ * Endpoint v3 changed from numeric city IDs to MD5 city IDs.
  *
- * Endpoint:
- *  - GET /v1/sholat/kota/semua           → semua kota (~300+)
- *  - GET /v1/sholat/kota/cari/{keyword}  → cari kota by nama
- *  - GET /v1/sholat/jadwal/{city_id}/{YYYY}/{M}    → jadwal 1 bulan penuh
- *  - GET /v1/sholat/jadwal/{city_id}/{YYYY}/{M}/{D} → jadwal 1 hari
+ * Endpoints:
+ *  - GET /sholat/kabkota/semua          → semua kota (~517)
+ *  - GET /sholat/kabkota/cari/{keyword} → cari kota by nama
+ *  - GET /sholat/jadwal/{city_id}/{period} → jadwal per hari (YYYY-MM-DD) atau per bulan (YYYY-MM)
  *
- * Field response:
- *  - imsak, subuh, terbit, dhuha, dzuhur, ashar, maghrib, isya (format "HH:MM")
- *  - tanggal (Indonesian), date (ISO YYYY-MM-DD)
- *  - lokasi (nama kota), daerah (provinsi)
+ * Field response jadwal:
+ *  - tanggal, imsak, subuh, terbit, dhuha, dzuhur, ashar, maghrib, isya (format "HH:MM")
  *
- * Free, no auth, no API key. Rate limit: pakai caching monthly (1 request per kota per bulan).
+ * Free, no auth, no API key.
  */
 
 @JsonClass(generateAdapter = true)
@@ -41,7 +36,8 @@ data class KemenagCity(
 @JsonClass(generateAdapter = true)
 data class KemenagCityListResponse(
     val status: Boolean,
-    val data: List<KemenagCity>
+    val message: String = "",
+    val data: List<KemenagCity> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
@@ -54,55 +50,54 @@ data class KemenagJadwal(
     val dzuhur: String = "",
     val ashar: String = "",
     val maghrib: String = "",
-    val isya: String = "",
-    val date: String = ""
+    val isya: String = ""
 )
 
 @JsonClass(generateAdapter = true)
 data class KemenagJadwalData(
-    val id: Int = 0,
-    val lokasi: String = "",
-    val daerah: String = "",
-    val jadwal: KemenagJadwal = KemenagJadwal()
+    val id: String = "",
+    val kabko: String = "",
+    val prov: String = "",
+    // v3 returns a date-keyed map for both daily and monthly responses
+    val jadwal: Map<String, KemenagJadwal> = emptyMap()
 )
 
 @JsonClass(generateAdapter = true)
 data class KemenagJadwalResponse(
     val status: Boolean,
-    val data: KemenagJadwalData
+    val message: String = "",
+    val data: KemenagJadwalData = KemenagJadwalData()
 )
 
 @JsonClass(generateAdapter = true)
 data class KemenagMonthlyJadwalResponse(
     val status: Boolean,
-    val data: KemenagJadwalData
+    val message: String = "",
+    val data: KemenagJadwalData = KemenagJadwalData()
 )
 
 interface KemenagApiService {
-    @GET("v1/sholat/kota/semua")
+    @GET("sholat/kabkota/semua")
     suspend fun getAllCities(): KemenagCityListResponse
 
-    @GET("v1/sholat/kota/cari/{keyword}")
+    @GET("sholat/kabkota/cari/{keyword}")
     suspend fun searchCities(@Path("keyword") keyword: String): KemenagCityListResponse
 
-    @GET("v1/sholat/jadwal/{cityId}/{year}/{month}/{day}")
+    @GET("sholat/jadwal/{cityId}/{period}")
     suspend fun getDailyJadwal(
         @Path("cityId") cityId: String,
-        @Path("year") year: Int,
-        @Path("month") month: Int,
-        @Path("day") day: Int
+        @Path("period") period: String
     ): KemenagJadwalResponse
 
-    @GET("v1/sholat/jadwal/{cityId}/{year}/{month}")
+    @GET("sholat/jadwal/{cityId}/{period}")
     suspend fun getMonthlyJadwal(
         @Path("cityId") cityId: String,
-        @Path("year") year: Int,
-        @Path("month") month: Int
+        @Path("period") period: String
     ): KemenagMonthlyJadwalResponse
 }
 
 object KemenagClient {
-    private const val BASE_URL = "https://api.myquran.com/"
+    private const val BASE_URL = "https://api.myquran.com/v3/"
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BASIC

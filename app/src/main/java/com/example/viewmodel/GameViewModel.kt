@@ -149,7 +149,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Start the game with onboarding data
      */
-    fun startNewGame(username: String, kota: String, kotaId: String = "5171") {
+    fun startNewGame(username: String, kota: String, kotaId: String = "6a9aeddfc689c1d0e3b9ccc3ab651bc5") {
         viewModelScope.launch {
             val defaultData = MuslimLevelingData(
                 user = User(
@@ -491,7 +491,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             generateQuests()
-            fetchPrayerTimes(state.user.kota)
+            fetchPrayerTimes(state.user.kotaId)
         }
     }
 
@@ -1234,53 +1234,60 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * Uses numeric city ID (not city name) per KEMENAG API requirement.
      * Falls back to Aladhan if KEMENAG fails.
      */
+    /**
+     * Fetch jadwal sholat dari api.myquran.com v3.
+     * v3 uses a date-keyed map (data.jadwal["YYYY-MM-DD"]) and MD5 city IDs.
+     */
     fun fetchPrayerTimes(kotaId: String) {
         if (kotaId.isEmpty()) return
         _isFetchingApi.value = true
         viewModelScope.launch {
             try {
                 val today = LocalDate.now()
+                val period = today.toString() // YYYY-MM-DD
                 val response = withContext(Dispatchers.IO) {
                     com.example.data.KemenagClient.apiService.getDailyJadwal(
                         cityId = kotaId,
-                        year = today.year,
-                        month = today.monthValue,
-                        day = today.dayOfMonth
+                        period = period
                     )
                 }
                 if (response.status) {
-                    val jadwal = response.data.jadwal
-                    val newCache = PlayerPrayerTimesCache(
-                        date = today.toString(),
-                        timings = Timings(
-                            imsak = jadwal.imsak.ifEmpty { "04:30" },
-                            subuh = jadwal.subuh.ifEmpty { "04:42" },
-                            terbit = jadwal.terbit.ifEmpty { "05:55" },
-                            dhuha = jadwal.dhuha.ifEmpty { "06:20" },
-                            dzuhur = jadwal.dzuhur.ifEmpty { "12:01" },
-                            ashar = jadwal.ashar.ifEmpty { "15:20" },
-                            maghrib = jadwal.maghrib.ifEmpty { "17:55" },
-                            isya = jadwal.isya.ifEmpty { "19:08" }
+                    val jadwal = response.data.jadwal.values.firstOrNull()
+                    if (jadwal != null) {
+                        val newCache = PlayerPrayerTimesCache(
+                            date = today.toString(),
+                            timings = Timings(
+                                imsak = jadwal.imsak.ifEmpty { "04:30" },
+                                subuh = jadwal.subuh.ifEmpty { "04:42" },
+                                terbit = jadwal.terbit.ifEmpty { "05:55" },
+                                dhuha = jadwal.dhuha.ifEmpty { "06:20" },
+                                dzuhur = jadwal.dzuhur.ifEmpty { "12:01" },
+                                ashar = jadwal.ashar.ifEmpty { "15:20" },
+                                maghrib = jadwal.maghrib.ifEmpty { "17:55" },
+                                isya = jadwal.isya.ifEmpty { "19:08" }
+                            )
                         )
-                    )
-                    val updatedData = _gameData.value.copy(prayerTimesCache = newCache)
-                    _gameData.value = updatedData
-                    repository.saveGameState(updatedData)
+                        val updatedData = _gameData.value.copy(prayerTimesCache = newCache)
+                        _gameData.value = updatedData
+                        repository.saveGameState(updatedData)
 
-                    // ── Schedule adhan reminders if enabled ──
-                    val timingsMap = mapOf(
-                        "subuh" to newCache.timings.subuh,
-                        "dzuhur" to newCache.timings.dzuhur,
-                        "ashar" to newCache.timings.ashar,
-                        "maghrib" to newCache.timings.maghrib,
-                        "isya" to newCache.timings.isya
-                    )
-                    val ctx = getApplication<Application>()
-                    if (NotificationScheduler.isRemindersEnabled(ctx)) {
-                        NotificationScheduler.scheduleAdhanReminders(ctx, kotaId, timingsMap)
+                        // ── Schedule adhan reminders if enabled ──
+                        val timingsMap = mapOf(
+                            "subuh" to newCache.timings.subuh,
+                            "dzuhur" to newCache.timings.dzuhur,
+                            "ashar" to newCache.timings.ashar,
+                            "maghrib" to newCache.timings.maghrib,
+                            "isya" to newCache.timings.isya
+                        )
+                        val ctx = getApplication<Application>()
+                        if (NotificationScheduler.isRemindersEnabled(ctx)) {
+                            NotificationScheduler.scheduleAdhanReminders(ctx, kotaId, timingsMap)
+                        }
+
+                        _toastEvent.emit("Jadwal sholat KEMENAG (${response.data.kabko}) ke-load! ✅")
+                    } else {
+                        fetchPrayerTimesFromAladhanFallback(kotaId)
                     }
-
-                    _toastEvent.emit("Jadwal sholat KEMENAG (${response.data.lokasi}) ke-load! ✅")
                 } else {
                     // KEMENAG returned error status — try Aladhan fallback
                     fetchPrayerTimesFromAladhanFallback(kotaId)

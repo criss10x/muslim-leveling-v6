@@ -11,8 +11,8 @@ data class User(
     // Field di-keep untuk backward-compat parsing save game lama, tapi tidak dipakai lagi.
     val intensityMode: String = "standar",
     val santaiTrackedPrayers: List<String> = listOf("subuh", "maghrib", "isya"),
-    val kota: String = "",          // Nama kota (display) — e.g. "Kota Denpasar"
-    val kotaId: String = "5171",    // KEMENAG city ID (default: Kota Denpasar)
+    val kota: String = "",          // Nama kota (display) — e.g. "KOTA DENPASAR"
+    val kotaId: String = "6a9aeddfc689c1d0e3b9ccc3ab651bc5",    // api.myquran.com v3 city ID (default: KOTA DENPASAR)
     val theme: String = "dark", // "dark" | "light"
     val notifMode: String = "seimbang", // "fokus" | "seimbang" | "intensif"
     val profileImagePath: String? = null  // Local file path to uploaded profile photo (null = use default 👑 avatar)

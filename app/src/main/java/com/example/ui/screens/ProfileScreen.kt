@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -928,10 +929,10 @@ private fun SettingsContent(
         if (showCityPicker) {
             CityDropdownPicker(
                 value = kota,
-                onValueChange = { newName ->
-                    kota = newName
-                    val match = cities.find { it.lokasi.equals(newName.trim(), ignoreCase = true) }
-                    kotaId = match?.id ?: state.user.kotaId
+                onValueChange = { newName -> kota = newName },
+                onCitySelected = { selected ->
+                    kota = selected.lokasi
+                    kotaId = selected.id
                 },
                 cities = cities,
                 isLoading = isLoadingCities,

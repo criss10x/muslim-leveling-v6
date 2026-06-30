@@ -54,8 +54,8 @@ fun OnboardingScreen(
 ) {
     var currentStep by remember { mutableStateOf(0) }
     var username by remember { mutableStateOf("") }
-    var kota by remember { mutableStateOf("Kota Denpasar") }
-    var kotaId by remember { mutableStateOf("5171") }
+    var kota by remember { mutableStateOf("KOTA DENPASAR") }
+    var kotaId by remember { mutableStateOf("6a9aeddfc689c1d0e3b9ccc3ab651bc5") }
     var errorMsg by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
@@ -543,6 +543,7 @@ private fun CreateCharacterStep(
                 CityDropdownPicker(
                     value = kota,
                     onValueChange = onKotaChange,
+                    onCitySelected = { selected -> onKotaIdChange(selected.id) },
                     cities = cities,
                     isLoading = isLoadingCities,
                     modifier = Modifier
