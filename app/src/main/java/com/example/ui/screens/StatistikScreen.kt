@@ -88,9 +88,21 @@ fun StatistikBottomSheet(
             // ─── Compute stats ───
             val last7Days = remember(state.prayerLog) { getLast7DaysCompletion(state.prayerLog) }
             val winRate = remember(state.prayerLog) { getOverallWinRate(state.prayerLog) }
-            val streak = remember(state.prayerLog) { getLongestHeroStreak(state.prayerLog) }
+            val streak = remember(state.heroStreak) { state.heroStreak.current }
+            val bestStreak = remember(state.heroStreak) { state.heroStreak.best }
             val xpThisMonth = remember(state.prayerLog) { getXpThisMonth(state.prayerLog) }
             val xpTrendPct = remember(state.prayerLog) { getXpTrendPercent(state.prayerLog) }
+            val prayerBreakdown = remember(state.prayerLog) { getPrayerCompletionBreakdown(state.prayerLog) }
+
+            // ─── Summary Header (XP, Level, Streaks) ───
+            SummaryHeaderCard(
+                totalXp = state.user.xp,
+                level = state.user.level,
+                currentStreak = streak,
+                bestStreak = bestStreak
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // ─── XP HARIAN (7 HARI TERAKHIR) ───
             XpDailyChartCard(last7Days = last7Days)
@@ -120,6 +132,11 @@ fun StatistikBottomSheet(
                 trendPct = xpTrendPct
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ─── Breakdown per Waktu Sholat ───
+            PrayerBreakdownCard(breakdown = prayerBreakdown)
+
             Spacer(modifier = Modifier.height(20.dp))
 
             // ─── Action button: "Lanjutkan Perjalanan" (teal gradient, on-primary text) ───
@@ -147,6 +164,189 @@ fun StatistikBottomSheet(
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SUMMARY HEADER CARD — XP total, Level, Current/Best Streak
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun SummaryHeaderCard(
+    totalXp: Int,
+    level: Int,
+    currentStreak: Int,
+    bestStreak: Int
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(DarkSurface)
+            .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "RINGKASAN PERJALANAN",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextMuted,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.2.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            SummaryItem(
+                icon = "⭐",
+                value = formatXp(totalXp),
+                label = "Total XP",
+                modifier = Modifier.weight(1f)
+            )
+            SummaryItem(
+                icon = "🎖️",
+                value = level.toString(),
+                label = "Level",
+                modifier = Modifier.weight(1f)
+            )
+            SummaryItem(
+                icon = "🔥",
+                value = "$currentStreak",
+                label = "Streak",
+                modifier = Modifier.weight(1f)
+            )
+            SummaryItem(
+                icon = "🏆",
+                value = "$bestStreak",
+                label = "Best",
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryItem(
+    icon: String,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = icon, fontSize = 18.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            color = TextLight,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            color = TextMuted,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRAYER BREAKDOWN CARD — Completion rate per waktu sholat (7 hari)
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+private fun PrayerBreakdownCard(breakdown: List<PrayerCompletion>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(DarkSurface)
+            .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+            .padding(20.dp)
+    ) {
+        Text(
+            text = "🕌 KONSISTENSI PER WAKTU SHOLAT",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextMuted,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.2.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        breakdown.forEach { item ->
+            PrayerBreakdownRow(item = item)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun PrayerBreakdownRow(item: PrayerCompletion) {
+    val prayerLabels = mapOf(
+        "subuh" to "Subuh",
+        "dzuhur" to "Dzuhur",
+        "ashar" to "Ashar",
+        "maghrib" to "Maghrib",
+        "isya" to "Isya"
+    )
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = prayerLabels[item.prayer] ?: item.prayer.capitalizeCompat(),
+                color = TextLight,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "${item.ratePercent.toInt()}%",
+                color = if (item.ratePercent >= 80f) IslamicGreen else TextMuted,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(DarkSurfaceVariant)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(item.ratePercent / 100f)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(
+                        if (item.ratePercent >= 80f) IslamicGreen
+                        else if (item.ratePercent >= 50f) GoldAccent
+                        else Color(0xFFCF6679)
+                    )
+            )
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA MODELS FOR BREAKDOWN
+// ═══════════════════════════════════════════════════════════════
+
+data class PrayerCompletion(
+    val prayer: String,
+    val ratePercent: Float
+)
 
 // ═══════════════════════════════════════════════════════════════
 // HEADER — Statistik Mingguan + subtitle + X close button
@@ -662,4 +862,20 @@ private fun dayXp(log: List<PrayerLog>, dateStr: String): Int {
     }
 
     return xp
+}
+
+/**
+ * Completion rate per waktu sholat over the last 7 days (0..100).
+ */
+fun getPrayerCompletionBreakdown(log: List<PrayerLog>): List<PrayerCompletion> {
+    val today = LocalDate.now()
+    val last7Dates = (0..6).map { today.minusDays(it.toLong()).toString() }.toSet()
+
+    return WAJIB_PRAYERS.map { prayer ->
+        val completed = last7Dates.count { dateStr ->
+            log.any { it.date == dateStr && it.prayer == prayer && it.type == "wajib" }
+        }
+        val rate = (completed / 7f) * 100f
+        PrayerCompletion(prayer = prayer, ratePercent = rate)
+    }
 }
