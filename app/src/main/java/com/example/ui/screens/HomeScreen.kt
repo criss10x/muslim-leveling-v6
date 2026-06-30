@@ -169,6 +169,7 @@ fun HomeScreen(
                         isChecked = isChecked,
                         isActive = isActive,
                         isLocked = isLocked,
+                        xpValue = 25,
                         onCheckedChange = { check ->
                             if (check) {
                                 viewModel.logPrayer(key, "wajib")
@@ -215,6 +216,7 @@ fun HomeScreen(
                         isChecked = isChecked,
                         isTimeLocked = isTimeLocked,
                         timeWindowHint = viewModel.getSunnahTimeHintPublic(id),
+                        xpValue = 15,
                         onCheckedChange = { check ->
                             if (check) {
                                 viewModel.logPrayer(id, "sunnah")
@@ -232,6 +234,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
             SideQuestChamferCard(
                 isClaimed = tilawahLogged,
+                xpValue = 15,
                 onLog = { viewModel.logPrayer("tilawah", "tilawah") }
             )
             Spacer(modifier = Modifier.height(20.dp))
@@ -760,7 +763,11 @@ private fun SideQuestDivider() {
 }
 
 @Composable
-private fun SideQuestChamferCard(isClaimed: Boolean, onLog: () -> Unit) {
+private fun SideQuestChamferCard(
+    isClaimed: Boolean,
+    xpValue: Int = 15,
+    onLog: () -> Unit
+) {
     val chamferShape = RoundedCornerShape(12.dp) // ponytail: chamfer clip-path approximated via rounded shape
     Box(
         modifier = Modifier
@@ -814,17 +821,31 @@ private fun SideQuestChamferCard(isClaimed: Boolean, onLog: () -> Unit) {
             }
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(CyanAccent)
-                    .shadow(8.dp, CircleShape, ambientColor = CyanAccent.copy(alpha = 0.6f)),
+                    .wrapContentWidth()
+                    .heightIn(min = 32.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isClaimed) {
+                            Brush.linearGradient(listOf(IslamicGreen.copy(alpha = 0.15f), IslamicGreen.copy(alpha = 0.15f)))
+                        } else {
+                            Brush.horizontalGradient(listOf(CyanAccent, CyanAccent.copy(alpha = 0.8f)))
+                        }
+                    )
+                    .border(
+                        BorderStroke(1.dp, if (isClaimed) IslamicGreen.copy(alpha = 0.5f) else CyanAccent),
+                        RoundedCornerShape(20.dp)
+                    )
+                    .alpha(if (isClaimed) 0.7f else 1f)
+                    .then(if (!isClaimed) Modifier.clickable { onLog() } else Modifier)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Mulai",
-                    tint = Color.Black,
-                    modifier = Modifier.size(22.dp)
+                Text(
+                    text = if (isClaimed) "✓ +$xpValue" else "+$xpValue XP",
+                    fontSize = 12.sp,
+                    color = if (isClaimed) IslamicGreen else DarkBackground,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
                 )
             }
         }
@@ -1152,6 +1173,7 @@ fun PrayerRowCard(
     isChecked: Boolean,
     isActive: Boolean,
     isLocked: Boolean = false,
+    xpValue: Int = 25,
     onCheckedChange: (Boolean) -> Unit
 ) {
     val pulse = rememberInfiniteTransition(label = "prayer_active_pulse")
@@ -1264,7 +1286,38 @@ fun PrayerRowCard(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-            Column(horizontalAlignment = Alignment.End) {
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // XP Claim button on the right
+                val xpButtonEnabled = !isChecked && !isLocked
+                val xpButtonBackground = when {
+                    isChecked -> Brush.linearGradient(listOf(IslamicGreen.copy(alpha = 0.15f), IslamicGreen.copy(alpha = 0.15f)))
+                    xpButtonEnabled -> Brush.horizontalGradient(listOf(GoldAccent, GoldAccent.copy(alpha = 0.8f)))
+                    else -> Brush.linearGradient(listOf(DarkBackground.copy(alpha = 0.5f), DarkBackground.copy(alpha = 0.5f)))
+                }
+                Box(
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .heightIn(min = 28.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(xpButtonBackground)
+                        .border(
+                            BorderStroke(1.dp, if (isChecked) IslamicGreen.copy(alpha = 0.5f) else if (xpButtonEnabled) GoldAccent else OutlineVariant.copy(alpha = 0.3f)),
+                            RoundedCornerShape(20.dp)
+                        )
+                        .alpha(if (xpButtonEnabled || isChecked) 1f else 0.5f)
+                        .then(if (xpButtonEnabled) Modifier.clickable { onCheckedChange(true) } else Modifier)
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isChecked) "✓ +$xpValue" else "+$xpValue XP",
+                        fontSize = 11.sp,
+                        color = if (isChecked) IslamicGreen else DarkBackground,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+
                 Text(
                     text = statusText,
                     fontSize = 10.sp,
@@ -1298,6 +1351,7 @@ fun SunnahRowCard(
     isChecked: Boolean,
     isTimeLocked: Boolean = false,
     timeWindowHint: String = "",
+    xpValue: Int = 15,
     onCheckedChange: (Boolean) -> Unit
 ) {
     val accentColor = if (isChecked) IslamicGreen else GoldAccent
@@ -1400,26 +1454,34 @@ fun SunnahRowCard(
                     )
                 }
             }
-            // Right: check icon or lock icon
-            if (isChecked) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = IslamicGreen,
-                    modifier = Modifier.size(20.dp)
-                )
-            } else if (isTimeLocked) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = OutlineDefault,
-                    modifier = Modifier.size(16.dp)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(20.dp)
-                        .border(BorderStroke(2.dp, GoldAccent), CircleShape)
+            // Right: XP claim button / status icon
+            val xpButtonEnabled = !isChecked && !isTimeLocked
+            val xpButtonBackground = when {
+                isChecked -> Brush.linearGradient(listOf(IslamicGreen.copy(alpha = 0.15f), IslamicGreen.copy(alpha = 0.15f)))
+                xpButtonEnabled -> Brush.horizontalGradient(listOf(GoldAccent, GoldAccent.copy(alpha = 0.8f)))
+                else -> Brush.linearGradient(listOf(DarkBackground.copy(alpha = 0.5f), DarkBackground.copy(alpha = 0.5f)))
+            }
+            Box(
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .heightIn(min = 28.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(xpButtonBackground)
+                    .border(
+                        BorderStroke(1.dp, if (isChecked) IslamicGreen.copy(alpha = 0.5f) else if (xpButtonEnabled) GoldAccent else OutlineVariant.copy(alpha = 0.3f)),
+                        RoundedCornerShape(20.dp)
+                    )
+                    .alpha(if (xpButtonEnabled || isChecked) 1f else 0.5f)
+                    .then(if (xpButtonEnabled) Modifier.clickable { onCheckedChange(true) } else Modifier)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isChecked) "✓ +$xpValue" else if (isTimeLocked) "🔒" else "+$xpValue XP",
+                    fontSize = 11.sp,
+                    color = if (isChecked) IslamicGreen else DarkBackground,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
                 )
             }
         }
