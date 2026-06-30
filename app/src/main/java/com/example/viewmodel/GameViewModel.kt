@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -113,7 +114,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // Daily chest availability — true kalau 5 sholat wajib hari ini komplit & chest belum dibuka
     val isDailyChestAvailable: StateFlow<Boolean> = _gameData
         .map { data ->
-            val todayStr = LocalDate.now().toString()
+            val todayStr = getIslamicTodayString(data.prayerTimesCache.timings)
             val wajibList = listOf("subuh", "dzuhur", "ashar", "maghrib", "isya")
             val allFiveDone = wajibList.all { p ->
                 data.prayerLog.any { it.date == todayStr && it.prayer == p }
@@ -157,7 +158,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     kota = kota,
                     kotaId = kotaId
                 ),
-                lastCheckedDate = LocalDate.now().toString()
+                lastCheckedDate = getIslamicTodayString()
             )
             _gameData.value = defaultData
             repository.saveGameState(defaultData)
@@ -503,12 +504,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Hitung tanggal "hari Islam" yang reset setiap adzan Subuh.
+     * Sebelum Subuh = masih dianggap hari sebelumnya.
+     */
+    fun getIslamicTodayString(timings: Timings? = null): String {
+        val now = LocalDateTime.now()
+        val today = LocalDate.now()
+        val subuhTime = try {
+            timings?.let { LocalTime.parse(it.subuh) } ?: LocalTime.of(4, 30)
+        } catch (e: Exception) {
+            LocalTime.of(4, 30)
+        }
+        return if (now.toLocalTime().isBefore(subuhTime)) {
+            // masih malam sebelum Subuh, anggap hari sebelumnya
+            today.minusDays(1).toString()
+        } else {
+            today.toString()
+        }
+    }
+
+    /**
      * Add single-log checked entries with XP computation and quest validations
      */
     fun logPrayer(prayer: String, type: String) {
         viewModelScope.launch {
             val state = _gameData.value
-            val todayStr = LocalDate.now().toString()
+            val todayStr = getIslamicTodayString(state.prayerTimesCache.timings)
             val timeStr = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
 
             // Check if already logged today
@@ -804,7 +825,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             var isyaStrk = state.perPrayerStreaks["isya"] ?: StreakState()
             var tilawahStrk = state.tilawahStreak
 
-            if (dateStr == LocalDate.now().toString()) {
+            if (dateStr == getIslamicTodayString(state.prayerTimesCache.timings)) {
                 if (logItem.type == "wajib") {
                     when (prayer) {
                         "subuh" -> subuhStrk = subuhStrk.copy(current = (subuhStrk.current - 1).coerceAtLeast(0), lastDate = "")
@@ -851,7 +872,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun incrementZikirQuestCounter() {
         viewModelScope.launch {
             val state = _gameData.value
-            val todayStr = LocalDate.now().toString()
+            val todayStr = getIslamicTodayString(state.prayerTimesCache.timings)
 
             val currentZikir = if (state.zikirCounter.date == todayStr) {
                 state.zikirCounter.copy(count = (state.zikirCounter.count + 1).coerceAtMost(3))
@@ -945,7 +966,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun claimDailyChest() {
         viewModelScope.launch {
             val state = _gameData.value
-            val todayStr = LocalDate.now().toString()
+            val todayStr = getIslamicTodayString(state.prayerTimesCache.timings)
 
             // Cek 5/5 sholat wajib komplit hari ini
             val wajibList = listOf("subuh", "dzuhur", "ashar", "maghrib", "isya")
@@ -1019,8 +1040,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun generateQuests() {
         viewModelScope.launch {
-            val todayStr = LocalDate.now().toString()
             val state = _gameData.value
+            val todayStr = getIslamicTodayString(state.prayerTimesCache.timings)
 
             val pool = mutableListOf(
                 Quest(
@@ -1758,6 +1779,27 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun getModuleProgress(moduleId: String): ModuleProgress? {
         return _gameData.value.learningState.progress.find { it.moduleId == moduleId }
+    }
+
+    /**
+     * Cek apakah adzan sholat tertentu sudah lewat.
+     * Digunakan untuk lock tombol checklist sebelum waktu adzan.
+     */
+    fun isAdzanPassed(prayer: String, timings: Timings): Boolean {
+        val now = LocalTime.now()
+        val time = try {
+            when (prayer) {
+                "subuh" -> LocalTime.parse(timings.subuh)
+                "dzuhur" -> LocalTime.parse(timings.dzuhur)
+                "ashar" -> LocalTime.parse(timings.ashar)
+                "maghrib" -> LocalTime.parse(timings.maghrib)
+                "isya" -> LocalTime.parse(timings.isya)
+                else -> return false
+            }
+        } catch (e: Exception) {
+            return false
+        }
+        return !now.isBefore(time)
     }
 }
 

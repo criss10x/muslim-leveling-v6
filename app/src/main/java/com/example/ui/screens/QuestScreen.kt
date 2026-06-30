@@ -389,7 +389,7 @@ fun InteractiveZikirWidget(
     state: MuslimLevelingData,
     viewModel: GameViewModel
 ) {
-    val count = if (state.zikirCounter.date == java.time.LocalDate.now().toString()) state.zikirCounter.count else 0
+    val count = if (state.zikirCounter.date == viewModel.getIslamicTodayString(state.prayerTimesCache.timings)) state.zikirCounter.count else 0
     val target = 3
     val progress = (count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
 
@@ -591,7 +591,7 @@ fun DailyRewardChest(
     state: MuslimLevelingData
 ) {
     val isAvailable by viewModel.isDailyChestAvailable.collectAsState()
-    val todayStr = java.time.LocalDate.now().toString()
+    val todayStr = viewModel.getIslamicTodayString(state.prayerTimesCache.timings)
     val isOpenedToday = state.dailyChestOpenedDate == todayStr
 
     // Hitung progress 5/5 sholat wajib hari ini

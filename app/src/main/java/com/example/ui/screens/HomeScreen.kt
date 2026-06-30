@@ -55,7 +55,7 @@ fun HomeScreen(
     state: MuslimLevelingData
 ) {
     var showUnlogConfirm by remember { mutableStateOf<String?>(null) }
-    val todayStr = LocalDate.now().toString()
+    val todayStr = viewModel.getIslamicTodayString(state.prayerTimesCache.timings)
 
     val wajibList = listOf("subuh", "dzuhur", "ashar", "maghrib", "isya")
     val checkedWajibToday = wajibList.count { p ->
@@ -162,7 +162,7 @@ fun HomeScreen(
                 prayers.forEach { (name, key, time) ->
                     val isChecked = state.prayerLog.any { it.date == todayStr && it.prayer == key }
                     val isActive = !isChecked && isCurrentOrUpcoming(key, timings)
-                    val isLocked = !isChecked && !isPrayerWindowOpen(key, timings)
+                    val isLocked = !isChecked && !viewModel.isAdzanPassed(key, timings)
                     PrayerRowCard(
                         name = name,
                         time = time,
