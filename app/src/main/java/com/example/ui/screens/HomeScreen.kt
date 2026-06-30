@@ -195,14 +195,14 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val sunnahItems = listOf(
-                    Triple("dhuha", "Sholat Dhuha", "Sunnah pagi"),
-                    Triple("tahajjud", "Sholat Tahajjud", "Sunnah sepertiga malam"),
-                    Triple("rawatib_subuh_qobliyah", "Qobliyah Subuh", "2 rakaat sebelum Subuh"),
-                    Triple("rawatib_dzuhur_qobliyah", "Qobliyah Dzuhur Sebelum", "2-4 rakaat sebelum Dzuhur"),
-                    Triple("rawatib_dzuhur_ba'diyyah", "Ba'diyyah Dzuhur Sesudah", "2 rakaat sesudah Dzuhur"),
-                    Triple("rawatib_ashar_qobliyah", "Qobliyah Ashar", "2-4 rakaat sebelum Ashar"),
-                    Triple("rawatib_maghrib_ba'diyyah", "Ba'diyyah Maghrib", "2 rakaat sesudah Maghrib"),
-                    Triple("rawatib_isya_ba'diyyah", "Ba'diyyah Isya", "2 rakaat sesudah Isya")
+                    Triple("dhuha", "Sholat Dhuha", "Setelah terbit (+15 menit) sampai sebelum Dzuhur"),
+                    Triple("tahajjud", "Sholat Tahajjud", "Setelah Isya sampai sebelum Imsak"),
+                    Triple("rawatib_subuh_qobliyah", "Qobliyah Subuh", "2 rakaat di waktu Subuh (Subuh → Terbit)"),
+                    Triple("rawatib_dzuhur_qobliyah", "Qobliyah Dzuhur", "2 rakaat di waktu Dzuhur (Dzuhur → Ashar)"),
+                    Triple("rawatib_dzuhur_ba'diyyah", "Ba'diyah Dzuhur", "2 rakaat sesudah Dzuhur (Dzuhur → Ashar)"),
+                    Triple("rawatib_ashar_qobliyah", "Qobliyah Ashar", "2 rakaat di waktu Ashar (Ashar → Maghrib)"),
+                    Triple("rawatib_maghrib_ba'diyyah", "Ba'diyah Maghrib", "2 rakaat sesudah Maghrib (Maghrib → Isya)"),
+                    Triple("rawatib_isya_ba'diyyah", "Ba'diyah Isya", "2 rakaat sesudah Isya (Isya → tengah malam)")
                 )
                 sunnahItems.forEach { (id, name, desc) ->
                     val isChecked = state.prayerLog.any { it.date == todayStr && it.prayer == id }
