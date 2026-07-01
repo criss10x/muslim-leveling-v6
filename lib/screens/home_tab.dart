@@ -500,7 +500,7 @@ class _HomeTabState extends State<HomeTab> {
           final xp = const {'subuh': 30, 'dzuhur': 20, 'ashar': 20, 'maghrib': 25, 'isya': 25}[p] ?? 15;
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: _prayerRow(p.cap, done, active, locked, () => _togglePrayer(p, 'wajib'), xp),
+            child: _prayerRow(p, p.cap, done, active, locked, () => _togglePrayer(p, 'wajib'), xp),
           );
         }),
       ],
@@ -508,16 +508,23 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   /// ponytail: one pill, three callers — wajib/sunnah/tilawah share this.
-  /// Locked state stays dim via the row's outer Opacity; we only tint here.
+  /// Locked state: lock glyph + neutral grey (no glow). Done: check + muted.
   Widget _xpPill(int xp, Color accent, Color onAccent,
       {bool done = false, bool locked = false}) {
-    final bg = done ? AppColors.onSurfaceVariant.withValues(alpha: 0.35) : accent;
-    final fg = done ? AppColors.onSurface : onAccent;
+    final bg = locked
+        ? AppColors.onSurfaceVariant.withValues(alpha: 0.25)
+        : (done ? AppColors.onSurfaceVariant.withValues(alpha: 0.35) : accent);
+    final fg = locked
+        ? AppColors.onSurfaceVariant
+        : (done ? AppColors.onSurface : onAccent);
+    final label = locked ? 'LOCKED' : (done ? 'DONE' : '+$xp XP');
+    final glyph = locked ? Icons.lock : (done ? Icons.check : Icons.bolt);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 2, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
+        border: locked ? Border.all(color: AppColors.onSurfaceVariant.withValues(alpha: 0.3), width: 1) : null,
         boxShadow: done || locked
             ? null
             : [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 2))],
@@ -525,16 +532,30 @@ class _HomeTabState extends State<HomeTab> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(done ? Icons.check : Icons.bolt, size: 12, color: fg),
+          Icon(glyph, size: 12, color: fg),
           const SizedBox(width: 3),
-          Text(done ? 'DONE' : '+$xp XP', style: AppText.labelCaps().copyWith(color: fg, fontSize: 10, fontWeight: FontWeight.w700)),
+          Text(label, style: AppText.labelCaps().copyWith(color: fg, fontSize: 10, fontWeight: FontWeight.w700)),
         ],
       ),
     );
   }
 
-  Widget _prayerRow(String name, bool done, bool active, bool locked, VoidCallback onTap, int xp) {
+  /// ponytail: time-of-day glyph per wajib prayer — replaces generic check_circle.
+  /// Color encodes state: done=primary, locked=grey, active=tertiary, else muted.
+  IconData _prayerIcon(String key) => switch (key) {
+        'subuh' => Icons.wb_twilight,    // fajar
+        'dzuhur' => Icons.wb_sunny,      // terik
+        'ashar' => Icons.wb_cloudy,      // sore
+        'maghrib' => Icons.brightness_3, // senja (crescent)
+        'isya' => Icons.nights_stay,     // malam
+        _ => Icons.circle_outlined,
+      };
+
+  Widget _prayerRow(String key, String name, bool done, bool active, bool locked, VoidCallback onTap, int xp) {
     final dimmed = locked && !done;
+    final iconColor = done
+        ? AppColors.primary
+        : (locked ? AppColors.onSurfaceVariant : (active ? AppColors.tertiary : AppColors.onSurfaceVariant));
     return Opacity(
       opacity: dimmed ? 0.5 : 1.0,
       child: Container(
@@ -553,14 +574,8 @@ class _HomeTabState extends State<HomeTab> {
           onTap: locked ? null : onTap,
           child: Row(
             children: [
-              Icon(
-                  done
-                      ? Icons.check_circle
-                      : (locked ? Icons.lock_outline : (active ? Icons.circle_outlined : Icons.radio_button_unchecked)),
-                  color: done
-                      ? AppColors.primary
-                      : (locked ? AppColors.onSurfaceVariant : (active ? AppColors.tertiary : AppColors.onSurfaceVariant)),
-                  size: 22),
+              Icon(_prayerIcon(key),
+                  color: iconColor, size: 24),
               const SizedBox(width: AppSpacing.sm),
               Expanded(child: Text(name, style: AppText.bodyMd())),
               _xpPill(xp, AppColors.primary, AppColors.onPrimary, done: done, locked: locked),
