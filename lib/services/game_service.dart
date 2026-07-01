@@ -544,8 +544,10 @@ class GameService {
     };
 
     // Apakah sebelum unlog ini 5/5 sudah lengkap? Kalau iya, prayer ini yang
-    // memicu hero bonus +50 XP.
-    final wasFullBefore = wajibList.every((p) =>
+    // memicu hero bonus +50 XP dan hero streak. ponytail: gate on type — sunnah
+    // unlog must not steal the wajib hero bonus / streak. Was bug: any unlog
+    // with 5 wajib logged added 50 + decremented hero streak.
+    final wasFullBefore = logItem.type == 'wajib' && wajibList.every((p) =>
         _cache.prayerLog.any((l) => l.date == today && l.prayer == p));
     if (wasFullBefore) xpLost += 50;
 
