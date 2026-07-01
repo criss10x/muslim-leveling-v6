@@ -681,68 +681,101 @@ class _ProfilTabState extends State<ProfilTab> {
   }
 
   Widget _badges() {
-    final logs = GameService.current.prayerLog;
-    final hero = GameService.current.heroStreak;
-    final subuhStreak = GameService.current.perPrayerStreaks['subuh']?.current ?? 0;
-    final wajibTotal = logs.where((l) => GameService.wajibList.contains(l.prayer)).length;
-    final tilawahTotal = logs.where((l) => l.prayer == 'tilawah').length;
+    final unlocked = GameService.current.badges.toSet();
+    final defs = GameService.badgeDefs;
 
-    final badges = [
-      ('First Step', Icons.directions_run, AppColors.primary, wajibTotal > 0),
-      ('7 Day Streak', Icons.local_fire_department, AppColors.secondaryFixed, hero.best >= 7),
-      ('Quran Reader', Icons.menu_book, AppColors.tertiary, tilawahTotal > 0),
-      ('Dawn Patrol', Icons.wb_twilight, AppColors.primaryFixed, subuhStreak >= 7),
-    ];
     return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ACHIEVEMENTS',
-            style: AppText.labelCaps().copyWith(color: AppColors.primary),
+          Row(
+            children: [
+              Text(
+                'ACHIEVEMENTS',
+                style: AppText.labelCaps().copyWith(color: AppColors.primary),
+              ),
+              const Spacer(),
+              Text(
+                '${unlocked.length}/${defs.length}',
+                style: AppText.labelCaps().copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: badges.map((b) {
-              return Expanded(
-                child: Opacity(
-                  opacity: b.$4 ? 1.0 : 0.3,
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: b.$3.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: b.$3.withValues(alpha: 0.4)),
-                          boxShadow: b.$4
-                              ? [
-                                  BoxShadow(
-                                    color: b.$3.withValues(alpha: 0.3),
-                                    blurRadius: 12,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Icon(b.$2, color: b.$3, size: 22),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        b.$1,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.labelCaps().copyWith(fontSize: 9),
-                      ),
-                    ],
-                  ),
-                ),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 4,
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.xs,
+            childAspectRatio: 0.82,
+            children: defs.map((b) {
+              final isUnlocked = unlocked.contains(b.$1);
+              return _badgeTile(
+                emoji: b.$3,
+                title: b.$2,
+                desc: b.$4,
+                unlocked: isUnlocked,
               );
             }).toList(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _badgeTile({
+    required String emoji,
+    required String title,
+    required String desc,
+    required bool unlocked,
+  }) {
+    return Tooltip(
+      message: unlocked ? desc : '???',
+      child: Opacity(
+        opacity: unlocked ? 1.0 : 0.35,
+        child: Column(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: (unlocked ? AppColors.primary : AppColors.onSurfaceVariant)
+                    .withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: (unlocked ? AppColors.primary : AppColors.onSurfaceVariant)
+                      .withValues(alpha: 0.4),
+                ),
+                boxShadow: unlocked
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Center(
+                child: Text(
+                  unlocked ? emoji : '🔒',
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.labelCaps().copyWith(fontSize: 8),
+            ),
+          ],
+        ),
       ),
     );
   }

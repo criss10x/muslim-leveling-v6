@@ -101,6 +101,7 @@ class GameState {
   final String questDate;
   final String lastCheckedDate; // YYYY-MM-DD — last time dailyCheck ran
   final int comebackCount;     // total streak recoveries
+  final List<String> badges;   // earned badge IDs
 
   GameState({
     this.xp = 0, this.level = 1,
@@ -108,6 +109,7 @@ class GameState {
     StreakState? heroStreak, Map<String, StreakState>? perPrayerStreaks,
     StreakState? tilawahStreak, List<Quest>? quests, this.questDate = '',
     this.lastCheckedDate = '', this.comebackCount = 0,
+    this.badges = const [],
   })  : timings = timings ?? Timings(),
         prayerLog = prayerLog ?? [],
         heroStreak = heroStreak ?? StreakState(),
@@ -119,7 +121,7 @@ class GameState {
     int? xp, int? level, Timings? timings, List<PrayerLog>? prayerLog,
     StreakState? heroStreak, Map<String, StreakState>? perPrayerStreaks,
     StreakState? tilawahStreak, List<Quest>? quests, String? questDate,
-    String? lastCheckedDate, int? comebackCount,
+    String? lastCheckedDate, int? comebackCount, List<String>? badges,
   }) => GameState(
       xp: xp ?? this.xp, level: level ?? this.level,
       timings: timings ?? this.timings, prayerLog: prayerLog ?? this.prayerLog,
@@ -128,7 +130,8 @@ class GameState {
       tilawahStreak: tilawahStreak ?? this.tilawahStreak,
       quests: quests ?? this.quests, questDate: questDate ?? this.questDate,
       lastCheckedDate: lastCheckedDate ?? this.lastCheckedDate,
-      comebackCount: comebackCount ?? this.comebackCount);
+      comebackCount: comebackCount ?? this.comebackCount,
+      badges: badges ?? this.badges);
 
   factory GameState.fromMap(Map<String, dynamic> m) {
     final logList = (m['prayerLog'] as List?)?.map((e) => PrayerLog.fromMap(e as Map<String, dynamic>)).toList() ?? [];
@@ -136,6 +139,7 @@ class GameState {
     final pstr = <String, StreakState>{};
     (m['perPrayerStreaks'] as Map<String, dynamic>?)?.forEach((k, v) =>
         pstr[k] = StreakState.fromMap(v as Map<String, dynamic>));
+    final badgeList = (m['badges'] as List?)?.cast<String>() ?? [];
     return GameState(
       xp: m['xp'] ?? 0, level: m['level'] ?? 1,
       timings: m['timings'] != null ? Timings.fromMap(m['timings'] as Map<String, dynamic>) : Timings(),
@@ -146,6 +150,7 @@ class GameState {
       quests: questList, questDate: m['questDate'] ?? '',
       lastCheckedDate: m['lastCheckedDate'] ?? '',
       comebackCount: m['comebackCount'] ?? 0,
+      badges: badgeList,
     );
   }
   Map<String, dynamic> toMap() => {
@@ -158,6 +163,7 @@ class GameState {
     'questDate': questDate,
     'lastCheckedDate': lastCheckedDate,
     'comebackCount': comebackCount,
+    'badges': badges,
   };
 }
 
@@ -482,7 +488,8 @@ class GameService {
     final res = logPrayer(_cache, prayer, type);
     if (res == null) return null;
     await _save(res.$1);
-    return res;
+    await refreshBadges(); // check badge unlock
+    return (current, res.$2, res.$3);
   }
 
   static Future<GameState> unlogPrayer(String prayer) async {
@@ -546,7 +553,8 @@ class GameService {
       quests: quests,
     );
     await _save(newState);
-    return newState;
+    await refreshBadges(); // re-evaluate after unlog
+    return current;
   }
 
   /// Claim a completed quest. Returns new state and whether the user leveled up.
@@ -560,7 +568,8 @@ class GameService {
     final newState = _cache.copyWith(
       xp: newXp, level: newInfo.level, quests: quests);
     await _save(newState);
-    return (newState, newInfo.level > oldInfo.level);
+    await refreshBadges(); // level-up may unlock mythic_reached
+    return (current, newInfo.level > oldInfo.level);
   }
 
   /// Add arbitrary XP (e.g. from learning modules). Returns new state + didLevelUp.
@@ -590,6 +599,100 @@ class GameService {
     }
     pool.shuffle();
     return pool.take(5).toList();
+  }
+
+  // ─── Badge system (13 badges) ───
+  // Port dari GameViewModel.evaluateBadges() (main Kotlin).
+  // Setiap aksi yang mengubah state (logPrayer, unlogPrayer, claimQuest, runDailyCheck)
+  // harus memanggil _evaluateBadges() untuk update badge yang earned.
+
+  static const badgeDefs = <(String id, String title, String emoji, String desc)>[
+    ('langkah_pertama',  'LANGKAH PERTAMA',   '🌱', 'Log sholat pertama kamu'),
+    ('subuh_warrior',    'SUBUH WARRIOR',     '🕌', 'Streak Subuh 7 hari'),
+    ('subuh_legend',     'SUBUH LEGEND',      '⭐', 'Streak Subuh 30 hari'),
+    ('five_five_master', '5/5 MASTER',        '🏆', 'Selesaikan 5 wajib 1 hari'),
+    ('five_five_streak_7','5/5 STREAK x7',    '🔥', 'Streak 5/5 selama 7 hari'),
+    ('five_five_streak_30','5/5 STREAK x30',  '💎', 'Streak 5/5 selama 30 hari'),
+    ('sultan_sunnah',    'SULTAN SUNNAH',     '🤲', '50 sunnah total'),
+    ('tilawah_streak_14','TILAWAH STREAK',    '📖', 'Streak Tilawah 14 hari'),
+    ('ramadan_champion', 'RAMADAN CHAMPION',  '🌙', 'Aktif di bulan Ramadan'),
+    ('comeback_king',    'COMEBACK KING',     '🛡', 'Comeback 3x setelah streak putus'),
+    ('early_bird',       'EARLY BIRD',        '⏱', '20x sholat tepat waktu (±10m)'),
+    ('mythic_reached',   'MYTHIC REACHED',    '👑', 'Capai level 80 (Muslim Mythic)'),
+    ('santri_digital',   'SANTRI DIGITAL',    '📚', 'Selesaikan 16 modul Belajar'),
+  ];
+
+  /// Evaluasi semua badge. Return list of newly earned badge IDs.
+  static List<String> evaluateBadges(GameState state) {
+    final earned = state.badges.toSet();
+
+    // 1. Langkah Pertama
+    if (state.prayerLog.isNotEmpty) earned.add('langkah_pertama');
+
+    // 2. Subuh Warrior (streak ≥ 7)
+    final subuhStrk = state.perPrayerStreaks['subuh']?.current ?? 0;
+    if (subuhStrk >= 7) earned.add('subuh_warrior');
+
+    // 3. Subuh Legend (streak ≥ 30)
+    if (subuhStrk >= 30) earned.add('subuh_legend');
+
+    // 4. 5/5 Master (hero streak ≥ 1)
+    final heroStrk = state.heroStreak.current;
+    if (heroStrk >= 1) earned.add('five_five_master');
+
+    // 5. 5/5 Streak x7
+    if (heroStrk >= 7) earned.add('five_five_streak_7');
+
+    // 6. 5/5 Streak x30
+    if (heroStrk >= 30) earned.add('five_five_streak_30');
+
+    // 7. Sultan Sunnah (50 sunnah total)
+    final sunnahCount = state.prayerLog.where((l) => l.type == 'sunnah').length;
+    if (sunnahCount >= 50) earned.add('sultan_sunnah');
+
+    // 8. Tilawah Streak (14 hari)
+    final tilawahStrk = state.tilawahStreak.current;
+    if (tilawahStrk >= 14) earned.add('tilawah_streak_14');
+
+    // 9. Ramadan Champion — log sholat hari ini (aktif beribadah)
+    final today = todayStr();
+    if (state.prayerLog.any((l) => l.date == today)) {
+      earned.add('ramadan_champion');
+    }
+
+    // 10. Comeback King (comebackCount ≥ 3)
+    if (state.comebackCount >= 3) earned.add('comeback_king');
+
+    // 11. Early Bird (20x tepat waktu ±10 menit dari adzan)
+    final timelyCount = state.prayerLog.where((l) {
+      if (l.type != 'wajib') return false;
+      final adzan = _adzanFor(l.prayer, state.timings);
+      return adzan.isNotEmpty && minDiff(l.time, adzan) <= 10;
+    }).length;
+    if (timelyCount >= 20) earned.add('early_bird');
+
+    // 12. Mythic Reached (level ≥ 80)
+    if (state.level >= 80) earned.add('mythic_reached');
+
+    // 13. Santri Digital — selesaikan 16 modul Belajar
+    // TODO: aktifkan setelah Gap learning system di-port
+    // final completedModules = state.learningProgress.where((m) => m.completed).length;
+    // if (completedModules >= 16) earned.add('santri_digital');
+
+    return earned.toList()..sort((a, b) =>
+        badgeDefs.indexWhere((d) => d.$1 == a)
+            .compareTo(badgeDefs.indexWhere((d) => d.$1 == b)));
+  }
+
+  /// Eval + save badges. Return newly earned badges (for toast notification).
+  static Future<List<String>> refreshBadges() async {
+    final before = _cache.badges.toSet();
+    final after = evaluateBadges(_cache);
+    final newBadges = after.where((b) => !before.contains(b)).toList();
+    if (newBadges.isNotEmpty) {
+      await _save(_cache.copyWith(badges: after));
+    }
+    return newBadges;
   }
 
   // ─── Daily check: streak recovery + comeback counter ───
@@ -667,12 +770,13 @@ class GameService {
       lastCheckedDate: today,
     );
     await _save(updated);
+    await refreshBadges(); // comeback_king may unlock
 
     // Generate fresh quests for today if needed
     if (updated.questDate != today) {
       return ensureDailyQuests();
     }
-    return updated;
+    return current;
   }
 
   /// Apply missed-day penalty to a single streak.
