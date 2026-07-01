@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../services/prayer_service.dart';
 import 'dashboard_shell.dart';
 
 /// Character creation form — nickname + city, with hero CTA.
@@ -16,7 +17,15 @@ class CharacterCreationScreen extends StatefulWidget {
 class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   final _nickname = TextEditingController();
   String? _city;
-  final _cities = const ['Jakarta', 'Bandung', 'Surabaya', 'Malang', 'Semarang'];
+  // ponytail: hardcoded presets mapped to myquran v3 city IDs.
+  // Profile uses the same PrayerService keys, so this keeps form & profile in sync.
+  final _cities = const {
+    'Jakarta': "58a2fc6ed39fd083f55d4182bf88826d",
+    'Bandung': "fc221309746013ac554571fbd180e1c8",
+    'Surabaya': "4734ba6f3de83d861c3176a6273cac6d",
+    'Malang': "06138bc5af6023646ede0e1f7c1eac75",
+    'Semarang': "74db120f0a8e5646ef5a30154e9f6deb",
+  };
 
   @override
   void dispose() {
@@ -82,10 +91,10 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                               value: null,
                               child: Text('Pilih Kota...'),
                             ),
-                            ..._cities.map(
-                              (c) => DropdownMenuItem<String>(
-                                value: c,
-                                child: Text(c),
+                            ..._cities.entries.map(
+                              (e) => DropdownMenuItem<String>(
+                                value: e.value,
+                                child: Text(e.key),
                               ),
                             ),
                           ],
@@ -113,10 +122,14 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                           : () async {
                               final prefs =
                                   await SharedPreferences.getInstance();
+                              final cityName = _cities.entries
+                                  .firstWhere((e) => e.value == _city)
+                                  .key;
                               await prefs.setBool('onboarding_done', true);
                               await prefs.setString(
                                   'nickname', _nickname.text.trim());
-                              await prefs.setString('city', _city!);
+                              await PrayerService.saveLocation(
+                                  _city!, cityName);
                               if (!context.mounted) return;
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(
