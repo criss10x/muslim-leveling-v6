@@ -497,16 +497,43 @@ class _HomeTabState extends State<HomeTab> {
           final t = _state.timings;
           final active = !done && GameService.isCurrentOrUpcoming(p, t);
           final locked = !done && !GameService.isPrayerWindowOpen(p, t);
+          final xp = const {'subuh': 30, 'dzuhur': 20, 'ashar': 20, 'maghrib': 25, 'isya': 25}[p] ?? 15;
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: _prayerRow(p.cap, done, active, locked, () => _togglePrayer(p, 'wajib')),
+            child: _prayerRow(p.cap, done, active, locked, () => _togglePrayer(p, 'wajib'), xp),
           );
         }),
       ],
     );
   }
 
-  Widget _prayerRow(String name, bool done, bool active, bool locked, VoidCallback onTap) {
+  /// ponytail: one pill, three callers — wajib/sunnah/tilawah share this.
+  /// Locked state stays dim via the row's outer Opacity; we only tint here.
+  Widget _xpPill(int xp, Color accent, Color onAccent,
+      {bool done = false, bool locked = false}) {
+    final bg = done ? AppColors.onSurfaceVariant.withValues(alpha: 0.35) : accent;
+    final fg = done ? AppColors.onSurface : onAccent;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 2, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: done || locked
+            ? null
+            : [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(done ? Icons.check : Icons.bolt, size: 12, color: fg),
+          const SizedBox(width: 3),
+          Text(done ? 'DONE' : '+$xp XP', style: AppText.labelCaps().copyWith(color: fg, fontSize: 10, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _prayerRow(String name, bool done, bool active, bool locked, VoidCallback onTap, int xp) {
     final dimmed = locked && !done;
     return Opacity(
       opacity: dimmed ? 0.5 : 1.0,
@@ -536,12 +563,7 @@ class _HomeTabState extends State<HomeTab> {
                   size: 22),
               const SizedBox(width: AppSpacing.sm),
               Expanded(child: Text(name, style: AppText.bodyMd())),
-              if (done)
-                Text('SELESAI', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10))
-              else if (locked)
-                Text('LOCKED', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10))
-              else if (active)
-                Text('AKTIF', style: AppText.labelCaps().copyWith(color: AppColors.tertiary, fontSize: 10)),
+              _xpPill(xp, AppColors.primary, AppColors.onPrimary, done: done, locked: locked),
             ],
           ),
         ),
@@ -588,7 +610,7 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _bonusRow(String name, String sub, IconData icon, Color color,
-      {bool locked = false, bool completed = false, VoidCallback? onTap}) {
+      {bool locked = false, bool completed = false, VoidCallback? onTap, int xp = 15}) {
     return Opacity(
       opacity: locked ? 0.5 : 1.0,
       child: Container(
@@ -609,19 +631,11 @@ class _HomeTabState extends State<HomeTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name, style: AppText.bodyLg()),
-                    Text('Bonus XP', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
+                    Text('+$xp XP', style: AppText.labelCaps().copyWith(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
-              Icon(
-                completed
-                    ? Icons.check_circle
-                    : locked
-                        ? Icons.lock_clock
-                        : Icons.radio_button_unchecked,
-                color: completed ? AppColors.primary : (locked ? AppColors.outline : color),
-                size: 20,
-              ),
+              _xpPill(xp, color, AppColors.onSecondary, done: completed, locked: locked),
             ],
           ),
         ),
@@ -713,6 +727,7 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _sideQuest(BuildContext context) {
     final done = GameService.tilawahDoneToday;
+    const xp = 15;
     return Column(
       children: [
         Row(
@@ -762,16 +777,7 @@ class _HomeTabState extends State<HomeTab> {
                     ],
                   ),
                 ),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: done ? AppColors.onSurfaceVariant : AppColors.tertiary,
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.6), blurRadius: 12)],
-                  ),
-                  child: Icon(done ? Icons.check : Icons.play_arrow, color: AppColors.onTertiary),
-                ),
+                _xpPill(xp, AppColors.tertiary, AppColors.onTertiary, done: done),
               ],
             ),
           ),
