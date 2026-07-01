@@ -63,6 +63,18 @@ class StreakState {
     'freezeAvailable': freezeAvailable};
 }
 
+/// Zikir counter — daily reset, persistent.
+class ZikirCounter {
+  final String date;   // YYYY-MM-DD
+  final int count;
+  const ZikirCounter({this.date = '', this.count = 0});
+  ZikirCounter copyWith({String? date, int? count}) =>
+      ZikirCounter(date: date ?? this.date, count: count ?? this.count);
+  factory ZikirCounter.fromMap(Map<String, dynamic> m) =>
+      ZikirCounter(date: m['date'] ?? '', count: m['count'] ?? 0);
+  Map<String, dynamic> toMap() => {'date': date, 'count': count};
+}
+
 class Quest {
   final String id, desc;
   final int xpReward, target, progress;
@@ -102,6 +114,7 @@ class GameState {
   final String lastCheckedDate; // YYYY-MM-DD — last time dailyCheck ran
   final int comebackCount;     // total streak recoveries
   final List<String> badges;   // earned badge IDs
+  final ZikirCounter zikirCounter; // daily zikir counter
 
   GameState({
     this.xp = 0, this.level = 1,
@@ -110,18 +123,21 @@ class GameState {
     StreakState? tilawahStreak, List<Quest>? quests, this.questDate = '',
     this.lastCheckedDate = '', this.comebackCount = 0,
     this.badges = const [],
+    ZikirCounter? zikirCounter,
   })  : timings = timings ?? Timings(),
         prayerLog = prayerLog ?? [],
         heroStreak = heroStreak ?? StreakState(),
         perPrayerStreaks = perPrayerStreaks ?? const {},
         tilawahStreak = tilawahStreak ?? StreakState(),
-        quests = quests ?? const [];
+        quests = quests ?? const [],
+        zikirCounter = zikirCounter ?? const ZikirCounter();
 
   GameState copyWith({
     int? xp, int? level, Timings? timings, List<PrayerLog>? prayerLog,
     StreakState? heroStreak, Map<String, StreakState>? perPrayerStreaks,
     StreakState? tilawahStreak, List<Quest>? quests, String? questDate,
     String? lastCheckedDate, int? comebackCount, List<String>? badges,
+    ZikirCounter? zikirCounter,
   }) => GameState(
       xp: xp ?? this.xp, level: level ?? this.level,
       timings: timings ?? this.timings, prayerLog: prayerLog ?? this.prayerLog,
@@ -131,7 +147,8 @@ class GameState {
       quests: quests ?? this.quests, questDate: questDate ?? this.questDate,
       lastCheckedDate: lastCheckedDate ?? this.lastCheckedDate,
       comebackCount: comebackCount ?? this.comebackCount,
-      badges: badges ?? this.badges);
+      badges: badges ?? this.badges,
+      zikirCounter: zikirCounter ?? this.zikirCounter);
 
   factory GameState.fromMap(Map<String, dynamic> m) {
     final logList = (m['prayerLog'] as List?)?.map((e) => PrayerLog.fromMap(e as Map<String, dynamic>)).toList() ?? [];
@@ -140,6 +157,9 @@ class GameState {
     (m['perPrayerStreaks'] as Map<String, dynamic>?)?.forEach((k, v) =>
         pstr[k] = StreakState.fromMap(v as Map<String, dynamic>));
     final badgeList = (m['badges'] as List?)?.cast<String>() ?? [];
+    final zikir = m['zikirCounter'] != null
+        ? ZikirCounter.fromMap(m['zikirCounter'] as Map<String, dynamic>)
+        : const ZikirCounter();
     return GameState(
       xp: m['xp'] ?? 0, level: m['level'] ?? 1,
       timings: m['timings'] != null ? Timings.fromMap(m['timings'] as Map<String, dynamic>) : Timings(),
@@ -151,6 +171,7 @@ class GameState {
       lastCheckedDate: m['lastCheckedDate'] ?? '',
       comebackCount: m['comebackCount'] ?? 0,
       badges: badgeList,
+      zikirCounter: zikir,
     );
   }
   Map<String, dynamic> toMap() => {
@@ -164,6 +185,7 @@ class GameState {
     'lastCheckedDate': lastCheckedDate,
     'comebackCount': comebackCount,
     'badges': badges,
+    'zikirCounter': zikirCounter.toMap(),
   };
 }
 
@@ -693,6 +715,35 @@ class GameService {
       await _save(_cache.copyWith(badges: after));
     }
     return newBadges;
+  }
+
+  // ─── Zikir counter (daily reset, persistent) ───
+  static const zikirGoal = 100;
+
+  /// Today's zikir count (resets if date changed).
+  static int get zikirCountToday {
+    final today = todayStr();
+    return _cache.zikirCounter.date == today ? _cache.zikirCounter.count : 0;
+  }
+
+  /// Increment zikir +1. Awards 1 XP per click. Returns (newCount, didLevelUp).
+  static Future<(int, bool)> incrementZikir() async {
+    final today = todayStr();
+    final zc = _cache.zikirCounter;
+    final newCount = (zc.date == today ? zc.count : 0) + 1;
+
+    final oldInfo = getLevelInfo(_cache.xp);
+    final newXp = _cache.xp + 1; // +1 XP per zikir
+    final newInfo = getLevelInfo(newXp);
+
+    final newState = _cache.copyWith(
+      xp: newXp,
+      level: newInfo.level,
+      zikirCounter: ZikirCounter(date: today, count: newCount),
+    );
+    await _save(newState);
+    await refreshBadges();
+    return (newCount, newInfo.level > oldInfo.level);
   }
 
   // ─── Daily check: streak recovery + comeback counter ───

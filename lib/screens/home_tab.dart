@@ -768,6 +768,9 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _dailyBento() {
+    final zikirCount = GameService.zikirCountToday;
+    final goal = GameService.zikirGoal;
+    final progress = (zikirCount / goal).clamp(0.0, 1.0);
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -776,11 +779,48 @@ class _HomeTabState extends State<HomeTab> {
       crossAxisSpacing: AppSpacing.sm,
       childAspectRatio: 0.95,
       children: [
-        _zikirTile('SUBHANALLAH', '33', AppColors.primary, '+1 XP', Icons.refresh,
-            onTap: () => _showDzikir('Subhanallah',
-                'سُبْحَانَ اللهِ',
-                'Subhanallah',
-                'Maha Suci Allah, sering diucapkan sebagai dzikir penghapus dosa.')),
+        // ── Zikir Clicker (persistent counter) ──
+        InkWell(
+          onTap: () async {
+            final (newCount, leveledUp) = await GameService.incrementZikir();
+            if (!mounted) return;
+            setState(() {});
+            if (newCount == goal) {
+              _showZikirComplete();
+            } else if (leveledUp) {
+              _showLevelUp();
+            }
+          },
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('DAILY ZIKIR', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10)),
+                const SizedBox(height: 4),
+                Text('$zikirCount', style: AppText.displayHero(32).copyWith(color: AppColors.primary)),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 4,
+                    backgroundColor: AppColors.surfaceContainerHighest,
+                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text('GOAL: $goal', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
+              ],
+            ),
+          ),
+        ),
         _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '+1 XP', Icons.refresh,
             onTap: () => _showDzikir('Alhamdulillah',
                 'الْحَمْدُ لِلَّهِ',
@@ -797,6 +837,35 @@ class _HomeTabState extends State<HomeTab> {
                 'Asbahna wa asbaha al-mulku lillah',
                 'Kami memasuki waktu pagi dan kerajaan hanya bagi Allah.')),
       ],
+    );
+  }
+
+  void _showZikirComplete() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Text('🎉 ', style: TextStyle(fontSize: 20)),
+            SizedBox(width: 8),
+            Expanded(child: Text('Zikir harian selesai! MasyaAllah 🤲')),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showLevelUp() {
+    final info = GameService.getLevelInfo(GameService.current.xp);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('⬆️ Level Up! LVL ${info.level}'),
+        backgroundColor: AppColors.tertiary,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
