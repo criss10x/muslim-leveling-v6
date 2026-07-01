@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/game_service.dart';
 import '../../services/prayer_service.dart';
+import '../../services/notification_service.dart';
 import 'naik_level_screen.dart';
 
 extension _StringExt on String {
@@ -84,6 +85,16 @@ class _HomeTabState extends State<HomeTab> {
           maghrib: j['maghrib'] ?? '17:55',
           isya: j['isya'] ?? '19:08',
         ));
+        // Schedule adhan reminders if enabled
+        if (await NotificationService.isRemindersEnabled()) {
+          await NotificationService.scheduleAdhanReminders(loc.name, {
+            'subuh': j['subuh'] ?? '04:42',
+            'dzuhur': j['dzuhur'] ?? '12:01',
+            'ashar': j['ashar'] ?? '15:20',
+            'maghrib': j['maghrib'] ?? '17:55',
+            'isya': j['isya'] ?? '19:08',
+          });
+        }
       }
     } catch (_) {
       // ponytail: timings are optional; never let this block home

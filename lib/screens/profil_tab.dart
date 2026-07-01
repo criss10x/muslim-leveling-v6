@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
+import '../../services/notification_service.dart';
 import 'statistik_sheet.dart';
 import 'welcome_pejuang.dart';
 
@@ -261,6 +262,176 @@ class _ProfilTabState extends State<ProfilTab> {
         backgroundColor: AppColors.surfaceContainerHigh,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      ),
+    );
+  }
+
+  void _showNotifDialog() {
+    bool enabled = false;
+    String mode = 'seimbang';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          // Load initial values on first build
+          if (!enabled && mode == 'seimbang') {
+            NotificationService.isRemindersEnabled().then((v) {
+              if (mounted) setSt(() => enabled = v);
+            });
+            NotificationService.getNotifMode().then((m) {
+              if (mounted) setSt(() => mode = m);
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: AppColors.surfaceContainerHigh,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+            title: Row(
+              children: [
+                Icon(Icons.notifications_active, color: AppColors.primary, size: 24),
+                const SizedBox(width: AppSpacing.sm),
+                Text('Pengingat Adzan', style: AppText.bodyLg().copyWith(color: AppColors.onSurface)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Toggle enable
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Aktifkan pengingat',
+                        style: AppText.bodyMd().copyWith(color: AppColors.onSurface),
+                      ),
+                    ),
+                    Switch(
+                      value: enabled,
+                      onChanged: (v) async {
+                        if (v) {
+                          // Request permission first
+                          final granted = await NotificationService.requestPermission();
+                          if (!granted) {
+                            _showSettingSnackbar('Izin notifikasi ditolak. Aktifkan manual di pengaturan HP.');
+                            return;
+                          }
+                          await NotificationService.setRemindersEnabled(true);
+                        } else {
+                          await NotificationService.setRemindersEnabled(false);
+                        }
+                        setSt(() => enabled = v);
+                      },
+                      activeThumbColor: AppColors.primary,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // Mode selection
+                AnimatedOpacity(
+                  opacity: enabled ? 1.0 : 0.4,
+                  duration: const Duration(milliseconds: 200),
+                  child: AbsorbPointer(
+                    absorbing: !enabled,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Mode Pengingat', style: AppText.bodyMd().copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        )),
+                        const SizedBox(height: AppSpacing.sm),
+                        _notifModeOption('fokus', '🎯 Fokus', 'Hanya pengingat utama di waktu adzan', mode, (m) => setSt(() => mode = m)),
+                        _notifModeOption('seimbang', '⚖️ Seimbang', 'Diingetin 15 menit sebelum & saat adzan', mode, (m) => setSt(() => mode = m)),
+                        _notifModeOption('intensif', '🔥 Intensif', '30 menit, 5 menit sebelum & saat adzan', mode, (m) => setSt(() => mode = m)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // Test button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            await NotificationService.setNotifMode(mode);
+                            await NotificationService.sendTestNotification(mode);
+                          }
+                        : null,
+                    icon: Icon(Icons.send, size: 16, color: enabled ? AppColors.primary : AppColors.onSurfaceVariant),
+                    label: Text('Tes Notifikasi', style: AppText.bodyMd().copyWith(
+                      color: enabled ? AppColors.primary : AppColors.onSurfaceVariant,
+                    )),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Tutup', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  if (enabled) {
+                    await NotificationService.setNotifMode(mode);
+                    _showSettingSnackbar('Pengingat adzan aktif: mode ${mode[0].toUpperCase()}${mode.substring(1)} 🔔');
+                  } else {
+                    _showSettingSnackbar('Pengingat adzan dimatikan');
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                child: Text('Simpan', style: AppText.bodyMd().copyWith(color: AppColors.onPrimary)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _notifModeOption(String value, String label, String desc, String current, ValueChanged<String> onTap) {
+    final selected = value == current;
+    return InkWell(
+      onTap: () => onTap(value),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryContainer.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: selected ? AppColors.primary.withValues(alpha: 0.5) : AppColors.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? AppColors.primary : AppColors.onSurfaceVariant,
+              size: 20,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: AppText.bodyMd().copyWith(
+                    color: AppColors.onSurface,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  )),
+                  Text(desc, style: AppText.bodyMd().copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 12,
+                  )),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -783,7 +954,7 @@ class _ProfilTabState extends State<ProfilTab> {
   Widget _settings() {
     final rows = <_SettingRow>[
       _SettingRow('Pengaturan Akun', Icons.person_outline, onTap: _editNickname),
-      _SettingRow('Notifikasi', Icons.notifications_outlined, onTap: () => _showSettingSnackbar('Pengaturan notifikasi akan datang di update berikutnya')),
+      _SettingRow('Notifikasi', Icons.notifications_outlined, onTap: _showNotifDialog),
       _SettingRow('Tema & Tampilan', Icons.palette_outlined, onTap: () => _showSettingSnackbar('Saat ini hanya tema gelap yang tersedia')),
       _SettingRow('Privasi & Data', Icons.lock_outline, onTap: _showPrivacyDialog),
       _SettingRow('Tentang Aplikasi', Icons.info_outline, onTap: _showAboutDialog),
