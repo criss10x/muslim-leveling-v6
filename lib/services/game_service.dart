@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -115,6 +116,8 @@ class GameState {
   final int comebackCount;     // total streak recoveries
   final List<String> badges;   // earned badge IDs
   final ZikirCounter zikirCounter; // daily zikir counter
+  final List<String> rewards;          // collected cosmetic reward names
+  final String dailyChestOpenedDate;   // YYYY-MM-DD last chest open ("" = never)
 
   GameState({
     this.xp = 0, this.level = 1,
@@ -124,6 +127,8 @@ class GameState {
     this.lastCheckedDate = '', this.comebackCount = 0,
     this.badges = const [],
     ZikirCounter? zikirCounter,
+    this.rewards = const [],
+    this.dailyChestOpenedDate = '',
   })  : timings = timings ?? Timings(),
         prayerLog = prayerLog ?? [],
         heroStreak = heroStreak ?? StreakState(),
@@ -138,6 +143,8 @@ class GameState {
     StreakState? tilawahStreak, List<Quest>? quests, String? questDate,
     String? lastCheckedDate, int? comebackCount, List<String>? badges,
     ZikirCounter? zikirCounter,
+    List<String>? rewards,
+    String? dailyChestOpenedDate,
   }) => GameState(
       xp: xp ?? this.xp, level: level ?? this.level,
       timings: timings ?? this.timings, prayerLog: prayerLog ?? this.prayerLog,
@@ -148,7 +155,9 @@ class GameState {
       lastCheckedDate: lastCheckedDate ?? this.lastCheckedDate,
       comebackCount: comebackCount ?? this.comebackCount,
       badges: badges ?? this.badges,
-      zikirCounter: zikirCounter ?? this.zikirCounter);
+      zikirCounter: zikirCounter ?? this.zikirCounter,
+      rewards: rewards ?? this.rewards,
+      dailyChestOpenedDate: dailyChestOpenedDate ?? this.dailyChestOpenedDate);
 
   factory GameState.fromMap(Map<String, dynamic> m) {
     final logList = (m['prayerLog'] as List?)?.map((e) => PrayerLog.fromMap(e as Map<String, dynamic>)).toList() ?? [];
@@ -157,6 +166,7 @@ class GameState {
     (m['perPrayerStreaks'] as Map<String, dynamic>?)?.forEach((k, v) =>
         pstr[k] = StreakState.fromMap(v as Map<String, dynamic>));
     final badgeList = (m['badges'] as List?)?.cast<String>() ?? [];
+    final rewardList = (m['rewards'] as List?)?.cast<String>() ?? [];
     final zikir = m['zikirCounter'] != null
         ? ZikirCounter.fromMap(m['zikirCounter'] as Map<String, dynamic>)
         : const ZikirCounter();
@@ -172,6 +182,8 @@ class GameState {
       comebackCount: m['comebackCount'] ?? 0,
       badges: badgeList,
       zikirCounter: zikir,
+      rewards: rewardList,
+      dailyChestOpenedDate: m['dailyChestOpenedDate'] ?? '',
     );
   }
   Map<String, dynamic> toMap() => {
@@ -186,6 +198,8 @@ class GameState {
     'comebackCount': comebackCount,
     'badges': badges,
     'zikirCounter': zikirCounter.toMap(),
+    'rewards': rewards,
+    'dailyChestOpenedDate': dailyChestOpenedDate,
   };
 }
 
@@ -195,6 +209,7 @@ class GameService {
   static const _key = 'game_state_v1';
   static GameState _cache = GameState();
   static GameState get current => _cache;
+  static final _rng = Random();
 
   static Future<GameState> load() async {
     final p = await SharedPreferences.getInstance();
@@ -911,6 +926,88 @@ class GameService {
     }
     return 'Subuh|${t.subuh}|besok';
   }
+
+  // ─── Daily Reward Chest ───
+  // Port dari GameViewModel.kt claimDailyChest() (main branch Kotlin).
+  // Syarat: 5/5 wajib selesai hari ini + belum dibuka hari ini.
+  // Reward: 50-150 XP + random cosmetic dari pool 10 items (prioritas belum dimiliki).
+
+  static const chestRewardPool = <(String name, String emoji)>[
+    ('Lencana Bulan Sabit Menyala',  '🌙'),
+    ('Efek Aura Sultan',             '🔱'),
+    ('Bingkai Penjelajah Subuh',     '🖼️'),
+    ('Gelar Pembasmi Sunyi Tahajjud','⚔️'),
+    ('Ikon Ramuan Mana Dzikir',      '🧪'),
+    ('Segel Penjaga Maghrib',        '🌌'),
+    ('Jejak Api Istiqomah',          '☄️'),
+    ("Jubah Bijak Al-Qur'an",        '🥋'),
+    ('Sayap Malaikat Istiqomah',     '👼'),
+    ('Pedang Sholat Mitik',          '🗡️'),
+  ];
+
+  /// True if 5/5 wajib logged today AND chest not yet opened today.
+  static bool get isDailyChestAvailable {
+    if (_cache.dailyChestOpenedDate == todayStr()) return false;
+    return wajibList.every((p) =>
+        _cache.prayerLog.any((l) => l.date == todayStr() && l.prayer == p));
+  }
+
+  /// True if chest already opened today.
+  static bool get isDailyChestOpened =>
+      _cache.dailyChestOpenedDate == todayStr();
+
+  /// Claim the daily chest. Returns reveal data or null if not eligible.
+  static Future<ChestRevealState?> claimDailyChest() async {
+    if (!isDailyChestAvailable) return null;
+
+    final xpReward = 50 + _rng.nextInt(101); // 50-150
+    final oldInfo = getLevelInfo(_cache.xp);
+    final newInfo = getLevelInfo(_cache.xp + xpReward);
+
+    // Pick cosmetic: prioritize not-yet-owned
+    final owned = _cache.rewards.toSet();
+    final unowned = chestRewardPool.where((r) => !owned.contains(r.$1)).toList();
+    final pool = unowned.isNotEmpty ? unowned : chestRewardPool.toList();
+    final pick = pool[_rng.nextInt(pool.length)];
+    final isDuplicate = owned.contains(pick.$1);
+
+    final newRewards = isDuplicate
+        ? _cache.rewards
+        : [..._cache.rewards, pick.$1];
+
+    await _save(_cache.copyWith(
+      xp: _cache.xp + xpReward,
+      level: newInfo.level,
+      rewards: newRewards,
+      dailyChestOpenedDate: todayStr(),
+    ));
+    await refreshBadges(); // mythic_reached may unlock
+
+    return ChestRevealState(
+      xpReward: xpReward,
+      rewardName: pick.$1,
+      rewardEmoji: pick.$2,
+      isDuplicate: isDuplicate,
+      didLevelUp: newInfo.level > oldInfo.level,
+    );
+  }
+}
+
+/// Chest reveal data returned by [GameService.claimDailyChest].
+class ChestRevealState {
+  final int xpReward;
+  final String rewardName;
+  final String rewardEmoji;
+  final bool isDuplicate;
+  final bool didLevelUp;
+
+  const ChestRevealState({
+    required this.xpReward,
+    required this.rewardName,
+    required this.rewardEmoji,
+    required this.isDuplicate,
+    required this.didLevelUp,
+  });
 }
 
 // ponytail: self-check

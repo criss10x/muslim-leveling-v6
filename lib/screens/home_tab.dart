@@ -180,6 +180,8 @@ class _HomeTabState extends State<HomeTab> {
               Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _sideQuest(context)),
               const SizedBox(height: AppSpacing.lg),
               Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _dailyBento()),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _dailyChest()),
               if (_error.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -854,6 +856,241 @@ class _HomeTabState extends State<HomeTab> {
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),
+    );
+  }
+
+  // ─── Daily Reward Chest ───
+  Widget _dailyChest() {
+    final wajibDone = GameService.checkedWajibToday;
+    final isOpened = GameService.isDailyChestOpened;
+    final isReady = GameService.isDailyChestAvailable;
+    final totalWajib = 5;
+
+    // Determine state
+    final String emoji;
+    final String label;
+    final String subtitle;
+    final Color accent;
+    final bool canTap;
+
+    if (isOpened) {
+      emoji = '📭';
+      label = 'CHEST DIBUKA';
+      subtitle = 'Besok lagi ya kak! 🌙';
+      accent = AppColors.onSurfaceVariant;
+      canTap = false;
+    } else if (isReady) {
+      emoji = '🎁';
+      label = 'REWARD SIAP!';
+      subtitle = 'Klik untuk klaim 🎉';
+      accent = AppColors.tertiary;
+      canTap = true;
+    } else {
+      emoji = '🔒';
+      label = 'DAILY CHEST';
+      subtitle = 'Selesaikan 5 wajib';
+      accent = AppColors.primary;
+      canTap = false;
+    }
+
+    return InkWell(
+      onTap: canTap ? _claimChest : null,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          gradient: isReady
+              ? LinearGradient(
+                  colors: [
+                    AppColors.tertiary.withValues(alpha: 0.15),
+                    AppColors.tertiary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isReady ? null : AppColors.surfaceContainer.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(
+            color: isReady ? AppColors.tertiary : accent.withValues(alpha: 0.3),
+            width: isReady ? 2 : 1,
+          ),
+          boxShadow: isReady
+              ? [
+                  BoxShadow(
+                    color: AppColors.tertiary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            // Emoji chest
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent.withValues(alpha: 0.12),
+              ),
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 28)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            // Text content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: AppText.labelCaps().copyWith(color: accent, fontSize: 11)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: AppText.bodyMd().copyWith(
+                        color: AppColors.onSurface,
+                        fontWeight: FontWeight.w600,
+                      )),
+                  const SizedBox(height: 8),
+                  // Progress dots: 5 wajib
+                  Row(
+                    children: List.generate(totalWajib, (i) {
+                      final done = i < wajibDone;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: done ? accent : accent.withValues(alpha: 0.2),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+            // CTA arrow
+            if (canTap)
+              Icon(Icons.arrow_forward_ios, color: accent, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _claimChest() async {
+    final reveal = await GameService.claimDailyChest();
+    if (!mounted || reveal == null) return;
+    setState(() {});
+    _showChestReveal(reveal);
+  }
+
+  void _showChestReveal(ChestRevealState reveal) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.tertiary.withValues(alpha: 0.2),
+                  AppColors.surface,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+              border: Border.all(color: AppColors.tertiary, width: 2),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Emoji reward
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.tertiary.withValues(alpha: 0.15),
+                  ),
+                  child: Center(
+                    child: Text(reveal.rewardEmoji, style: const TextStyle(fontSize: 44)),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text('REWARD DIDAPAT!',
+                    style: AppText.labelCaps().copyWith(
+                      color: AppColors.tertiary,
+                      fontSize: 12,
+                    )),
+                const SizedBox(height: AppSpacing.sm),
+                Text(reveal.rewardName,
+                    style: AppText.displayHero(20).copyWith(
+                      color: AppColors.onSurface,
+                    ),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: AppSpacing.md),
+                // XP reward
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.tertiary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
+                  child: Text('+${reveal.xpReward} XP',
+                      style: AppText.labelCaps().copyWith(
+                        color: AppColors.tertiary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      )),
+                ),
+                if (reveal.isDuplicate) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text('Item duplikat — koleksi tetap tersimpan 📦',
+                      style: AppText.bodyMd().copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 12,
+                      )),
+                ],
+                if (reveal.didLevelUp) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text('⬆️ Level Up!',
+                      style: AppText.labelCaps().copyWith(
+                        color: AppColors.tertiary,
+                        fontSize: 14,
+                      )),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.tertiary,
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                    ),
+                    child: const Text('Alhamdulillah! 🤲'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
