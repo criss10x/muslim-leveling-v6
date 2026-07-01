@@ -3,16 +3,18 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ponytail: stdlib HttpClient + SharedPreferences. No dio, no riverpod.
-/// API: api.myquran.com/v2 (Kemenag proxy), with Aladhan fallback.
+/// API: api.myquran.com/v3 (Kemenag proxy), with Aladhan fallback.
+/// v3 changed from numeric city IDs to MD5 city IDs and date-keyed jadwal map.
 class PrayerService {
-  static const _base = 'https://api.myquran.com/v2/sholat';
+  static const _base = 'https://api.myquran.com/v3/sholat';
   static const _aladhanBase = 'https://api.aladhan.com/v1/timingsByCity';
-  static const _cacheKey = 'prayer_cache_v1';
+  static const _cacheKey = 'prayer_cache_v2';
   static final _client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
 
   static Future<List<Map<String, dynamic>>> searchCities(String q) async {
     if (q.trim().isEmpty) return const [];
-    final uri = Uri.parse('$_base/kota/cari/${Uri.encodeComponent(q.trim())}');
+    // v3: /kabkota/cari/{keyword} (was /kota/cari/{q} in v2)
+    final uri = Uri.parse('$_base/kabkota/cari/${Uri.encodeComponent(q.trim())}');
     try {
       final req = await _client.getUrl(uri);
       final res = await req.close();
@@ -63,9 +65,10 @@ class PrayerService {
     required String cityId,
     required DateTime date,
   }) async {
-    final uri = Uri.parse(
-      '$_base/jadwal/$cityId/${date.year}/${date.month}/${date.day}',
-    );
+    // v3: /jadwal/{cityId}/{YYYY-MM-DD}  (was /jadwal/{cityId}/{Y}/{M}/{D} in v2)
+    // v3 response: data.jadwal["YYYY-MM-DD"] = {tanggal, imsak, subuh, ...}
+    final dateKey = _dateKey(date);
+    final uri = Uri.parse('$_base/jadwal/$cityId/$dateKey');
     try {
       final req = await _client.getUrl(uri);
       final res = await req.close();
@@ -73,8 +76,13 @@ class PrayerService {
       final body = await res.transform(utf8.decoder).join();
       final json = jsonDecode(body) as Map<String, dynamic>;
       if (json['status'] != true) return null;
-      final jadwal = (json['data']?['jadwal']) as Map<String, dynamic>?;
-      if (jadwal == null) return null;
+      final data = (json['data']) as Map<String, dynamic>?;
+      if (data == null) return null;
+      final jadwalMap = (data['jadwal']) as Map<String, dynamic>?;
+      if (jadwalMap == null || jadwalMap.isEmpty) return null;
+      // v3: jadwal is date-keyed map, take the entry for this date
+      final jadwal = (jadwalMap[dateKey] ?? jadwalMap.values.first)
+          as Map<String, dynamic>;
       return {
         'imsak': jadwal['imsak'] as String? ?? '',
         'subuh': jadwal['subuh'] as String? ?? '',
@@ -85,8 +93,8 @@ class PrayerService {
         'maghrib': jadwal['maghrib'] as String? ?? '',
         'isya': jadwal['isya'] as String? ?? '',
         'tanggal': jadwal['tanggal'] as String? ?? '',
-        'lokasi': (json['data']?['lokasi'] as String?) ?? '',
-        'daerah': (json['data']?['daerah'] as String?) ?? '',
+        'lokasi': (data['kabko'] as String?) ?? '',
+        'daerah': (data['prov'] as String?) ?? '',
       };
     } catch (_) {
       return null;
