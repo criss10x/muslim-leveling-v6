@@ -9,6 +9,7 @@ import '../../widgets/common.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
 import '../../services/notification_service.dart';
+import '../../widgets/tier_avatar.dart';
 import 'statistik_sheet.dart';
 import 'welcome_pejuang.dart';
 
@@ -28,6 +29,7 @@ class _ProfilTabState extends State<ProfilTab> {
   // ignore: unused_field
   String _cityId = '1301';
   String? _avatarPath;
+  int _level = 1;
 
   @override
   void initState() {
@@ -39,9 +41,12 @@ class _ProfilTabState extends State<ProfilTab> {
     await GameService.load();
     final p = await SharedPreferences.getInstance();
     final loc = await PrayerService.loadLocation();
+    final state = GameService.current;
+    final levelInfo = GameService.getLevelInfo(state.xp);
     setState(() {
       _nickname = p.getString('nickname') ?? 'Pejuang';
       _avatarPath = p.getString('avatar_path');
+      _level = levelInfo.level;
       if (loc != null) {
         _cityId = loc.id;
         _cityName = loc.name;
@@ -559,43 +564,37 @@ class _ProfilTabState extends State<ProfilTab> {
                   child: Stack(
                     alignment: Alignment.bottomRight,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        child: Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.secondaryContainer, AppColors.secondaryFixed],
-                            ),
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.secondaryFixed.withValues(alpha: 0.4),
-                                blurRadius: 15,
-                              ),
-                            ],
-                          ),
-                          child: _avatarPath != null && File(_avatarPath!).existsSync()
-                              ? Image.file(
-                                  File(_avatarPath!),
-                                  fit: BoxFit.cover,
-                                )
-                              : const Icon(
-                                  Icons.shield,
-                                  color: AppColors.onSecondaryContainer,
-                                  size: 32,
-                                ),
-                        ),
+                      TierProfileAvatar(
+                        profileImagePath: _avatarPath,
+                        tierName: getTierName(_level),
+                        sizeDp: 64,
+                        showEditBadge: true,
+                        onTap: _showAvatarOptions,
                       ),
+                      // LVL badge bottom-right
                       Container(
                         margin: const EdgeInsets.all(2),
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(color: AppColors.primary, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
-                        child: const Icon(Icons.camera_alt, color: AppColors.onPrimary, size: 12),
+                        child: Text(
+                          'LVL $_level',
+                          style: AppText.labelCaps().copyWith(
+                            color: AppColors.primary,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ],
                   ),
