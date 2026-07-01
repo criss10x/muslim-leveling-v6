@@ -482,41 +482,54 @@ class _HomeTabState extends State<HomeTab> {
           final done = GameService.isPrayerCheckedToday(p);
           final t = _state.timings;
           final active = !done && GameService.isCurrentOrUpcoming(p, t);
+          final locked = !done && !GameService.isPrayerWindowOpen(p, t);
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: _prayerRow(p.cap, done, active, () => _togglePrayer(p, 'wajib')),
+            child: _prayerRow(p.cap, done, active, locked, () => _togglePrayer(p, 'wajib')),
           );
         }),
       ],
     );
   }
 
-  Widget _prayerRow(String name, bool done, bool active, VoidCallback onTap) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: done
-              ? AppColors.primary.withValues(alpha: 0.6)
-              : (active ? AppColors.tertiary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
-          width: done || active ? 2 : 1,
+  Widget _prayerRow(String name, bool done, bool active, bool locked, VoidCallback onTap) {
+    final dimmed = locked && !done;
+    return Opacity(
+      opacity: dimmed ? 0.5 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainer.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: done
+                ? AppColors.primary.withValues(alpha: 0.6)
+                : (active ? AppColors.tertiary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
+            width: done || active ? 2 : 1,
+          ),
         ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        child: Row(
-          children: [
-            Icon(done ? Icons.check_circle : (active ? Icons.circle_outlined : Icons.radio_button_unchecked),
-                color: done ? AppColors.primary : (active ? AppColors.tertiary : AppColors.onSurfaceVariant), size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(child: Text(name, style: AppText.bodyMd())),
-            if (done)
-              Text('SELESAI', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10))
-            else if (active)
-              Text('AKTIF', style: AppText.labelCaps().copyWith(color: AppColors.tertiary, fontSize: 10)),
-          ],
+        child: InkWell(
+          onTap: locked ? null : onTap,
+          child: Row(
+            children: [
+              Icon(
+                  done
+                      ? Icons.check_circle
+                      : (locked ? Icons.lock_outline : (active ? Icons.circle_outlined : Icons.radio_button_unchecked)),
+                  color: done
+                      ? AppColors.primary
+                      : (locked ? AppColors.onSurfaceVariant : (active ? AppColors.tertiary : AppColors.onSurfaceVariant)),
+                  size: 22),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: Text(name, style: AppText.bodyMd())),
+              if (done)
+                Text('SELESAI', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10))
+              else if (locked)
+                Text('LOCKED', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10))
+              else if (active)
+                Text('AKTIF', style: AppText.labelCaps().copyWith(color: AppColors.tertiary, fontSize: 10)),
+            ],
+          ),
         ),
       ),
     );
