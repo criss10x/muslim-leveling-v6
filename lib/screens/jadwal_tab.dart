@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/city_picker.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
 import 'qibla_screen.dart';
@@ -39,6 +40,17 @@ class _JadwalTabState extends State<JadwalTab> {
       await p.setString('city_id', _cityId);
       await p.setString('city_name', _cityName);
     }
+    await _fetch();
+  }
+
+  Future<void> _changeLocation() async {
+    final picked = await CityPicker.show(context);
+    if (picked == null) return;
+    await PrayerService.saveLocation(picked.id, picked.name);
+    setState(() {
+      _cityId = picked.id;
+      _cityName = picked.name;
+    });
     await _fetch();
   }
 
@@ -199,12 +211,19 @@ class _JadwalTabState extends State<JadwalTab> {
               const Icon(Icons.location_on, size: 14, color: AppColors.onSurfaceVariant),
               const SizedBox(width: 4),
               Expanded(
-                child: Text(
-                  _cityName,
-                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: InkWell(
+                  onTap: _changeLocation,
+                  child: Text(
+                    _cityName,
+                    style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+              ),
+              InkWell(
+                onTap: _changeLocation,
+                child: const Icon(Icons.edit, size: 14, color: AppColors.primary),
               ),
             ],
           ),
