@@ -589,15 +589,15 @@ class _HomeTabState extends State<HomeTab> {
   Widget _bonusQuest() {
     final t = _state.timings;
     final items = [
-      ('Dhuha', 'dhuha', 'Setelah matahari naik sampai sebelum Dzuhur', Icons.wb_sunny),
-      ('Tahajjud', 'tahajjud', 'Setelah Isya sampai sebelum Imsak', Icons.nights_stay),
-      ('Qobliyah Subuh', 'rawatib_subuh_qobliyah', '2 rakaat sebelum Subuh', Icons.history),
-      ("Ba'diyah Subuh", 'rawatib_subuh_ba_diyyah', '2 rakaat sesudah Subuh', Icons.history),
-      ('Qobliyah Dzuhur', 'rawatib_dzuhur_qobliyah', '2-4 rakaat sebelum Dzuhur', Icons.history),
-      ("Ba'diyah Dzuhur", 'rawatib_dzuhur_ba_diyyah', '2 rakaat sesudah Dzuhur', Icons.history),
-      ('Qobliyah Ashar', 'rawatib_ashar_qobliyah', '2-4 rakaat sebelum Ashar', Icons.history),
-      ("Ba'diyah Maghrib", 'rawatib_maghrib_ba_diyyah', '2 rakaat sesudah Maghrib', Icons.history),
-      ("Ba'diyah Isya", 'rawatib_isya_ba_diyyah', '2 rakaat sesudah Isya', Icons.history),
+      ('Dhuha', 'dhuha', 'Sunnah mutlak di pagi hari', Icons.wb_sunny),
+      ('Tahajjud', 'tahajjud', 'Sunnah malam (qiyamul lail)', Icons.nights_stay),
+      ('Qobliyah Subuh', 'rawatib_subuh_qobliyah', 'Sunnah sebelum Subuh', Icons.history),
+      ("Ba'diyah Subuh", 'rawatib_subuh_ba_diyyah', 'Sunnah sesudah Subuh', Icons.history),
+      ('Qobliyah Dzuhur', 'rawatib_dzuhur_qobliyah', 'Sunnah sebelum Dzuhur', Icons.history),
+      ("Ba'diyah Dzuhur", 'rawatib_dzuhur_ba_diyyah', 'Sunnah sesudah Dzuhur', Icons.history),
+      ('Qobliyah Ashar', 'rawatib_ashar_qobliyah', 'Sunnah sebelum Ashar', Icons.history),
+      ("Ba'diyah Maghrib", 'rawatib_maghrib_ba_diyyah', 'Sunnah sesudah Maghrib', Icons.history),
+      ("Ba'diyah Isya", 'rawatib_isya_ba_diyyah', 'Sunnah sesudah Isya', Icons.history),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,7 +646,7 @@ class _HomeTabState extends State<HomeTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name, style: AppText.bodyLg()),
-                    Text('+$xp XP', style: AppText.labelCaps().copyWith(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+                    Text(sub, style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),

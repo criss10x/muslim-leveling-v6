@@ -300,6 +300,7 @@ class GameService {
       case 'dhuha': return isAfter(now, addMin(t.terbit, 15)) && isBefore(now, t.dzuhur);
       case 'tahajjud': return _isTimeBetweenWrap(now, t.isya, t.imsak);
       case 'rawatib_subuh_qobliyah': return isAfter(now, t.subuh) && isBefore(now, t.terbit);
+      case 'rawatib_subuh_ba_diyyah': return isAfter(now, t.subuh) && isBefore(now, t.terbit);
       case 'rawatib_dzuhur_qobliyah': return isAfter(now, t.subuh) && isBefore(now, t.dzuhur);
       case "rawatib_dzuhur_ba'diyyah": return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
       case 'rawatib_ashar_qobliyah': return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
@@ -313,6 +314,7 @@ class GameService {
     'dhuha' => 'Dhuha bisa setelah matahari naik (±15 min setelah terbit) sampai sebelum Dzuhur.',
     'tahajjud' => 'Tahajjud waktu setelah Isya sampai sebelum Imsak.',
     'rawatib_subuh_qobliyah' => 'Qobliyah Subuh waktunya sama dengan sholat Subuh (dari Subuh sampai Terbit).',
+    'rawatib_subuh_ba_diyyah' => 'Ba\'diyah Subuh waktunya setelah Subuh sampai sebelum Terbit.',
     'rawatib_dzuhur_qobliyah' => 'Qobliyah Dzuhur waktunya setelah Subuh sampai sebelum adzan Dzuhur.',
     "rawatib_dzuhur_ba'diyyah" => "Ba'diyah Dzuhur waktunya setelah Dzuhur sampai sebelum Ashar.",
     'rawatib_ashar_qobliyah' => 'Qobliyah Ashar waktunya setelah Dzuhur sampai sebelum adzan Ashar.',
