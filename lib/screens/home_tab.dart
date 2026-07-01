@@ -46,6 +46,7 @@ class _HomeTabState extends State<HomeTab> {
     _error = '';
     try {
       await GameService.load();
+      await GameService.runDailyCheck();
       await GameService.ensureDailyQuests();
       final p = await SharedPreferences.getInstance();
       await _fetchTimingsSilently();

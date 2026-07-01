@@ -46,15 +46,21 @@ class PrayerLog {
 class StreakState {
   final int current, best;
   final String lastDate;
-  StreakState({this.current = 0, this.best = 0, this.lastDate = ''});
-  StreakState copyWith({int? current, int? best, String? lastDate}) => StreakState(
+  final bool freezeAvailable;
+  StreakState({this.current = 0, this.best = 0, this.lastDate = '', this.freezeAvailable = true});
+  StreakState copyWith({int? current, int? best, String? lastDate, bool? freezeAvailable}) => StreakState(
         current: current ?? this.current,
         best: best ?? this.best,
         lastDate: lastDate ?? this.lastDate,
+        freezeAvailable: freezeAvailable ?? this.freezeAvailable,
       );
   factory StreakState.fromMap(Map<String, dynamic> m) => StreakState(
-        current: m['current'] ?? 0, best: m['best'] ?? 0, lastDate: m['lastDate'] ?? '');
-  Map<String, dynamic> toMap() => {'current': current, 'best': best, 'lastDate': lastDate};
+        current: m['current'] ?? 0, best: m['best'] ?? 0,
+        lastDate: m['lastDate'] ?? '',
+        freezeAvailable: m['freezeAvailable'] ?? true);
+  Map<String, dynamic> toMap() => {
+    'current': current, 'best': best, 'lastDate': lastDate,
+    'freezeAvailable': freezeAvailable};
 }
 
 class Quest {
@@ -93,12 +99,15 @@ class GameState {
   final StreakState tilawahStreak;
   final List<Quest> quests;
   final String questDate;
+  final String lastCheckedDate; // YYYY-MM-DD — last time dailyCheck ran
+  final int comebackCount;     // total streak recoveries
 
   GameState({
     this.xp = 0, this.level = 1,
     Timings? timings, List<PrayerLog>? prayerLog,
     StreakState? heroStreak, Map<String, StreakState>? perPrayerStreaks,
     StreakState? tilawahStreak, List<Quest>? quests, this.questDate = '',
+    this.lastCheckedDate = '', this.comebackCount = 0,
   })  : timings = timings ?? Timings(),
         prayerLog = prayerLog ?? [],
         heroStreak = heroStreak ?? StreakState(),
@@ -110,13 +119,16 @@ class GameState {
     int? xp, int? level, Timings? timings, List<PrayerLog>? prayerLog,
     StreakState? heroStreak, Map<String, StreakState>? perPrayerStreaks,
     StreakState? tilawahStreak, List<Quest>? quests, String? questDate,
+    String? lastCheckedDate, int? comebackCount,
   }) => GameState(
       xp: xp ?? this.xp, level: level ?? this.level,
       timings: timings ?? this.timings, prayerLog: prayerLog ?? this.prayerLog,
       heroStreak: heroStreak ?? this.heroStreak,
       perPrayerStreaks: perPrayerStreaks ?? this.perPrayerStreaks,
       tilawahStreak: tilawahStreak ?? this.tilawahStreak,
-      quests: quests ?? this.quests, questDate: questDate ?? this.questDate);
+      quests: quests ?? this.quests, questDate: questDate ?? this.questDate,
+      lastCheckedDate: lastCheckedDate ?? this.lastCheckedDate,
+      comebackCount: comebackCount ?? this.comebackCount);
 
   factory GameState.fromMap(Map<String, dynamic> m) {
     final logList = (m['prayerLog'] as List?)?.map((e) => PrayerLog.fromMap(e as Map<String, dynamic>)).toList() ?? [];
@@ -132,6 +144,8 @@ class GameState {
       perPrayerStreaks: pstr,
       tilawahStreak: m['tilawahStreak'] != null ? StreakState.fromMap(m['tilawahStreak'] as Map<String, dynamic>) : null,
       quests: questList, questDate: m['questDate'] ?? '',
+      lastCheckedDate: m['lastCheckedDate'] ?? '',
+      comebackCount: m['comebackCount'] ?? 0,
     );
   }
   Map<String, dynamic> toMap() => {
@@ -142,6 +156,8 @@ class GameState {
     'tilawahStreak': tilawahStreak.toMap(),
     'quests': quests.map((e) => e.toMap()).toList(),
     'questDate': questDate,
+    'lastCheckedDate': lastCheckedDate,
+    'comebackCount': comebackCount,
   };
 }
 
@@ -574,6 +590,133 @@ class GameService {
     }
     pool.shuffle();
     return pool.take(5).toList();
+  }
+
+  // ─── Daily check: streak recovery + comeback counter ───
+  // Port dari GameViewModel.runDailyCheckAndRefresh() (main branch Kotlin).
+  // Evaluasi hari² yang terlewat antara lastCheckedDate → today.
+  // Untuk setiap hari yang missed: pakai freeze jika ada, atau recovery (×0.75) + comebackCount++.
+  // Setiap awal minggu (ISO week berbeda), reset freezeAvailable = true untuk semua streak.
+  static Future<GameState> runDailyCheck() async {
+    final state = _cache;
+    final today = todayStr();
+
+    // Already checked today → skip
+    if (state.lastCheckedDate == today) {
+      // Make sure quests are generated for today
+      if (state.questDate != today) {
+        return ensureDailyQuests();
+      }
+      return state;
+    }
+
+    // First-time init
+    if (state.lastCheckedDate.isEmpty) {
+      final init = state.copyWith(lastCheckedDate: today, questDate: today);
+      await _save(init);
+      return ensureDailyQuests();
+    }
+
+    final lastChecked = DateTime.parse(state.lastCheckedDate);
+    final todayDate = DateTime.parse(today);
+
+    var hero = state.heroStreak;
+    var tilawah = state.tilawahStreak;
+    var tracker = Map<String, StreakState>.from(state.perPrayerStreaks);
+    // Ensure all 5 wajib keys exist
+    for (final p in wajibList) {
+      tracker.putIfAbsent(p, () => StreakState());
+    }
+    var comeback = state.comebackCount;
+
+    // Week rotation: reset freezeAvailable if different ISO week
+    if (_isDifferentWeek(lastChecked, todayDate)) {
+      hero = hero.copyWith(freezeAvailable: true);
+      tilawah = tilawah.copyWith(freezeAvailable: true);
+      for (final k in tracker.keys) {
+        tracker[k] = tracker[k]!.copyWith(freezeAvailable: true);
+      }
+    }
+
+    // Evaluate missed days: lastChecked+1 .. today-1 (exclusive of today)
+    var evalDate = lastChecked.add(const Duration(days: 1));
+    while (evalDate.isBefore(todayDate)) {
+      final evalStr = _dateKey(evalDate);
+      hero = _evalStreakMissed(hero, _allWajibLoggedForDate(state, evalStr), evalStr);
+      tilawah = _evalStreakMissed(tilawah, _prayerLoggedForDate(state, evalStr, 'tilawah'), evalStr);
+      for (final p in tracker.keys) {
+        tracker[p] = _evalStreakMissed(tracker[p]!, _prayerLoggedForDate(state, evalStr, p), evalStr);
+      }
+      evalDate = evalDate.add(const Duration(days: 1));
+    }
+
+    // Count recoveries (compare before/after)
+    final heroRecoveries = _countRecovery(state.heroStreak, hero);
+    final tilawahRecoveries = _countRecovery(state.tilawahStreak, tilawah);
+    var prayerRecoveries = 0;
+    for (final k in tracker.keys) {
+      prayerRecoveries += _countRecovery(state.perPrayerStreaks[k] ?? StreakState(), tracker[k]!);
+    }
+    comeback += heroRecoveries + tilawahRecoveries + prayerRecoveries;
+
+    final updated = state.copyWith(
+      heroStreak: hero,
+      perPrayerStreaks: tracker,
+      tilawahStreak: tilawah,
+      comebackCount: comeback,
+      lastCheckedDate: today,
+    );
+    await _save(updated);
+
+    // Generate fresh quests for today if needed
+    if (updated.questDate != today) {
+      return ensureDailyQuests();
+    }
+    return updated;
+  }
+
+  /// Apply missed-day penalty to a single streak.
+  /// If [logged] is true, no penalty. If freezeAvailable, consume freeze.
+  /// Else recovery: current × 0.75 (min 1 if was >0), mark comeback.
+  static StreakState _evalStreakMissed(StreakState s, bool logged, String evalDate) {
+    if (logged || s.lastDate == evalDate) return s;
+    if (s.freezeAvailable) {
+      return s.copyWith(freezeAvailable: false, lastDate: evalDate);
+    }
+    if (s.current > 0) {
+      final recovered = (s.current * 0.75).floor().clamp(1, s.current);
+      return s.copyWith(current: recovered);
+    }
+    return s;
+  }
+
+  static int _countRecovery(StreakState before, StreakState after) {
+    // Recovery = current decreased without freeze consumption
+    if (after.current < before.current && after.freezeAvailable == before.freezeAvailable) {
+      return 1;
+    }
+    return 0;
+  }
+
+  static bool _allWajibLoggedForDate(GameState state, String date) {
+    return wajibList.every((p) =>
+        state.prayerLog.any((l) => l.date == date && l.prayer == p));
+  }
+
+  static bool _prayerLoggedForDate(GameState state, String date, String prayer) {
+    return state.prayerLog.any((l) => l.date == date && l.prayer == prayer);
+  }
+
+  static String _dateKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Check if two dates are in different ISO weeks.
+  /// ISO week: Monday = start of week. Week 1 = first week with Thursday.
+  static bool _isDifferentWeek(DateTime a, DateTime b) {
+    // Find Monday of each date's week
+    final aMonday = a.subtract(Duration(days: a.weekday - 1));
+    final bMonday = b.subtract(Duration(days: b.weekday - 1));
+    return aMonday != bMonday;
   }
 
   static Future<GameState> ensureDailyQuests() async {
