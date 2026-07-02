@@ -270,6 +270,15 @@ class GameService {
   static int minDiff(String a, String b) => (_toMin(a) - _toMin(b)).abs();
   static bool isBefore(String a, String b) => _toMin(a) < _toMin(b);
   static bool isAfter(String a, String b) => _toMin(a) > _toMin(b);
+  static bool _isBetween(String now, String start, String end) {
+    final n = _toMin(now), s = _toMin(start), e = _toMin(end);
+    return n >= s && n < e;
+  }
+  static bool _isBetweenWrap(String now, String start, String end) {
+    final n = _toMin(now), s = _toMin(start), e = _toMin(end);
+    if (s <= e) return n >= s && n < e;
+    return n >= s || n < e;
+  }
   static String addMin(String t, int m) {
     final total = ((_toMin(t) + m) % 1440 + 1440) % 1440;
     return '${(total ~/ 60).toString().padLeft(2,'0')}:${(total % 60).toString().padLeft(2,'0')}';
@@ -355,6 +364,32 @@ class GameService {
     'subuh' => t.subuh, 'dzuhur' => t.dzuhur, 'ashar' => t.ashar,
     'maghrib' => t.maghrib, 'isya' => t.isya, _ => '',
   };
+
+  /// Mengembalikan sholat yang sedang aktif (wajib atau sunnah Dhuha).
+  /// Kalau tidak ada wajib yang aktif, tampilkan next wajib atau Dhuha.
+  static ({String name, String time, String label, bool isSunnah}) currentPrayerInfo(Timings t) {
+    final now = nowHHmm();
+    if (_isBetween(now, t.subuh, t.terbit)) {
+      return (name: 'Subuh', time: t.subuh, label: 'Waktu Sholat', isSunnah: false);
+    }
+    if (_isBetween(now, t.dzuhur, t.ashar)) {
+      return (name: 'Dzuhur', time: t.dzuhur, label: 'Waktu Sholat', isSunnah: false);
+    }
+    if (_isBetween(now, t.ashar, t.maghrib)) {
+      return (name: 'Ashar', time: t.ashar, label: 'Waktu Sholat', isSunnah: false);
+    }
+    if (_isBetween(now, t.maghrib, t.isya)) {
+      return (name: 'Maghrib', time: t.maghrib, label: 'Waktu Sholat', isSunnah: false);
+    }
+    if (_isBetweenWrap(now, t.isya, t.subuh)) {
+      return (name: 'Isya', time: t.isya, label: 'Waktu Sholat', isSunnah: false);
+    }
+    if (_isBetween(now, t.terbit, t.dzuhur)) {
+      return (name: 'Dhuha', time: t.dhuha, label: 'Sunnah Dhuha', isSunnah: true);
+    }
+    // Fallback: seharusnya tidak terjadi.
+    return (name: 'Subuh', time: t.subuh, label: 'Menuju Waktu', isSunnah: false);
+  }
 
   /// Re-evaluate daily quest progress from today's prayer logs.
   /// Preserves claimed quests (they stay as-is).

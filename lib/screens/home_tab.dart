@@ -169,6 +169,10 @@ class _HomeTabState extends State<HomeTab> {
               const SizedBox(height: AppSpacing.md),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _activePrayerCard(),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -322,6 +326,61 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activePrayerCard() {
+    final current = GameService.currentPrayerInfo(_state.timings);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.surfaceContainer.withValues(alpha: 0.6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  current.label.toUpperCase(),
+                  style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  current.name.toUpperCase(),
+                  style: AppText.headlineMd().copyWith(color: AppColors.onBackground),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            current.time,
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 20,
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
