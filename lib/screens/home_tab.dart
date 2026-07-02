@@ -807,7 +807,39 @@ class _HomeTabState extends State<HomeTab> {
     final progress = (zikirCount / goal).clamp(0.0, 1.0);
     return Column(
       children: [
-        // ── Zikir Clicker (full-width row, no XP) ──
+        // ── Zikir tiles grid (2×2) ──
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: AppSpacing.sm,
+          childAspectRatio: 0.95,
+          children: [
+            _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '', Icons.refresh,
+                onTap: () => _showDzikir('Alhamdulillah',
+                    'الْحَمْدُ لِلَّهِ',
+                    'Alhamdulillah',
+                    'Segala puji bagi Allah, dzikir yang mengisi timbangan amal di hari kiamat.')),
+            _zikirTile('ALLAHU AKBAR', '34', AppColors.secondaryFixed, '', Icons.refresh,
+                onTap: () => _showDzikir('Allahu Akbar',
+                    'اللَّهُ أَكْبَرُ',
+                    'Allahu Akbar',
+                    'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
+            _zikirTile('SUBHANALLAH', '33', AppColors.primary, '', Icons.refresh,
+                onTap: () => _showDzikir('Subhanallah',
+                    'سُبْحَانَ اللَّهِ',
+                    'Subhanallah',
+                    'Maha Suci Allah, dzikir yang menumbuhkan pohon-pohon di surga.')),
+            _zikirTile('LA ILAHA ILLALLAH', '100', AppColors.tertiary, '', Icons.refresh,
+                onTap: () => _showDzikir('La ilaha illallah',
+                    'لَا إِلَهَ إِلَّا اللَّهُ',
+                    'La ilaha illallah',
+                    'Tiada tuhan selain Allah, kalimat tauhid yang paling utama.')),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        // ── Zikir Clicker (full-width row below grid, no XP) ──
         InkWell(
           onTap: () async {
             final (newCount, _) = await GameService.incrementZikir();
@@ -852,38 +884,6 @@ class _HomeTabState extends State<HomeTab> {
               ],
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        // ── Zikir tiles grid (2×2) ──
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: AppSpacing.sm,
-          crossAxisSpacing: AppSpacing.sm,
-          childAspectRatio: 0.95,
-          children: [
-            _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '+1 XP', Icons.refresh,
-                onTap: () => _showDzikir('Alhamdulillah',
-                    'الْحَمْدُ لِلَّهِ',
-                    'Alhamdulillah',
-                    'Segala puji bagi Allah, dzikir yang mengisi timbangan amal di hari kiamat.')),
-            _zikirTile('ALLAHU AKBAR', '34', AppColors.secondaryFixed, '+1 XP', Icons.refresh,
-                onTap: () => _showDzikir('Allahu Akbar',
-                    'اللَّهُ أَكْبَرُ',
-                    'Allahu Akbar',
-                    'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
-            _zikirTile('SUBHANALLAH', '33', AppColors.primary, '+1 XP', Icons.refresh,
-                onTap: () => _showDzikir('Subhanallah',
-                    'سُبْحَانَ اللَّهِ',
-                    'Subhanallah',
-                    'Maha Suci Allah, dzikir yang menumbuhkan pohon-pohon di surga.')),
-            _zikirTile('LA ILAHA ILLALLAH', '100', AppColors.tertiary, '+1 XP', Icons.refresh,
-                onTap: () => _showDzikir('La ilaha illallah',
-                    'لَا إِلَهَ إِلَّا اللَّهُ',
-                    'La ilaha illallah',
-                    'Tiada tuhan selain Allah, kalimat tauhid yang paling utama.')),
-          ],
         ),
       ],
     );
@@ -1169,15 +1169,17 @@ class _HomeTabState extends State<HomeTab> {
             Text(label, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
             const SizedBox(height: 4),
             Text(count, style: AppText.displayHero(32).copyWith(color: color)),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: color, size: 12),
-                const SizedBox(width: 4),
-                Text(cta, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
-              ],
-            ),
+            if (cta.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: color, size: 12),
+                  const SizedBox(width: 4),
+                  Text(cta, style: AppText.labelCaps().copyWith(color: color, fontSize: 10)),
+                ],
+              ),
+            ],
           ],
         ),
       ),
