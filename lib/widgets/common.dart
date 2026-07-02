@@ -287,7 +287,7 @@ class NeonProgressBar extends StatelessWidget {
     required this.progress,
     this.fromColor = AppColors.primaryContainer,
     this.toColor = AppColors.primary,
-    this.height = 16,
+    this.height = 10,
     this.segmented = false,
     this.segments = 5,
     this.leadingGlow = false,
@@ -325,7 +325,8 @@ class NeonProgressBar extends StatelessWidget {
       builder: (context, constraints) {
         final barWidth = constraints.maxWidth;
         final fillWidth = barWidth * p;
-        final glowSize = height * 2.2;
+        final glowSize = height * 1.4;
+        final radius = height / 2;
         return SizedBox(
           height: height,
           width: barWidth,
@@ -337,7 +338,7 @@ class NeonProgressBar extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(height),
+                    borderRadius: BorderRadius.circular(radius),
                     border: Border.all(
                       color: AppColors.outlineVariant.withValues(alpha: 0.4),
                     ),
@@ -347,7 +348,7 @@ class NeonProgressBar extends StatelessWidget {
               // fill gradient (clipped to bar shape)
               Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(height),
+                  borderRadius: BorderRadius.circular(radius),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: p,
@@ -359,10 +360,10 @@ class NeonProgressBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // leading-edge glow: bright spot + halo OUTSIDE clip
+              // leading-edge glow: bright white spot + halo OUTSIDE clip
               if (leadingGlow && p > 0.0 && p < 1.0)
                 Positioned(
-                  left: fillWidth - glowSize / 2,
+                  left: (fillWidth - glowSize / 2).clamp(0.0, barWidth - glowSize),
                   top: -(glowSize - height) / 2,
                   width: glowSize,
                   height: glowSize,
@@ -374,11 +375,11 @@ class NeonProgressBar extends StatelessWidget {
                           center: Alignment.center,
                           radius: 0.5,
                           colors: [
-                            toColor.withValues(alpha: 1.0),
-                            toColor.withValues(alpha: 0.6),
-                            toColor.withValues(alpha: 0.0),
+                            Colors.white.withValues(alpha: 0.95),
+                            Colors.white.withValues(alpha: 0.35),
+                            Colors.white.withValues(alpha: 0.0),
                           ],
-                          stops: const [0.0, 0.35, 1.0],
+                          stops: const [0.0, 0.4, 1.0],
                         ),
                       ),
                     ),
