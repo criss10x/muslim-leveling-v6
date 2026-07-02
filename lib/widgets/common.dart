@@ -1,8 +1,12 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// Glass panel — translucent dark surface with subtle border and inner glow.
 /// Mirrors the `glass-panel` Tailwind utility used throughout the designs.
+/// Set [blurSigma] > 0 for a real frosted-glass backdrop blur (use sparingly —
+/// BackdropFilter is expensive, so reserve it for hero surfaces and the nav bar).
 class GlassPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -10,6 +14,7 @@ class GlassPanel extends StatelessWidget {
   final Color? borderColor;
   final double borderWidth;
   final List<BoxShadow>? shadow;
+  final double blurSigma;
 
   const GlassPanel({
     super.key,
@@ -19,11 +24,12 @@ class GlassPanel extends StatelessWidget {
     this.borderColor,
     this.borderWidth = 1.0,
     this.shadow,
+    this.blurSigma = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final panel = Container(
       padding: padding,
       decoration: BoxDecoration(
         color: AppColors.surfaceContainer.withValues(alpha: 0.6),
@@ -36,7 +42,322 @@ class GlassPanel extends StatelessWidget {
       ),
       child: child,
     );
+    if (blurSigma <= 0) return panel;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        child: panel,
+      ),
+    );
   }
+}
+
+/// Entrance — fades and slides a child up into place on first build.
+/// Give each section an increasing [delay] for a staggered "HUD boot" feel.
+class Entrance extends StatefulWidget {
+  final Widget child;
+  final Duration delay;
+  final Duration duration;
+  final double offsetY;
+
+  const Entrance({
+    super.key,
+    required this.child,
+    this.delay = Duration.zero,
+    this.duration = const Duration(milliseconds: 450),
+    this.offsetY = 24,
+  });
+
+  @override
+  State<Entrance> createState() => _EntranceState();
+}
+
+class _EntranceState extends State<Entrance> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl = AnimationController(vsync: this, duration: widget.duration);
+    _anim = CurvedAnimation(parent: _ctl, curve: Curves.easeOutCubic);
+    Future.delayed(widget.delay, () {
+      if (mounted) _ctl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, child) => Opacity(
+        opacity: _anim.value,
+        child: Transform.translate(
+          offset: Offset(0, widget.offsetY * (1 - _anim.value)),
+          child: child,
+        ),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// PressableScale — shrinks slightly while pressed, springs back on release.
+/// Wrap any tappable card/button for tactile "game button" feedback.
+class PressableScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final double pressedScale;
+
+  const PressableScale({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.pressedScale = 0.96,
+  });
+
+  @override
+  State<PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<PressableScale> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+    return GestureDetector(
+      onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: enabled
+          ? (_) {
+              setState(() => _pressed = false);
+              widget.onTap?.call();
+            }
+          : null,
+      onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
+      child: AnimatedScale(
+        scale: _pressed ? widget.pressedScale : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// AnimatedCount — rolls a number toward its new value whenever it changes.
+class AnimatedCount extends StatelessWidget {
+  final int value;
+  final TextStyle? style;
+  final Duration duration;
+  final String prefix;
+  final String suffix;
+
+  const AnimatedCount({
+    super.key,
+    required this.value,
+    this.style,
+    this.duration = const Duration(milliseconds: 700),
+    this.prefix = '',
+    this.suffix = '',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: value.toDouble()),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (_, v, __) => Text('$prefix${v.round()}$suffix', style: style),
+    );
+  }
+}
+
+/// ShimmerSweep — a diagonal light band that periodically sweeps across the
+/// child. Perfect for "reward ready" states (daily chest, claimable quests).
+class ShimmerSweep extends StatefulWidget {
+  final Widget child;
+  final double radius;
+  final Color color;
+  final bool enabled;
+
+  const ShimmerSweep({
+    super.key,
+    required this.child,
+    this.radius = AppRadius.xl,
+    this.color = Colors.white,
+    this.enabled = true,
+  });
+
+  @override
+  State<ShimmerSweep> createState() => _ShimmerSweepState();
+}
+
+class _ShimmerSweepState extends State<ShimmerSweep>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
+    if (widget.enabled) _ctl.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant ShimmerSweep old) {
+    super.didUpdateWidget(old);
+    if (widget.enabled && !_ctl.isAnimating) _ctl.repeat();
+    if (!widget.enabled && _ctl.isAnimating) _ctl.stop();
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) return widget.child;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(widget.radius),
+      child: Stack(
+        children: [
+          widget.child,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _ctl,
+                builder: (_, __) {
+                  // Band travels from left(-1.5) to right(+1.5); rests between sweeps.
+                  final t = Curves.easeInOut.transform(_ctl.value);
+                  final dx = -1.5 + 3.0 * t;
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(dx - 0.4, -1),
+                        end: Alignment(dx + 0.4, 1),
+                        colors: [
+                          widget.color.withValues(alpha: 0),
+                          widget.color.withValues(alpha: 0.10),
+                          widget.color.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ConfettiBurst — celebratory particles (emerald/gold/cyan) that fall and
+/// sway across the child. Runs once; used on the level-up screen.
+class ConfettiBurst extends StatefulWidget {
+  final Duration duration;
+  final int particleCount;
+
+  const ConfettiBurst({
+    super.key,
+    this.duration = const Duration(milliseconds: 3200),
+    this.particleCount = 60,
+  });
+
+  @override
+  State<ConfettiBurst> createState() => _ConfettiBurstState();
+}
+
+class _ConfettiBurstState extends State<ConfettiBurst>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl = AnimationController(vsync: this, duration: widget.duration)..forward();
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _ctl,
+        builder: (_, __) => CustomPaint(
+          size: Size.infinite,
+          painter: _ConfettiPainter(_ctl.value, widget.particleCount),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConfettiPainter extends CustomPainter {
+  final double t; // 0..1
+  final int count;
+  _ConfettiPainter(this.t, this.count);
+
+  static const _palette = [
+    AppColors.primary,
+    AppColors.secondaryFixed,
+    AppColors.tertiary,
+    AppColors.secondaryContainer,
+    Colors.white,
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rnd = math.Random(7);
+    final paint = Paint();
+    for (var i = 0; i < count; i++) {
+      final startX = rnd.nextDouble() * size.width;
+      final speed = 0.6 + rnd.nextDouble() * 0.8;
+      final sway = (rnd.nextDouble() - 0.5) * 80;
+      final spin = rnd.nextDouble() * math.pi * 6;
+      final sizePx = 4 + rnd.nextDouble() * 5;
+      final color = _palette[i % _palette.length];
+      final delay = rnd.nextDouble() * 0.25;
+
+      final p = ((t - delay) / (1 - delay)).clamp(0.0, 1.0);
+      if (p <= 0) continue;
+      final y = -20 + p * speed * (size.height + 60);
+      final x = startX + math.sin(p * math.pi * 3) * sway;
+      final fade = p > 0.75 ? (1 - p) / 0.25 : 1.0;
+
+      paint.color = color.withValues(alpha: 0.9 * fade);
+      canvas.save();
+      canvas.translate(x, y);
+      canvas.rotate(spin * p);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset.zero, width: sizePx, height: sizePx * 0.6),
+          const Radius.circular(1.5),
+        ),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConfettiPainter old) => old.t != t;
 }
 
 /// Hero button — emerald gradient, inner highlight, glow, "gaming" feel.
@@ -321,6 +642,15 @@ class NeonProgressBar extends StatelessWidget {
         }),
       );
     }
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: p),
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOutCubic,
+      builder: (context, animP, _) => _bar(animP),
+    );
+  }
+
+  Widget _bar(double p) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final barWidth = constraints.maxWidth;

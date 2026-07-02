@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/tier_avatar.dart';
 import '../../services/game_service.dart';
 import '../../services/prayer_service.dart';
 import '../../services/notification_service.dart';
@@ -163,17 +165,14 @@ class _HomeTabState extends State<HomeTab> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: 100),
             children: [
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _appBar(context)),
+              _section(0, _appBar(context)),
               const SizedBox(height: AppSpacing.md),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _heroRank(info)),
+              _section(1, _heroRank(info)),
               const SizedBox(height: AppSpacing.md),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: _activePrayerCard(),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Row(
+              _section(2, _activePrayerCard()),
+              _section(
+                3,
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(child: _countdownCard()),
@@ -183,20 +182,19 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _ritualRings()),
+              _section(4, _ritualRings()),
               const SizedBox(height: AppSpacing.lg),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _prayerQuests()),
+              _section(5, _prayerQuests()),
               const SizedBox(height: AppSpacing.lg),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _dailyChest()),
+              _section(6, _dailyChest()),
               const SizedBox(height: AppSpacing.lg),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _bonusQuest()),
+              _section(7, _bonusQuest()),
               const SizedBox(height: AppSpacing.lg),
-              if (_state.quests.isNotEmpty)
-                Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _questList()),
+              if (_state.quests.isNotEmpty) _section(8, _questList()),
               if (_state.quests.isNotEmpty) const SizedBox(height: AppSpacing.lg),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _sideQuest(context)),
+              _section(9, _sideQuest(context)),
               const SizedBox(height: AppSpacing.lg),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _dailyBento()),
+              _section(10, _dailyBento()),
               if (_error.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -205,6 +203,17 @@ class _HomeTabState extends State<HomeTab> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Staggered entrance wrapper — each home section fades/slides in sequence.
+  Widget _section(int index, Widget child) {
+    return Entrance(
+      delay: Duration(milliseconds: 60 * index),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        child: child,
       ),
     );
   }
@@ -242,92 +251,124 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _heroRank(LevelInfo info) {
-    return GlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.1),
-                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 60)],
-              ),
+    final tier = getTierVisualConfig(getTierName(info.level));
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(color: tier.primaryColor.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                tier.primaryColor.withValues(alpha: 0.14),
+                AppColors.surfaceContainer.withValues(alpha: 0.75),
+                tier.secondaryColor.withValues(alpha: 0.08),
+              ],
             ),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: tier.primaryColor.withValues(alpha: 0.45), width: 1.5),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
+              // subtle Islamic geometric lattice, tinted by tier
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _GeoPatternPainter(tier.primaryColor)),
+                ),
+              ),
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: tier.primaryColor.withValues(alpha: 0.10),
+                    boxShadow: [BoxShadow(color: tier.secondaryColor.withValues(alpha: 0.12), blurRadius: 60)],
+                  ),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('CURRENT RANK', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
-                        const SizedBox(height: 4),
-                        Text(
-                          GameService.getRankTitle(info.level),
-                          style: AppText.headlineMd().copyWith(
-                            color: AppColors.primary,
-                            shadows: [Shadow(color: AppColors.primary.withValues(alpha: 0.5), blurRadius: 12)],
-                          ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('CURRENT RANK', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
+                            const SizedBox(height: 4),
+                            ShaderMask(
+                              shaderCallback: (rect) => LinearGradient(
+                                colors: [tier.primaryColor, tier.secondaryColor],
+                              ).createShader(rect),
+                              child: Text(
+                                GameService.getRankTitle(info.level),
+                                style: AppText.headlineMd().copyWith(
+                                  color: Colors.white,
+                                  shadows: [Shadow(color: tier.primaryColor.withValues(alpha: 0.5), blurRadius: 12)],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '$_nickname • Lv ${info.level}',
+                              style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'XP PROGRESS',
+                          style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(
-                          '$_nickname • Lv ${info.level}',
-                          style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
-                        ),
-                      ],
-                    ),
+                      ),
+                      AnimatedCount(
+                        value: info.xpInCurrentLevel,
+                        suffix: ' / ${info.xpNeededForNextLevel}',
+                        style: AppText.bodyMd().copyWith(color: AppColors.primary),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'XP PROGRESS',
+                  const SizedBox(height: AppSpacing.xs),
+                  NeonProgressBar(progress: info.progress, leadingGlow: true, height: 10),
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AnimatedCount(
+                      value: info.xpNeededForNextLevel - info.xpInCurrentLevel,
+                      suffix: ' XP TO NEXT RANK',
                       style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Flexible(
-                    child: Text(
-                      '${info.xpInCurrentLevel} / ${info.xpNeededForNextLevel}',
-                      style: AppText.bodyMd().copyWith(color: AppColors.primary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              NeonProgressBar(progress: info.progress, leadingGlow: true, height: 10),
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${info.xpNeededForNextLevel - info.xpInCurrentLevel} XP to Next Rank',
-                  style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -598,22 +639,26 @@ class _HomeTabState extends State<HomeTab> {
     final iconColor = done
         ? AppColors.primary
         : (locked ? AppColors.onSurfaceVariant : (active ? AppColors.tertiary : AppColors.onSurfaceVariant));
-    return Opacity(
-      opacity: dimmed ? 0.5 : 1.0,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: done
-                ? AppColors.primary.withValues(alpha: 0.6)
-                : (active ? AppColors.tertiary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
-            width: done || active ? 2 : 1,
+    return PressableScale(
+      onTap: locked ? null : onTap,
+      child: Opacity(
+        opacity: dimmed ? 0.5 : 1.0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainer.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: done
+                  ? AppColors.primary.withValues(alpha: 0.6)
+                  : (active ? AppColors.tertiary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
+              width: done || active ? 2 : 1,
+            ),
+            boxShadow: active
+                ? [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.15), blurRadius: 12)]
+                : null,
           ),
-        ),
-        child: InkWell(
-          onTap: locked ? null : onTap,
           child: Row(
             children: [
               Icon(_prayerIcon(key),
@@ -672,22 +717,26 @@ class _HomeTabState extends State<HomeTab> {
     final iconColor = completed
         ? color
         : (locked ? AppColors.onSurfaceVariant : (active ? color : AppColors.onSurfaceVariant));
-    return Opacity(
-      opacity: dimmed ? 0.5 : 1.0,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: completed
-                ? color.withValues(alpha: 0.6)
-                : (active ? color.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
-            width: completed || active ? 2 : 1,
+    return PressableScale(
+      onTap: locked ? null : onTap,
+      child: Opacity(
+        opacity: dimmed ? 0.5 : 1.0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainer.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: completed
+                  ? color.withValues(alpha: 0.6)
+                  : (active ? color.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
+              width: completed || active ? 2 : 1,
+            ),
+            boxShadow: active
+                ? [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 12)]
+                : null,
           ),
-        ),
-        child: InkWell(
-          onTap: locked ? null : onTap,
           child: Row(
             children: [
               Icon(icon, color: iconColor, size: 24),
@@ -737,7 +786,13 @@ class _HomeTabState extends State<HomeTab> {
       scale: isClaiming ? 1.04 : 1.0,
       duration: const Duration(milliseconds: 250),
       curve: Curves.elasticOut,
-      child: Container(
+      child: PressableScale(
+        onTap: claimable ? () => _claimQuest(q) : null,
+        child: ShimmerSweep(
+          enabled: claimable,
+          radius: AppRadius.lg,
+          color: AppColors.primary,
+          child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: q.claimed
@@ -754,8 +809,6 @@ class _HomeTabState extends State<HomeTab> {
               ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, spreadRadius: 1)]
               : null,
         ),
-        child: InkWell(
-          onTap: claimable ? () => _claimQuest(q) : null,
           child: Row(
             children: [
               Icon(q.claimed ? Icons.check_circle : (q.completed ? Icons.card_giftcard : Icons.radio_button_unchecked),
@@ -787,6 +840,7 @@ class _HomeTabState extends State<HomeTab> {
                 const Icon(Icons.check, color: AppColors.onSurfaceVariant, size: 18),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -808,19 +862,19 @@ class _HomeTabState extends State<HomeTab> {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [
-              AppColors.tertiary.withValues(alpha: 0.2),
-              AppColors.primary.withValues(alpha: 0.1),
-            ]),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.tertiary.withValues(alpha: 0.4)),
-            boxShadow: [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.15), blurRadius: 32, offset: const Offset(0, 8))],
-          ),
-          child: InkWell(
-            onTap: () => _togglePrayer('tilawah', 'tilawah'),
+        PressableScale(
+          onTap: () => _togglePrayer('tilawah', 'tilawah'),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                AppColors.tertiary.withValues(alpha: 0.2),
+                AppColors.primary.withValues(alpha: 0.1),
+              ]),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.tertiary.withValues(alpha: 0.4)),
+              boxShadow: [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.15), blurRadius: 32, offset: const Offset(0, 8))],
+            ),
             child: Row(
               children: [
                 Container(
@@ -892,7 +946,8 @@ class _HomeTabState extends State<HomeTab> {
         ),
         const SizedBox(height: AppSpacing.sm),
         // ── Zikir Clicker (full-width row below grid, no XP) ──
-        InkWell(
+        PressableScale(
+          pressedScale: 0.97,
           onTap: () async {
             final (newCount, _) = await GameService.incrementZikir();
             if (!mounted) return;
@@ -901,7 +956,6 @@ class _HomeTabState extends State<HomeTab> {
               _showZikirComplete();
             }
           },
-          borderRadius: BorderRadius.circular(AppRadius.xl),
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
@@ -917,7 +971,11 @@ class _HomeTabState extends State<HomeTab> {
                     children: [
                       Text('DAILY ZIKIR', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10)),
                       const SizedBox(height: 4),
-                      Text('$zikirCount / $goal', style: AppText.displayHero(28).copyWith(color: AppColors.primary)),
+                      AnimatedCount(
+                          value: zikirCount,
+                          suffix: ' / $goal',
+                          duration: const Duration(milliseconds: 350),
+                          style: AppText.displayHero(28).copyWith(color: AppColors.primary)),
                       const SizedBox(height: 6),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
@@ -992,10 +1050,12 @@ class _HomeTabState extends State<HomeTab> {
       canTap = false;
     }
 
-    return InkWell(
+    return PressableScale(
       onTap: canTap ? _claimChest : null,
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      child: AnimatedContainer(
+      child: ShimmerSweep(
+        enabled: isReady,
+        color: AppColors.tertiary,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
@@ -1079,6 +1139,7 @@ class _HomeTabState extends State<HomeTab> {
             if (canTap)
               Icon(Icons.arrow_forward_ios, color: accent, size: 20),
           ],
+        ),
         ),
       ),
     );
@@ -1194,9 +1255,8 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _zikirTile(String label, String count, Color color, String cta, IconData icon, {VoidCallback? onTap}) {
-    return InkWell(
+    return PressableScale(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.xl),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
@@ -1310,4 +1370,43 @@ class _RingsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RingsPainter old) =>
       old.wajib != wajib || old.sunnah != sunnah || old.tilawah != tilawah;
+}
+
+/// Faint 8-pointed star lattice (khatam pattern) for the hero rank card.
+class _GeoPatternPainter extends CustomPainter {
+  final Color color;
+  _GeoPatternPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    const cell = 44.0;
+    for (var y = 0.0; y < size.height + cell; y += cell) {
+      for (var x = 0.0; x < size.width + cell; x += cell) {
+        _star(canvas, Offset(x, y), cell * 0.36, paint);
+      }
+    }
+  }
+
+  void _star(Canvas canvas, Offset c, double r, Paint paint) {
+    final path = Path();
+    for (var i = 0; i < 16; i++) {
+      final angle = i * math.pi / 8;
+      final radius = i.isEven ? r : r * 0.45;
+      final p = Offset(c.dx + radius * math.cos(angle), c.dy + radius * math.sin(angle));
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GeoPatternPainter old) => old.color != color;
 }

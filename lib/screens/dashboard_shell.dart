@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'home_tab.dart';
@@ -17,10 +18,18 @@ class DashboardShell extends StatefulWidget {
 class _DashboardShellState extends State<DashboardShell> {
   int _tab = 0;
 
+  static const _items = [
+    (Icons.home_outlined, Icons.home, 'HOME'),
+    (Icons.schedule_outlined, Icons.schedule, 'JADWAL'),
+    (Icons.menu_book_outlined, Icons.menu_book, 'BELAJAR'),
+    (Icons.person_outline, Icons.person, 'PROFIL'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      extendBody: true,
       body: IndexedStack(
         index: _tab,
         children: [
@@ -30,50 +39,85 @@ class _DashboardShellState extends State<DashboardShell> {
           const ProfilTab(),
         ],
       ),
-      floatingActionButton: null,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.background.withValues(alpha: 0.95),
-          border: Border(
-            top: BorderSide(
-              color: AppColors.outlineVariant.withValues(alpha: 0.3),
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.background.withValues(alpha: 0.75),
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                ),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
+                height: 64,
+                child: Row(
+                  children: List.generate(_items.length, (i) => Expanded(child: _navItem(i))),
+                ),
+              ),
             ),
           ),
         ),
-        child: SafeArea(
-          top: false,
-          child: NavigationBar(
-            backgroundColor: Colors.transparent,
-            selectedIndex: _tab,
-            onDestinationSelected: (i) => setState(() => _tab = i),
-            indicatorColor: AppColors.primary.withValues(alpha: 0.15),
-            labelTextStyle: WidgetStatePropertyAll(
-              AppText.labelCaps().copyWith(fontSize: 10),
+      ),
+    );
+  }
+
+  Widget _navItem(int i) {
+    final (iconOff, iconOn, label) = _items[i];
+    final selected = _tab == i;
+    return InkResponse(
+      onTap: () => setState(() => _tab = i),
+      highlightShape: BoxShape.rectangle,
+      containedInkWell: true,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutBack,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        blurRadius: 14,
+                      ),
+                    ]
+                  : null,
             ),
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined, color: AppColors.onSurfaceVariant),
-                selectedIcon: Icon(Icons.home, color: AppColors.primary),
-                label: 'Home',
+            child: AnimatedScale(
+              scale: selected ? 1.12 : 1.0,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutBack,
+              child: Icon(
+                selected ? iconOn : iconOff,
+                size: 24,
+                color: selected ? AppColors.primary : AppColors.onSurfaceVariant,
               ),
-              NavigationDestination(
-                icon: Icon(Icons.schedule_outlined, color: AppColors.onSurfaceVariant),
-                selectedIcon: Icon(Icons.schedule, color: AppColors.primary),
-                label: 'Jadwal',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.menu_book_outlined, color: AppColors.onSurfaceVariant),
-                selectedIcon: Icon(Icons.menu_book, color: AppColors.primary),
-                label: 'Belajar',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline, color: AppColors.onSurfaceVariant),
-                selectedIcon: Icon(Icons.person, color: AppColors.primary),
-                label: 'Profil',
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 3),
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 250),
+            style: AppText.labelCaps().copyWith(
+              fontSize: 9,
+              color: selected ? AppColors.primary : AppColors.onSurfaceVariant,
+              shadows: selected
+                  ? [Shadow(color: AppColors.primary.withValues(alpha: 0.6), blurRadius: 8)]
+                  : null,
+            ),
+            child: Text(label),
+          ),
+        ],
       ),
     );
   }

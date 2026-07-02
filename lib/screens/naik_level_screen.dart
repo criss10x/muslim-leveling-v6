@@ -43,48 +43,65 @@ class NaikLevelScreen extends StatelessWidget {
                 children: [
                   _badge(context),
                   const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'NAIK LEVEL!',
-                    textAlign: TextAlign.center,
-                    style: AppText.displayHero(40).copyWith(
-                      color: AppColors.secondaryFixed,
-                      shadows: [
-                        Shadow(
-                          color: AppColors.secondaryFixed.withValues(alpha: 0.6),
-                          blurRadius: 20,
-                        ),
-                      ],
+                  Entrance(
+                    delay: const Duration(milliseconds: 250),
+                    child: Text(
+                      'NAIK LEVEL!',
+                      textAlign: TextAlign.center,
+                      style: AppText.displayHero(40).copyWith(
+                        color: AppColors.secondaryFixed,
+                        shadows: [
+                          Shadow(
+                            color: AppColors.secondaryFixed.withValues(alpha: 0.6),
+                            blurRadius: 20,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Kamu mencapai $rankTitle — Level ${info.level}',
-                    textAlign: TextAlign.center,
-                    style: AppText.bodyLg().copyWith(
-                      color: AppColors.onSurfaceVariant,
+                  Entrance(
+                    delay: const Duration(milliseconds: 400),
+                    child: Text(
+                      'Kamu mencapai $rankTitle — Level ${info.level}',
+                      textAlign: TextAlign.center,
+                      style: AppText.bodyLg().copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  _rewards(info, rankTitle),
+                  Entrance(
+                    delay: const Duration(milliseconds: 550),
+                    child: _rewards(info, rankTitle),
+                  ),
                   const SizedBox(height: AppSpacing.xl),
-                  _unlocked(info),
+                  Entrance(
+                    delay: const Duration(milliseconds: 700),
+                    child: _unlocked(info),
+                  ),
                   const Spacer(),
-                  HeroButton(
-                    label: 'KEMBALI KE DASHBOARD',
-                    trailingIcon: Icons.arrow_forward,
-                    onPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (_) => const DashboardShell(),
-                        ),
-                        (route) => false,
-                      );
-                    },
+                  Entrance(
+                    delay: const Duration(milliseconds: 850),
+                    child: HeroButton(
+                      label: 'KEMBALI KE DASHBOARD',
+                      trailingIcon: Icons.arrow_forward,
+                      onPressed: () {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (_) => const DashboardShell(),
+                          ),
+                          (route) => false,
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+          // celebratory confetti raining over everything
+          const Positioned.fill(child: ConfettiBurst(particleCount: 70)),
         ],
       ),
     );
