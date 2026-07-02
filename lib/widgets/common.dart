@@ -287,7 +287,7 @@ class NeonProgressBar extends StatelessWidget {
     required this.progress,
     this.fromColor = AppColors.primaryContainer,
     this.toColor = AppColors.primary,
-    this.height = 10,
+    this.height = 16,
     this.segmented = false,
     this.segments = 5,
     this.leadingGlow = false,
