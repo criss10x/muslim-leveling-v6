@@ -596,11 +596,11 @@ class _HomeTabState extends State<HomeTab> {
         ...items.map((it) {
           final checked = GameService.isPrayerCheckedToday(it.$2);
           final onTime = GameService.isSunnahOnTime(it.$2, t);
-          final locked = !checked && !onTime;
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
             child: _bonusRow(it.$1, it.$3, it.$4, AppColors.secondaryFixed,
-                completed: checked, locked: locked, onTap: () => _togglePrayer(it.$2, 'sunnah')),
+                completed: checked, active: !checked && onTime, locked: !checked && !onTime,
+                onTap: () => _togglePrayer(it.$2, 'sunnah')),
           );
         }),
       ],
@@ -608,28 +608,38 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _bonusRow(String name, String sub, IconData icon, Color color,
-      {bool locked = false, bool completed = false, VoidCallback? onTap, int xp = 15}) {
+      {bool locked = false, bool completed = false, bool active = false, VoidCallback? onTap, int xp = 15}) {
+    final dimmed = locked && !completed;
+    final iconColor = completed
+        ? color
+        : (locked ? AppColors.onSurfaceVariant : (active ? color : AppColors.onSurfaceVariant));
     return Opacity(
-      opacity: locked ? 0.5 : 1.0,
+      opacity: dimmed ? 0.5 : 1.0,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: AppColors.surfaceContainer.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border(left: BorderSide(color: color, width: 4)),
+          border: Border.all(
+            color: completed
+                ? color.withValues(alpha: 0.6)
+                : (active ? color.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
+            width: completed || active ? 2 : 1,
+          ),
         ),
         child: InkWell(
           onTap: locked ? null : onTap,
           child: Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: iconColor, size: 24),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: AppText.bodyLg()),
-                    Text(sub, style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10, fontWeight: FontWeight.w500)),
+                    Text(name, style: AppText.bodyMd()),
+                    Text(sub,
+                        style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
