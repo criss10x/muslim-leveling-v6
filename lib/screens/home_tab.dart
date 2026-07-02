@@ -183,6 +183,8 @@ class _HomeTabState extends State<HomeTab> {
               const SizedBox(height: AppSpacing.lg),
               Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _prayerQuests()),
               const SizedBox(height: AppSpacing.lg),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _dailyChest()),
+              const SizedBox(height: AppSpacing.lg),
               Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _bonusQuest()),
               const SizedBox(height: AppSpacing.lg),
               if (_state.quests.isNotEmpty)
@@ -191,8 +193,6 @@ class _HomeTabState extends State<HomeTab> {
               Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _sideQuest(context)),
               const SizedBox(height: AppSpacing.lg),
               Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _dailyBento()),
-              const SizedBox(height: AppSpacing.lg),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md), child: _dailyChest()),
               if (_error.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
