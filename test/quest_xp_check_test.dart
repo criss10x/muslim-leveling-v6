@@ -56,7 +56,6 @@ void main() {
 
   group('sunnah logPrayer', () {
     test('sunnah gives flat 15 XP regardless of which rawatib', () {
-      final s = fresh();
       // Qobliyah Dzuhur — within window (subuh..dzuhur) so accept regardless of clock
       // To avoid time-of-day flakiness we set timings such that "now" is in-window.
       // Simpler: the default branch of xpGained switch is 15, so any sunnah that
@@ -65,11 +64,6 @@ void main() {
       // Use 'dhuha' but force timings where now (real clock) might be outside.
       // Instead, exercise via unlog path which doesn't re-check window.
       // For a deterministic check: skip the log call, verify unlog gives back 15.
-      final sWithLog = GameState(
-        timings: fakeTimings(),
-        xp: 15, level: 1,
-        prayerLog: [PrayerLog(date: GameService.todayStr(), prayer: 'rawatib_dzuhur_qobliyah', time: '11:00', type: 'sunnah')],
-      );
       // ponytail: unlog uses the same xp table; if unlog returns 15, log gave 15.
       // We can't call unlog without _cache being set, so just assert the table constant.
       const expected = 15;
@@ -144,7 +138,6 @@ void main() {
       // Build state: 5 wajib + 1 sunnah logged. Unlog the sunnah.
       // xpLost should be 15 (sunnah base) only, NOT 15+50.
       final today = GameService.todayStr();
-      final t = fakeTimings();
       final logs = [
         PrayerLog(date: today, prayer: 'subuh',  time: '04:50', type: 'wajib'),
         PrayerLog(date: today, prayer: 'dzuhur', time: '12:05', type: 'wajib'),
@@ -155,7 +148,6 @@ void main() {
       ];
       // Total XP gained: 30+20+20+25+25 + 50(hero) + 15(sunnah) = 185
       // (timely bonuses skipped for simplicity — not the point of this test)
-      final s = GameState(timings: t, xp: 185, level: 1, prayerLog: logs);
 
       // Replicate the xpLost computation from unlogPrayer with the fix applied.
       // We can't call unlogPrayer directly (it reads _cache), so we inline the
