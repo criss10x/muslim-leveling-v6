@@ -85,7 +85,7 @@ class _BelajarTabState extends State<BelajarTab> {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          NeonProgressBar(progress: progress),
+          NeonProgressBar(progress: progress, leadingGlow: true),
         ],
       ),
     );
