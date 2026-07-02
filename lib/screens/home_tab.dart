@@ -805,24 +805,16 @@ class _HomeTabState extends State<HomeTab> {
     final zikirCount = GameService.zikirCountToday;
     final goal = GameService.zikirGoal;
     final progress = (zikirCount / goal).clamp(0.0, 1.0);
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 0.95,
+    return Column(
       children: [
-        // ── Zikir Clicker (persistent counter) ──
+        // ── Zikir Clicker (full-width row, no XP) ──
         InkWell(
           onTap: () async {
-            final (newCount, leveledUp) = await GameService.incrementZikir();
+            final (newCount, _) = await GameService.incrementZikir();
             if (!mounted) return;
             setState(() {});
             if (newCount == goal) {
               _showZikirComplete();
-            } else if (leveledUp) {
-              _showLevelUp();
             }
           },
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -833,43 +825,66 @@ class _HomeTabState extends State<HomeTab> {
               borderRadius: BorderRadius.circular(AppRadius.xl),
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Row(
               children: [
-                Text('DAILY ZIKIR', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10)),
-                const SizedBox(height: 4),
-                Text('$zikirCount', style: AppText.displayHero(32).copyWith(color: AppColors.primary)),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 4,
-                    backgroundColor: AppColors.surfaceContainerHighest,
-                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('DAILY ZIKIR', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10)),
+                      const SizedBox(height: 4),
+                      Text('$zikirCount / $goal', style: AppText.displayHero(28).copyWith(color: AppColors.primary)),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 4,
+                          backgroundColor: AppColors.surfaceContainerHighest,
+                          valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text('GOAL: $goal', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
+                const SizedBox(width: AppSpacing.md),
+                Icon(Icons.touch_app, color: AppColors.primary, size: 28),
               ],
             ),
           ),
         ),
-        _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '+1 XP', Icons.refresh,
-            onTap: () => _showDzikir('Alhamdulillah',
-                'الْحَمْدُ لِلَّهِ',
-                'Alhamdulillah',
-                'Segala puji bagi Allah, dzikir yang mengisi timbangan amal di hari kiamat.')),
-        _zikirTile('ALLAHU AKBAR', '34', AppColors.secondaryFixed, '+1 XP', Icons.refresh,
-            onTap: () => _showDzikir('Allahu Akbar',
-                'اللَّهُ أَكْبَرُ',
-                'Allahu Akbar',
-                'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
-        _zikirTile('DZIKIR PAGI', '5/8', AppColors.primary, 'MENU', Icons.arrow_forward,
-            onTap: () => _showDzikir('Dzikir Pagi',
-                'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ',
-                'Asbahna wa asbaha al-mulku lillah',
-                'Kami memasuki waktu pagi dan kerajaan hanya bagi Allah.')),
+        const SizedBox(height: AppSpacing.sm),
+        // ── Zikir tiles grid (2×2) ──
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: AppSpacing.sm,
+          childAspectRatio: 0.95,
+          children: [
+            _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '+1 XP', Icons.refresh,
+                onTap: () => _showDzikir('Alhamdulillah',
+                    'الْحَمْدُ لِلَّهِ',
+                    'Alhamdulillah',
+                    'Segala puji bagi Allah, dzikir yang mengisi timbangan amal di hari kiamat.')),
+            _zikirTile('ALLAHU AKBAR', '34', AppColors.secondaryFixed, '+1 XP', Icons.refresh,
+                onTap: () => _showDzikir('Allahu Akbar',
+                    'اللَّهُ أَكْبَرُ',
+                    'Allahu Akbar',
+                    'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
+            _zikirTile('SUBHANALLAH', '33', AppColors.primary, '+1 XP', Icons.refresh,
+                onTap: () => _showDzikir('Subhanallah',
+                    'سُبْحَانَ اللَّهِ',
+                    'Subhanallah',
+                    'Maha Suci Allah, dzikir yang menumbuhkan pohon-pohon di surga.')),
+            _zikirTile('LA ILAHA ILLALLAH', '100', AppColors.tertiary, '+1 XP', Icons.refresh,
+                onTap: () => _showDzikir('La ilaha illallah',
+                    'لَا إِلَهَ إِلَّا اللَّهُ',
+                    'La ilaha illallah',
+                    'Tiada tuhan selain Allah, kalimat tauhid yang paling utama.')),
+          ],
+        ),
       ],
     );
   }

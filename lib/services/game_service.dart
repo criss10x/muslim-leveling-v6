@@ -745,24 +745,20 @@ class GameService {
     return _cache.zikirCounter.date == today ? _cache.zikirCounter.count : 0;
   }
 
-  /// Increment zikir +1. Awards 1 XP per click. Returns (newCount, didLevelUp).
+  /// Increment zikir +1. No XP awarded (user request 2026-07-02).
+  /// Returns (newCount, didLevelUp) — didLevelUp always false now.
   static Future<(int, bool)> incrementZikir() async {
     final today = todayStr();
     final zc = _cache.zikirCounter;
     final newCount = (zc.date == today ? zc.count : 0) + 1;
 
-    final oldInfo = getLevelInfo(_cache.xp);
-    final newXp = _cache.xp + 1; // +1 XP per zikir
-    final newInfo = getLevelInfo(newXp);
-
     final newState = _cache.copyWith(
-      xp: newXp,
-      level: newInfo.level,
       zikirCounter: ZikirCounter(date: today, count: newCount),
     );
     await _save(newState);
     await refreshBadges();
-    return (newCount, newInfo.level > oldInfo.level);
+    // ponytail: no XP, no level-up from zikir — user explicitly removed it
+    return (newCount, false);
   }
 
   // ─── Daily check: streak recovery + comeback counter ───
