@@ -325,60 +325,66 @@ class NeonProgressBar extends StatelessWidget {
       builder: (context, constraints) {
         final barWidth = constraints.maxWidth;
         final fillWidth = barWidth * p;
-        return Container(
+        final glowSize = height * 2.2;
+        return SizedBox(
           height: height,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(height),
-            border: Border.all(
-              color: AppColors.outlineVariant.withValues(alpha: 0.4),
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(height),
-            child: Stack(
-              children: [
-                // base fill gradient
-                FractionallySizedBox(
-                  widthFactor: p,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [fromColor, toColor]),
+          width: barWidth,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // base bar with rounded corners + border
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(height),
+                    border: Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
                     ),
                   ),
                 ),
-                // leading-edge glow: soft halo at the front of the bar
-                if (leadingGlow && p > 0.0 && p < 1.0)
-                  Positioned(
-                    left: fillWidth - height * 0.5,
-                    top: 0,
-                    bottom: 0,
-                    width: height,
+              ),
+              // fill gradient (clipped to bar shape)
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(height),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: p,
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(height),
-                        boxShadow: [
-                          BoxShadow(
-                            color: toColor.withValues(alpha: 0.9),
-                            blurRadius: height * 0.75,
-                            spreadRadius: 1,
-                          ),
-                        ],
+                        gradient: LinearGradient(colors: [fromColor, toColor]),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // leading-edge glow: bright spot + halo OUTSIDE clip
+              if (leadingGlow && p > 0.0 && p < 1.0)
+                Positioned(
+                  left: fillWidth - glowSize / 2,
+                  top: -(glowSize - height) / 2,
+                  width: glowSize,
+                  height: glowSize,
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         gradient: RadialGradient(
                           center: Alignment.center,
-                          radius: 0.9,
+                          radius: 0.5,
                           colors: [
-                            toColor.withValues(alpha: 0.95),
-                            toColor.withValues(alpha: 0.4),
+                            toColor.withValues(alpha: 1.0),
+                            toColor.withValues(alpha: 0.6),
                             toColor.withValues(alpha: 0.0),
                           ],
-                          stops: const [0.0, 0.5, 1.0],
+                          stops: const [0.0, 0.35, 1.0],
                         ),
                       ),
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         );
       },
