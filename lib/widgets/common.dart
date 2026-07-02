@@ -280,6 +280,7 @@ class NeonProgressBar extends StatelessWidget {
   final double height;
   final bool segmented;
   final int segments;
+  final bool leadingGlow; // glow di ujung leading bar (hero rank card)
 
   const NeonProgressBar({
     super.key,
@@ -289,14 +290,16 @@ class NeonProgressBar extends StatelessWidget {
     this.height = 16,
     this.segmented = false,
     this.segments = 5,
+    this.leadingGlow = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final p = progress.clamp(0.0, 1.0);
     if (segmented) {
       return Row(
         children: List.generate(segments, (i) {
-          final filled = (i / segments) < progress;
+          final filled = (i / segments) < p;
           return Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 1),
@@ -318,30 +321,67 @@ class NeonProgressBar extends StatelessWidget {
         }),
       );
     }
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(height),
-        border: Border.all(
-          color: AppColors.outlineVariant.withValues(alpha: 0.4),
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(height),
-        child: Stack(
-          children: [
-            FractionallySizedBox(
-              widthFactor: progress.clamp(0, 1),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [fromColor, toColor]),
-                ),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final barWidth = constraints.maxWidth;
+        final fillWidth = barWidth * p;
+        return Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(height),
+            border: Border.all(
+              color: AppColors.outlineVariant.withValues(alpha: 0.4),
             ),
-          ],
-        ),
-      ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(height),
+            child: Stack(
+              children: [
+                // base fill gradient
+                FractionallySizedBox(
+                  widthFactor: p,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [fromColor, toColor]),
+                    ),
+                  ),
+                ),
+                // leading-edge glow: soft halo at the front of the bar
+                if (leadingGlow && p > 0.0 && p < 1.0)
+                  Positioned(
+                    left: fillWidth - height * 0.5,
+                    top: 0,
+                    bottom: 0,
+                    width: height,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(height),
+                        boxShadow: [
+                          BoxShadow(
+                            color: toColor.withValues(alpha: 0.9),
+                            blurRadius: height * 0.75,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                        gradient: RadialGradient(
+                          center: Alignment.center,
+                          radius: 0.9,
+                          colors: [
+                            toColor.withValues(alpha: 0.95),
+                            toColor.withValues(alpha: 0.4),
+                            toColor.withValues(alpha: 0.0),
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -310,7 +310,7 @@ class _HomeTabState extends State<HomeTab> {
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),
-              NeonProgressBar(progress: info.progress),
+              NeonProgressBar(progress: info.progress, leadingGlow: true),
               const SizedBox(height: 6),
               Align(
                 alignment: Alignment.centerRight,
