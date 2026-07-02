@@ -68,6 +68,7 @@ class _BelajarTabState extends State<BelajarTab> {
       padding: const EdgeInsets.all(AppSpacing.lg),
       borderColor: AppColors.primary.withValues(alpha: 0.2),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
