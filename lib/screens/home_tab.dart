@@ -1124,18 +1124,6 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  void _showLevelUp() {
-    final info = GameService.getLevelInfo(GameService.current.xp);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('⬆️ Level Up! LVL ${info.level}'),
-        backgroundColor: AppColors.tertiary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   Widget _zikirTile(String label, String count, Color color, String cta, IconData icon, {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
