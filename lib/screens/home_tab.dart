@@ -284,23 +284,6 @@ class _HomeTabState extends State<HomeTab> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.local_fire_department, size: 16, color: AppColors.secondaryContainer),
-                        const SizedBox(width: 4),
-                        Text('${_state.heroStreak.current} Hari', style: AppText.labelCaps()),
-                      ],
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
