@@ -301,9 +301,9 @@ class GameService {
       case 'tahajjud': return _isTimeBetweenWrap(now, t.isya, t.imsak);
       case 'rawatib_subuh_qobliyah': return isAfter(now, t.subuh) && isBefore(now, t.terbit);
       case 'rawatib_subuh_ba_diyyah': return isAfter(now, t.subuh) && isBefore(now, t.terbit);
-      case 'rawatib_dzuhur_qobliyah': return isAfter(now, t.subuh) && isBefore(now, t.dzuhur);
+      case 'rawatib_dzuhur_qobliyah': return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
       case "rawatib_dzuhur_ba'diyyah": return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
-      case 'rawatib_ashar_qobliyah': return isAfter(now, t.dzuhur) && isBefore(now, t.ashar);
+      case 'rawatib_ashar_qobliyah': return isAfter(now, t.ashar) && isBefore(now, t.maghrib);
       case "rawatib_maghrib_ba'diyyah": return isAfter(now, t.maghrib) && isBefore(now, t.isya);
       case "rawatib_isya_ba'diyyah": return isAfter(now, t.isya) && isBefore(now, addMin(t.isya, 300));
       default: return true;
@@ -315,9 +315,9 @@ class GameService {
     'tahajjud' => 'Tahajjud waktu setelah Isya sampai sebelum Imsak.',
     'rawatib_subuh_qobliyah' => 'Qobliyah Subuh waktunya sama dengan sholat Subuh (dari Subuh sampai Terbit).',
     'rawatib_subuh_ba_diyyah' => 'Ba\'diyah Subuh waktunya setelah Subuh sampai sebelum Terbit.',
-    'rawatib_dzuhur_qobliyah' => 'Qobliyah Dzuhur waktunya setelah Subuh sampai sebelum adzan Dzuhur.',
+    'rawatib_dzuhur_qobliyah' => 'Qobliyah Dzuhur waktunya dari Dzuhur sampai sebelum Ashar.',
     "rawatib_dzuhur_ba'diyyah" => "Ba'diyah Dzuhur waktunya setelah Dzuhur sampai sebelum Ashar.",
-    'rawatib_ashar_qobliyah' => 'Qobliyah Ashar waktunya setelah Dzuhur sampai sebelum adzan Ashar.',
+    'rawatib_ashar_qobliyah' => 'Qobliyah Ashar waktunya dari Ashar sampai sebelum Maghrib.',
     "rawatib_maghrib_ba'diyyah" => "Ba'diyah Maghrib waktunya setelah Maghrib sampai sebelum Isya.",
     "rawatib_isya_ba'diyyah" => "Ba'diyah Isya waktunya setelah Isya sampai tengah malam.",
     _ => 'Coba lagi nanti ya.',
