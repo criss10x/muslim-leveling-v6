@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- adzan.mp3 hanya direferensikan lewat string saat runtime
+     (RawResourceAndroidNotificationSound), jadi harus di-keep manual
+     agar tidak dibuang resource shrinker di build release. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/adzan" />

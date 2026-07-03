@@ -26,6 +26,14 @@ class NotificationService {
   static const _channelName = 'Pengingat Adzan';
   static const _channelDesc = 'Notifikasi pengingat waktu sholat';
 
+  // Channel terpisah untuk notifikasi saat masuk waktu adzan, dengan suara
+  // adzan (res/raw/adzan.mp3). Channel Android immutable setelah dibuat,
+  // makanya pakai ID baru, bukan mengubah channel lama.
+  static const _adzanChannelId = 'adhan_sound_v1';
+  static const _adzanChannelName = 'Adzan';
+  static const _adzanChannelDesc = 'Notifikasi bersuara adzan saat masuk waktu sholat';
+  static const _adzanSound = RawResourceAndroidNotificationSound('adzan');
+
   static const _prefEnabled = 'reminders_enabled';
   static const _prefCity = 'city';
   static const _prefDate = 'date';
@@ -81,10 +89,24 @@ class NotificationService {
       enableVibration: true,
     );
 
+    final adzanChannel = AndroidNotificationChannel(
+      _adzanChannelId,
+      _adzanChannelName,
+      description: _adzanChannelDesc,
+      importance: Importance.high,
+      sound: _adzanSound,
+      // Usage alarm supaya adzan tetap terdengar penuh, tidak dipotong
+      // aturan suara notifikasi biasa.
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
+      enableVibration: true,
+    );
+
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(androidChannel);
+    await androidPlugin?.createNotificationChannel(adzanChannel);
   }
 
   /// Request POST_NOTIFICATIONS permission (Android 13+).
@@ -225,6 +247,9 @@ class NotificationService {
           title: _titleFor(prayer),
           body: _bodyFor(prayer, city, mode, i),
           scheduledTime: scheduledTime,
+          // Elemen terakhir = tepat waktu adzan → pakai suara adzan;
+          // pengingat pra-adzan tetap suara default.
+          adzanSound: i == schedules.length - 1,
         );
       }
     }
@@ -287,14 +312,19 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime scheduledTime,
+    bool adzanSound = false,
   }) async {
     final androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDesc,
+      adzanSound ? _adzanChannelId : _channelId,
+      adzanSound ? _adzanChannelName : _channelName,
+      channelDescription: adzanSound ? _adzanChannelDesc : _channelDesc,
       importance: Importance.high,
       priority: Priority.high,
       category: AndroidNotificationCategory.alarm,
+      sound: adzanSound ? _adzanSound : null,
+      audioAttributesUsage: adzanSound
+          ? AudioAttributesUsage.alarm
+          : AudioAttributesUsage.notification,
       vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
       enableVibration: true,
       autoCancel: true,
