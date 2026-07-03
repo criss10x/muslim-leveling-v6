@@ -212,15 +212,19 @@ class NotificationService {
       // Schedule based on mode
       final schedules = _getScheduleTimes(mode, hour, minute, now);
       for (var i = 0; i < schedules.length; i++) {
-        final scheduledTime = schedules[i];
-        if (scheduledTime.isAfter(now)) {
-          await _scheduleOne(
-            id: notifId + i, // unique ID per reminder
-            title: _titleFor(prayer),
-            body: _bodyFor(prayer, city, mode, i),
-            scheduledTime: scheduledTime,
-          );
+        var scheduledTime = schedules[i];
+        // Sudah lewat hari ini → mulai besok. Notifikasi berulang harian
+        // (matchDateTimeComponents), jadi tetap bunyi walau app tak dibuka;
+        // jam presisi di-refresh tiap app dibuka.
+        if (!scheduledTime.isAfter(now)) {
+          scheduledTime = scheduledTime.add(const Duration(days: 1));
         }
+        await _scheduleOne(
+          id: notifId + i, // unique ID per reminder
+          title: _titleFor(prayer),
+          body: _bodyFor(prayer, city, mode, i),
+          scheduledTime: scheduledTime,
+        );
       }
     }
   }
@@ -237,10 +241,7 @@ class NotificationService {
 
     switch (mode) {
       case 'fokus':
-        // Only Subuh + 15 min before next prayer
-        // Simplified: just schedule at prayer time for all, but only fire
-        // for subuh and 15 min before others
-        // For now: schedule at adzan time (1 reminder)
+        // At adzan time only (1 reminder)
         return [today];
       case 'intensif':
         // 30 min before + 5 min before + at adzan time (3 reminders)
@@ -315,6 +316,7 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
@@ -359,7 +361,7 @@ class NotificationService {
     if (!_initialized) await init();
 
     final message = switch (mode) {
-      'fokus' => 'Mode Fokus aktif! Cuma diingetin Subuh & 15 menit sebelum sholat berikutnya.',
+      'fokus' => 'Mode Fokus aktif! Pengingat hanya saat masuk waktu adzan.',
       'seimbang' => 'Mode Seimbang aktif! Pengingat semua sholat wajib 15 menit sebelum adzan.',
       'intensif' => 'Mode Intensif aktif! Diingetin 30 menit & 5 menit sebelum sholat. Pertahanin streak! 🔥',
       _ => 'Notifikasi Muslim Leveling siap! 🔔',

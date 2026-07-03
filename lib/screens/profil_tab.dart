@@ -229,6 +229,22 @@ class _ProfilTabState extends State<ProfilTab> {
                             return;
                           }
                           await NotificationService.setRemindersEnabled(true);
+                          // Enable pertama kali belum punya timing tersimpan di
+                          // prefs — jadwalkan langsung dari jadwal kota tersimpan.
+                          final loc = await PrayerService.loadLocation();
+                          if (loc != null) {
+                            final j = await PrayerService.fetchSchedule(
+                                cityId: loc.id, cityName: loc.name);
+                            if (j != null) {
+                              await NotificationService.scheduleAdhanReminders(loc.name, {
+                                'subuh': j['subuh'] ?? '',
+                                'dzuhur': j['dzuhur'] ?? '',
+                                'ashar': j['ashar'] ?? '',
+                                'maghrib': j['maghrib'] ?? '',
+                                'isya': j['isya'] ?? '',
+                              });
+                            }
+                          }
                         } else {
                           await NotificationService.setRemindersEnabled(false);
                         }
