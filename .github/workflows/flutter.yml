@@ -3,6 +3,8 @@ name: Flutter CI
 on:
   push:
     branches: [flutter]
+  pull_request:
+    branches: [flutter]
   workflow_dispatch:
 
 jobs:
