@@ -291,99 +291,111 @@ class _JadwalTabState extends State<JadwalTab> {
 
     return NeonPulse(
       color: AppColors.primary,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Container(
           color: AppColors.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-        ),
-        child: _loading
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              )
-            : _error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          const Icon(Icons.cloud_off, color: AppColors.error, size: 32),
-                          const SizedBox(height: 8),
-                          Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: _fetch,
-                            child: Text('Coba lagi', style: AppText.bodyMd().copyWith(color: AppColors.primary)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset('assets/images/mosque_bg.jpg', fit: BoxFit.cover),
+              ),
+              Positioned.fill(
+                child: Container(color: Colors.black.withValues(alpha: 0.5)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: _loading
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      )
+                    : _error != null
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.cloud_off, color: Colors.white, size: 32),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _error!,
+                                    textAlign: TextAlign.center,
+                                    style: AppText.bodyMd().copyWith(color: Colors.white),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: _fetch,
+                                    child: Text('Coba lagi', style: AppText.bodyMd().copyWith(color: AppColors.primaryFixed)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('SHOLAT BERIKUTNYA', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
-                              const SizedBox(height: 2),
-                              Text(next.name, style: AppText.headlineLg()),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('SHOLAT BERIKUTNYA', style: AppText.labelCaps().copyWith(color: AppColors.primaryFixed)),
+                                      const SizedBox(height: 2),
+                                      Text(next.name, style: AppText.headlineLg().copyWith(color: Colors.white)),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.35),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.timer, size: 14, color: Colors.white),
+                                        const SizedBox(width: 4),
+                                        Text(next.countdown, style: AppText.labelCaps().copyWith(color: Colors.white)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  ShaderMask(
+                                    shaderCallback: (rect) => const LinearGradient(
+                                      colors: [AppColors.primaryFixed, AppColors.primary],
+                                    ).createShader(rect),
+                                    child: Text(
+                                      next.time,
+                                      style: AppText.displayHero(40).copyWith(color: Colors.white),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                    ),
+                                    child: const Icon(Icons.notifications_active, color: Colors.white, size: 20),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceBright.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.secondaryContainer.withValues(alpha: 0.5)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.timer, size: 14, color: AppColors.secondaryFixed),
-                                const SizedBox(width: 4),
-                                Text(next.countdown, style: AppText.labelCaps().copyWith(color: AppColors.secondaryFixed)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ShaderMask(
-                            shaderCallback: (rect) => const LinearGradient(
-                              colors: [AppColors.primary, AppColors.primaryFixed],
-                            ).createShader(rect),
-                            child: Text(
-                              next.time,
-                              style: AppText.displayHero(40).copyWith(color: Colors.white),
-                            ),
-                          ),
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryContainer.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.5)),
-                            ),
-                            child: const Icon(Icons.notifications_active, color: AppColors.primary, size: 20),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
