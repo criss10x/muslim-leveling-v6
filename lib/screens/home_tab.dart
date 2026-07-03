@@ -37,12 +37,21 @@ class _HomeTabState extends State<HomeTab> {
     _tick = Timer.periodic(const Duration(seconds: 60), (_) {
       if (mounted) setState(() {});
     });
+    // Kota diganti dari tab jadwal/profil → refetch timing kota baru
+    // (sekalian reschedule notif adzan di _fetchTimingsSilently).
+    PrayerService.locationVersion.addListener(_onLocationChanged);
   }
 
   @override
   void dispose() {
     _tick?.cancel();
+    PrayerService.locationVersion.removeListener(_onLocationChanged);
     super.dispose();
+  }
+
+  Future<void> _onLocationChanged() async {
+    await _fetchTimingsSilently();
+    if (mounted) setState(() => _state = GameService.current);
   }
 
   Future<void> _load({bool showLoading = true}) async {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ponytail: stdlib HttpClient + SharedPreferences. No dio, no riverpod.
@@ -182,10 +183,16 @@ class PrayerService {
   }
 
   // --- SharedPreferences helpers ---
+  /// Bump setiap kali lokasi diganti. Tab home & jadwal hidup terus di
+  /// IndexedStack (initState sekali), jadi mereka mendengarkan ini untuk
+  /// refetch jadwal saat kota diganti dari tab lain.
+  static final ValueNotifier<int> locationVersion = ValueNotifier(0);
+
   static Future<void> saveLocation(String id, String name) async {
     final p = await SharedPreferences.getInstance();
     await p.setString('city_id', id);
     await p.setString('city_name', name);
+    locationVersion.value++;
   }
 
   static Future<({String id, String name})?> loadLocation() async {

@@ -28,7 +28,7 @@ class _ProfilTabState extends State<ProfilTab> {
   String _cityName = 'Jakarta';
   // ponytail: cityId kept for future "show on map" feature
   // ignore: unused_field
-  String _cityId = '1301';
+  String _cityId = '';
   String? _avatarPath;
   int _level = 1;
 

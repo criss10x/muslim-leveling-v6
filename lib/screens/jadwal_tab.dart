@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/city_picker.dart';
@@ -20,7 +19,7 @@ class JadwalTab extends StatefulWidget {
 class _JadwalTabState extends State<JadwalTab> {
   Map<String, String>? _jadwal;
   String _cityName = 'Jakarta';
-  String _cityId = '1301';
+  String _cityId = '';
   bool _loading = true;
   String? _error;
 
@@ -28,33 +27,45 @@ class _JadwalTabState extends State<JadwalTab> {
   void initState() {
     super.initState();
     _loadAndFetch();
+    // Refetch saat kota diganti dari tab lain (profil/onboarding).
+    PrayerService.locationVersion.addListener(_loadAndFetch);
+  }
+
+  @override
+  void dispose() {
+    PrayerService.locationVersion.removeListener(_loadAndFetch);
+    super.dispose();
   }
 
   Future<void> _loadAndFetch() async {
     final loc = await PrayerService.loadLocation();
-    if (loc != null) {
-      _cityId = loc.id;
-      _cityName = loc.name;
-    } else {
-      final p = await SharedPreferences.getInstance();
-      await p.setString('city_id', _cityId);
-      await p.setString('city_name', _cityName);
+    if (loc == null) {
+      // Jangan fetch dengan ID default — API v3 pakai MD5 city ID,
+      // ID numerik lama tidak valid. Onboarding harusnya sudah menyimpan
+      // lokasi; ini pengaman kalau prefs kosong.
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Belum ada lokasi tersimpan. Tap ikon lokasi untuk pilih kota.';
+        });
+      }
+      return;
     }
+    _cityId = loc.id;
+    _cityName = loc.name;
     await _fetch();
   }
 
   Future<void> _changeLocation() async {
     final picked = await CityPicker.show(context);
     if (picked == null) return;
+    // saveLocation membump locationVersion → _loadAndFetch jalan via listener
+    // (sekalian home_tab ikut refresh timing + reschedule notif adzan).
     await PrayerService.saveLocation(picked.id, picked.name);
-    setState(() {
-      _cityId = picked.id;
-      _cityName = picked.name;
-    });
-    await _fetch();
   }
 
   Future<void> _fetch() async {
+    if (_cityId.isEmpty) return _loadAndFetch();
     setState(() {
       _loading = true;
       _error = null;
