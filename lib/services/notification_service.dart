@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -119,6 +120,30 @@ class NotificationService {
 
     final granted = await androidPlugin.requestNotificationsPermission();
     return granted ?? false;
+  }
+
+  /// Pastikan izin exact alarm (Android 12+). Tanpa izin ini zonedSchedule
+  /// mode exact melempar PlatformException dan TIDAK ADA notif terjadwal
+  /// sama sekali. Kalau belum diizinkan, buka halaman sistem
+  /// "Alarm & pengingat". Return status akhir.
+  static Future<bool> ensureExactAlarmPermission() async {
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return true; // iOS or other
+
+    final canExact =
+        await androidPlugin.canScheduleExactNotifications() ?? false;
+    if (canExact) return true;
+    final granted = await androidPlugin.requestExactAlarmsPermission();
+    return granted ?? false;
+  }
+
+  /// Jumlah notifikasi yang benar-benar terjadwal di sistem —
+  /// dipakai untuk verifikasi setelah toggle diaktifkan.
+  static Future<int> pendingCount() async {
+    final pending = await _plugin.pendingNotificationRequests();
+    return pending.length;
   }
 
   // ═══════════════════════════════════════════
@@ -338,17 +363,36 @@ class NotificationService {
 
     // Use zonedSchedule for reliable delivery
     // Convert to TZ — but for simplicity, use the platform's local time
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledTime, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } on PlatformException catch (e) {
+      // Izin "Alarm & pengingat" ditolak/dicabut → jangan gagal total tanpa
+      // notif sama sekali; jatuhkan ke inexact (bisa telat beberapa menit
+      // tapi tetap bunyi).
+      debugPrint('[NotificationService] exact schedule gagal (${e.code}), '
+          'fallback ke inexact untuk id=$id');
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledTime, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
   }
 
   static Future<void> cancelAlarms() async {
@@ -410,6 +454,36 @@ class NotificationService {
       99,
       'Muslim Leveling Mode: $cap',
       message,
+      details,
+    );
+  }
+
+  /// Tes suara adzan — bunyikan notifikasi lewat channel adzan sekarang juga,
+  /// supaya user bisa verifikasi suara tanpa menunggu waktu sholat.
+  static Future<void> sendTestAdzanSound() async {
+    if (!_initialized) await init();
+
+    final androidDetails = AndroidNotificationDetails(
+      _adzanChannelId,
+      _adzanChannelName,
+      channelDescription: _adzanChannelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      category: AndroidNotificationCategory.alarm,
+      sound: _adzanSound,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
+      enableVibration: true,
+      autoCancel: true,
+    );
+    const iosDetails = DarwinNotificationDetails(presentSound: true);
+    final details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _plugin.show(
+      98,
+      '🕌 Tes Suara Adzan',
+      'Kalau adzan terdengar, notifikasi kamu siap! Kalau tidak, cek volume alarm HP.',
       details,
     );
   }

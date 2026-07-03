@@ -219,6 +219,12 @@ class _ProfilTabState extends State<ProfilTab> {
                             _showSettingSnackbar('Izin notifikasi ditolak. Aktifkan manual di pengaturan HP.');
                             return;
                           }
+                          // Tanpa izin "Alarm & pengingat" (Android 12+),
+                          // penjadwalan exact gagal total — minta dulu.
+                          final exactOk = await NotificationService.ensureExactAlarmPermission();
+                          if (!exactOk) {
+                            _showSettingSnackbar('Izin "Alarm & pengingat" belum aktif — pengingat bisa telat beberapa menit.');
+                          }
                           await NotificationService.setRemindersEnabled(true);
                           // Enable pertama kali belum punya timing tersimpan di
                           // prefs — jadwalkan langsung dari jadwal kota tersimpan.
@@ -236,6 +242,12 @@ class _ProfilTabState extends State<ProfilTab> {
                               });
                             }
                           }
+                          // Verifikasi hasil nyata di sistem, bukan cuma
+                          // status toggle.
+                          final n = await NotificationService.pendingCount();
+                          _showSettingSnackbar(n > 0
+                              ? '$n pengingat adzan terjadwal 🔔'
+                              : 'Gagal menjadwalkan pengingat — cek izin notifikasi & alarm di pengaturan HP.');
                         } else {
                           await NotificationService.setRemindersEnabled(false);
                         }
@@ -268,21 +280,37 @@ class _ProfilTabState extends State<ProfilTab> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                // Test button
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    onPressed: enabled
-                        ? () async {
-                            await NotificationService.setNotifMode(mode);
-                            await NotificationService.sendTestNotification(mode);
-                          }
-                        : null,
-                    icon: Icon(Icons.send, size: 16, color: enabled ? AppColors.primary : AppColors.onSurfaceVariant),
-                    label: Text('Tes Notifikasi', style: AppText.bodyMd().copyWith(
-                      color: enabled ? AppColors.primary : AppColors.onSurfaceVariant,
-                    )),
-                  ),
+                // Test buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: enabled
+                            ? () async {
+                                await NotificationService.setNotifMode(mode);
+                                await NotificationService.sendTestNotification(mode);
+                              }
+                            : null,
+                        icon: Icon(Icons.send, size: 16, color: enabled ? AppColors.primary : AppColors.onSurfaceVariant),
+                        label: Text('Tes Notifikasi', style: AppText.bodyMd().copyWith(
+                          color: enabled ? AppColors.primary : AppColors.onSurfaceVariant,
+                        )),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: enabled
+                            ? () async {
+                                await NotificationService.sendTestAdzanSound();
+                              }
+                            : null,
+                        icon: Icon(Icons.volume_up, size: 16, color: enabled ? AppColors.secondaryFixed : AppColors.onSurfaceVariant),
+                        label: Text('Tes Adzan', style: AppText.bodyMd().copyWith(
+                          color: enabled ? AppColors.secondaryFixed : AppColors.onSurfaceVariant,
+                        )),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
