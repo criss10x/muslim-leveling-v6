@@ -407,16 +407,14 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
   Widget _buildMainAvatar(TierVisualConfig config, double size, double cornerRadius) {
     final hasPhoto = widget.profileImagePath != null &&
         File(widget.profileImagePath!).existsSync();
+    final bw = config.borderWidth;
 
-    return Container(
+    final content = Container(
       width: size,
       height: size,
+      padding: EdgeInsets.all(bw),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(cornerRadius),
-        border: Border.all(
-          width: config.borderWidth,
-          color: config.primaryColor, // Will be overridden by gradient below
-        ),
         boxShadow: [
           BoxShadow(
             color: config.primaryColor.withValues(alpha: config.hasGlow ? 0.5 : 0.3),
@@ -438,33 +436,54 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
           ],
         ),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(cornerRadius),
-          border: Border.all(
-            width: config.borderWidth,
-            color: Colors.transparent,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(cornerRadius - 2),
-          child: hasPhoto
-              ? Image.file(
-                  File(widget.profileImagePath!),
-                  fit: BoxFit.cover,
-                  width: size,
-                  height: size,
-                )
-              : Container(
-                  color: const Color(0xFF0E1512),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _defaultEmoji(widget.tierName, config),
-                    style: TextStyle(fontSize: size * 0.45),
-                  ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(cornerRadius - bw),
+        child: hasPhoto
+            ? Image.file(
+                File(widget.profileImagePath!),
+                fit: BoxFit.cover,
+                width: size,
+                height: size,
+              )
+            : Container(
+                color: const Color(0xFF0E1512),
+                alignment: Alignment.center,
+                child: Text(
+                  _defaultEmoji(widget.tierName, config),
+                  style: TextStyle(fontSize: size * 0.45),
                 ),
-        ),
+              ),
       ),
+    );
+
+    // Gradient border on top of the content. Grandmaster+ gets a slowly
+    // rotating sweep so the colors shimmer around the frame; lower tiers
+    // get a static gradient (still fancier than the old solid border).
+    if (!config.hasGlow) {
+      return CustomPaint(
+        foregroundPainter: _GradientBorderPainter(
+          primaryColor: config.primaryColor,
+          secondaryColor: config.secondaryColor,
+          strokeWidth: bw,
+          cornerRadius: cornerRadius,
+          rotation: 0,
+        ),
+        child: content,
+      );
+    }
+    return AnimatedBuilder(
+      animation: _ringController,
+      builder: (context, child) => CustomPaint(
+        foregroundPainter: _GradientBorderPainter(
+          primaryColor: config.primaryColor,
+          secondaryColor: config.secondaryColor,
+          strokeWidth: bw,
+          cornerRadius: cornerRadius,
+          rotation: _ringController.value * 2 * pi,
+        ),
+        child: child,
+      ),
+      child: content,
     );
   }
 
@@ -537,38 +556,44 @@ class SmallTierAvatar extends StatelessWidget {
     final hasPhoto = profileImagePath != null &&
         File(profileImagePath!).existsSync();
 
-    return Container(
-      width: sizeDp,
-      height: sizeDp,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(cornerRadius),
-        border: Border.all(
-          width: effectiveBorderWidth,
-          color: config.primaryColor,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: config.primaryColor.withValues(alpha: 0.3),
-            blurRadius: 4,
-          ),
-        ],
-        color: const Color(0xFF0E1512),
+    return CustomPaint(
+      foregroundPainter: _GradientBorderPainter(
+        primaryColor: config.primaryColor,
+        secondaryColor: config.secondaryColor,
+        strokeWidth: effectiveBorderWidth,
+        cornerRadius: cornerRadius,
+        rotation: 0,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(cornerRadius - effectiveBorderWidth),
-        child: hasPhoto
-            ? Image.file(
-                File(profileImagePath!),
-                fit: BoxFit.cover,
-                width: sizeDp,
-                height: sizeDp,
-              )
-            : Center(
-                child: Text(
-                  _defaultEmoji(tierName, config),
-                  style: TextStyle(fontSize: sizeDp * 0.5),
+      child: Container(
+        width: sizeDp,
+        height: sizeDp,
+        padding: EdgeInsets.all(effectiveBorderWidth),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(cornerRadius),
+          boxShadow: [
+            BoxShadow(
+              color: config.primaryColor.withValues(alpha: 0.3),
+              blurRadius: 4,
+            ),
+          ],
+          color: const Color(0xFF0E1512),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(cornerRadius - effectiveBorderWidth),
+          child: hasPhoto
+              ? Image.file(
+                  File(profileImagePath!),
+                  fit: BoxFit.cover,
+                  width: sizeDp,
+                  height: sizeDp,
+                )
+              : Center(
+                  child: Text(
+                    _defaultEmoji(tierName, config),
+                    style: TextStyle(fontSize: sizeDp * 0.5),
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }
@@ -577,6 +602,71 @@ class SmallTierAvatar extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 // CUSTOM PAINTERS — Canvas effects for tiers
 // ═══════════════════════════════════════════════════════════════
+
+/// Gradient border — sweep gradient stroked around the avatar frame with a
+/// thin glossy highlight on top for a metallic feel. [rotation] spins the
+/// gradient (used by Grandmaster+ for a shimmering border).
+class _GradientBorderPainter extends CustomPainter {
+  final Color primaryColor;
+  final Color secondaryColor;
+  final double strokeWidth;
+  final double cornerRadius;
+  final double rotation;
+
+  _GradientBorderPainter({
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.strokeWidth,
+    required this.cornerRadius,
+    required this.rotation,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(
+      rect.deflate(strokeWidth / 2),
+      Radius.circular(cornerRadius - strokeWidth / 2),
+    );
+
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..shader = SweepGradient(
+        colors: [
+          primaryColor,
+          secondaryColor,
+          primaryColor,
+          secondaryColor,
+          primaryColor,
+        ],
+        stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+        transform: GradientRotation(rotation),
+      ).createShader(rect);
+    canvas.drawRRect(rrect, borderPaint);
+
+    // Glossy highlight — thin white stroke fading from the top edge.
+    final highlightPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.white.withValues(alpha: 0.55),
+          Colors.white.withValues(alpha: 0.0),
+        ],
+      ).createShader(rect);
+    canvas.drawRRect(rrect.deflate(strokeWidth / 2 + 0.5), highlightPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GradientBorderPainter oldDelegate) =>
+      oldDelegate.rotation != rotation ||
+      oldDelegate.primaryColor != primaryColor ||
+      oldDelegate.secondaryColor != secondaryColor ||
+      oldDelegate.strokeWidth != strokeWidth;
+}
 
 class _ArcRingPainter extends CustomPainter {
   final Color primaryColor;
@@ -709,31 +799,39 @@ class _CornerAccentPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    const cornerLen = 12.0;
+
+    // Soft glow pass under the crisp accents.
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.6)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     final paint = Paint()
       ..color = color
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
-    const cornerLen = 12.0;
-
-    // Top-left
-    canvas.drawLine(const Offset(0, 0), const Offset(cornerLen, 0), paint);
-    canvas.drawLine(const Offset(0, 0), const Offset(0, cornerLen), paint);
-    // Top-right
-    canvas.drawLine(
-        Offset(size.width - cornerLen, 0), Offset(size.width, 0), paint);
-    canvas.drawLine(
-        Offset(size.width, 0), Offset(size.width, cornerLen), paint);
-    // Bottom-left
-    canvas.drawLine(
-        Offset(0, size.height - cornerLen), Offset(0, size.height), paint);
-    canvas.drawLine(
-        Offset(0, size.height), Offset(cornerLen, size.height), paint);
-    // Bottom-right
-    canvas.drawLine(Offset(size.width - cornerLen, size.height),
-        Offset(size.width, size.height), paint);
-    canvas.drawLine(Offset(size.width, size.height - cornerLen),
-        Offset(size.width, size.height), paint);
+    for (final p in [glowPaint, paint]) {
+      // Top-left
+      canvas.drawLine(const Offset(0, 0), const Offset(cornerLen, 0), p);
+      canvas.drawLine(const Offset(0, 0), const Offset(0, cornerLen), p);
+      // Top-right
+      canvas.drawLine(
+          Offset(size.width - cornerLen, 0), Offset(size.width, 0), p);
+      canvas.drawLine(
+          Offset(size.width, 0), Offset(size.width, cornerLen), p);
+      // Bottom-left
+      canvas.drawLine(
+          Offset(0, size.height - cornerLen), Offset(0, size.height), p);
+      canvas.drawLine(
+          Offset(0, size.height), Offset(cornerLen, size.height), p);
+      // Bottom-right
+      canvas.drawLine(Offset(size.width - cornerLen, size.height),
+          Offset(size.width, size.height), p);
+      canvas.drawLine(Offset(size.width, size.height - cornerLen),
+          Offset(size.width, size.height), p);
+    }
   }
 
   @override
