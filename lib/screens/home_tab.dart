@@ -152,18 +152,20 @@ class _HomeTabState extends State<HomeTab> {
       _state = s;
       _claimingQuestId = '';
     });
-    _toast('+${q.xpReward} XP dari quest!');
+    _toast('+${q.xpReward} XP dari quest!', top: true);
     if (didLevelUp && mounted) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaikLevelScreen(xpGained: q.xpReward)));
     }
   }
 
-  void _toast(String msg) {
+  void _toast(String msg, {bool top = false}) {
+    final screenHeight = MediaQuery.of(context).size.height;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg, style: AppText.bodyMd().copyWith(color: Colors.white)),
       backgroundColor: AppColors.surfaceContainerHigh,
       behavior: SnackBarBehavior.floating,
       duration: const Duration(seconds: 3),
+      margin: top ? EdgeInsets.only(bottom: screenHeight - 80) : null,
     ));
   }
 
@@ -954,7 +956,7 @@ class _HomeTabState extends State<HomeTab> {
                     'اللَّهُ أَكْبَرُ',
                     'Allahu Akbar',
                     'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
-            _zikirTile('LA ILAHA ILLALLAH', '100', AppColors.tertiary, '', Icons.refresh,
+            _zikirTile('LA ILAHA ILLALLAH', '1', AppColors.tertiary, '', Icons.refresh,
                 onTap: () => _showDzikir('La ilaha illallah',
                     'لَا إِلَهَ إِلَّا اللَّهُ',
                     'La ilaha illallah',
