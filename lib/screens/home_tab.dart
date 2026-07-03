@@ -113,6 +113,13 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _togglePrayer(String prayer, String type) async {
+    // Di luar window (mis. Subuh lewat 3 jam dari adzan) status beku —
+    // tidak bisa dicentang ataupun dibatalkan lagi.
+    if (type == 'wajib' &&
+        !GameService.isPrayerWindowOpen(prayer, _state.timings)) {
+      _toast('🔒 ${GameService.wajibLockHint(prayer, _state.timings)}');
+      return;
+    }
     final isLogged = GameService.isPrayerCheckedToday(prayer);
     if (isLogged) {
       final s = await GameService.unlogPrayer(prayer);

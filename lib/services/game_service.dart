@@ -332,16 +332,37 @@ class GameService {
     _ => 'Coba lagi nanti ya.',
   };
 
+  /// Batas akhir quest Subuh: 3 jam setelah adzan. Sholat lain terbuka
+  /// sampai ganti hari karena adzan berikutnya masih menyusul di hari yang
+  /// sama, sedangkan jeda Subuh → Dzuhur terlalu panjang untuk dibiarkan.
+  static const subuhLockAfterMin = 180;
+
   static bool isPrayerWindowOpen(String prayer, Timings t) {
     final now = nowHHmm();
     switch (prayer) {
-      case 'subuh': return isAfter(now, t.subuh);
+      case 'subuh':
+        return isAfter(now, t.subuh) &&
+            isBefore(now, addMin(t.subuh, subuhLockAfterMin));
       case 'dzuhur': return isAfter(now, t.dzuhur);
       case 'ashar': return isAfter(now, t.ashar);
       case 'maghrib': return isAfter(now, t.maghrib);
       case 'isya': return isAfter(now, t.isya);
       default: return true;
     }
+  }
+
+  /// Alasan quest wajib terkunci — dipakai untuk toast di UI.
+  static String wajibLockHint(String prayer, Timings t) {
+    final cap = prayer[0].toUpperCase() + prayer.substring(1);
+    final adzan = _adzanFor(prayer, t);
+    if (adzan.isNotEmpty && isBefore(nowHHmm(), adzan)) {
+      return 'Belum masuk waktu $cap (adzan $adzan).';
+    }
+    if (prayer == 'subuh') {
+      return 'Quest Subuh terkunci ${subuhLockAfterMin ~/ 60} jam setelah adzan '
+          '(sampai ${addMin(t.subuh, subuhLockAfterMin)}). Besok jangan kelewat ya! 💪';
+    }
+    return 'Waktu $cap sudah lewat.';
   }
 
   static bool isCurrentOrUpcoming(String prayer, Timings t) {
@@ -472,6 +493,8 @@ class GameService {
     if (state.prayerLog.any((l) => l.date == today && l.prayer == prayer)) return null;
 
     if (type == 'sunnah' && !isSunnahOnTime(prayer, state.timings)) return null;
+
+    if (type == 'wajib' && !isPrayerWindowOpen(prayer, state.timings)) return null;
 
     final newLog = PrayerLog(date: today, prayer: prayer, time: now, type: type);
     final updatedLogs = [...state.prayerLog, newLog];
