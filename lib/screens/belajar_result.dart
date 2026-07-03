@@ -4,6 +4,7 @@ import '../../widgets/common.dart';
 import '../../services/learning_content.dart';
 import '../../services/game_service.dart';
 import 'naik_level_screen.dart';
+import 'dapet_exp_screen.dart';
 
 /// Quiz result — score, XP claim, next module unlock, level-up check.
 class BelajarResultScreen extends StatefulWidget {
@@ -143,9 +144,18 @@ class _BelajarResultScreenState extends State<BelajarResultScreen> {
       _processing = false;
     });
 
-    if (didLevelUp && mounted) {
+    if (!mounted) return;
+    if (didLevelUp) {
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => NaikLevelScreen(xpGained: _module.xpReward),
+      ));
+    } else {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => DapetExpScreen(
+          xpGained: _module.xpReward,
+          moduleTitle: _module.title,
+          score: widget.score,
+        ),
       ));
     }
   }

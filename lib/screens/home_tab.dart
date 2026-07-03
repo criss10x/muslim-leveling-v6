@@ -179,6 +179,7 @@ class _HomeTabState extends State<HomeTab> {
               _section(1, _heroRank(info)),
               const SizedBox(height: AppSpacing.md),
               _section(2, _activePrayerCard()),
+              const SizedBox(height: AppSpacing.md),
               _section(
                 3,
                 Row(
