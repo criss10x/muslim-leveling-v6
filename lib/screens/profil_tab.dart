@@ -177,24 +177,15 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
-  void _showNotifDialog() {
-    bool enabled = false;
-    String mode = 'seimbang';
+  Future<void> _showNotifDialog() async {
+    bool enabled = await NotificationService.isRemindersEnabled();
+    String mode = await NotificationService.getNotifMode();
+    if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) {
-          // Load initial values on first build
-          if (!enabled && mode == 'seimbang') {
-            NotificationService.isRemindersEnabled().then((v) {
-              if (mounted) setSt(() => enabled = v);
-            });
-            NotificationService.getNotifMode().then((m) {
-              if (mounted) setSt(() => mode = m);
-            });
-          }
-
           return AlertDialog(
             backgroundColor: AppColors.surfaceContainerHigh,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),

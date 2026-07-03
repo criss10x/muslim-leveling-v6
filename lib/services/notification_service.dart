@@ -34,6 +34,10 @@ class NotificationService {
 
   static const _wajibList = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
 
+  /// ID notifikasi tetap per sholat (index × 10, + offset reminder 0–2).
+  /// String.hashCode tidak dijamin stabil antar-run, jadi jangan dipakai.
+  static int _baseIdFor(String prayer) => (_wajibList.indexOf(prayer) + 1) * 10;
+
   static bool _initialized = false;
   static bool get isInitialized => _initialized;
 
@@ -204,10 +208,7 @@ class NotificationService {
       if (hour == null || minute == null) continue;
 
       // Notification ID per prayer
-      final notifId = prayer.hashCode;
-
-      // Cancel this specific notification first
-      await _plugin.cancel(notifId);
+      final notifId = _baseIdFor(prayer);
 
       // Schedule based on mode
       final schedules = _getScheduleTimes(mode, hour, minute, now);
@@ -321,13 +322,9 @@ class NotificationService {
   }
 
   static Future<void> cancelAlarms() async {
-    // Cancel all possible notification IDs (5 prayers × 3 max reminders)
-    for (final prayer in _wajibList) {
-      final baseId = prayer.hashCode;
-      await _plugin.cancel(baseId);
-      await _plugin.cancel(baseId + 1);
-      await _plugin.cancel(baseId + 2);
-    }
+    // App ini cuma menjadwalkan pengingat adzan, jadi cancelAll aman —
+    // sekaligus bersih-bersih jadwal lama ber-ID hashCode dari versi sebelumnya.
+    await _plugin.cancelAll();
   }
 
   // ═══════════════════════════════════════════
