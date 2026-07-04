@@ -41,7 +41,7 @@ class _BelajarResultScreenState extends State<BelajarResultScreen> {
       .where((m) => m.id == widget.moduleId)
       .first;
 
-  bool get _passed => widget.score >= 70;
+  bool get _passed => widget.score >= LearningService.passScore;
 
   @override
   Widget build(BuildContext context) {
