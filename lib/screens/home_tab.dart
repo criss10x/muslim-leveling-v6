@@ -932,36 +932,53 @@ class _HomeTabState extends State<HomeTab> {
     final progress = (zikirCount / goal).clamp(0.0, 1.0);
     return Column(
       children: [
-        // ── Zikir tiles grid (2×2) ──
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: AppSpacing.sm,
-          crossAxisSpacing: AppSpacing.sm,
-          childAspectRatio: 0.95,
-          children: [
-            _zikirTile('SUBHANALLAH', '33', AppColors.primary, '', Icons.refresh,
-                onTap: () => _showDzikir('Subhanallah',
-                    'سُبْحَانَ اللَّهِ',
-                    'Subhanallah',
-                    'Maha Suci Allah, dzikir yang menumbuhkan pohon-pohon di surga.')),
-            _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '', Icons.refresh,
-                onTap: () => _showDzikir('Alhamdulillah',
-                    'الْحَمْدُ لِلَّهِ',
-                    'Alhamdulillah',
-                    'Segala puji bagi Allah, dzikir yang mengisi timbangan amal di hari kiamat.')),
-            _zikirTile('ALLAHU AKBAR', '33', AppColors.secondaryFixed, '', Icons.refresh,
-                onTap: () => _showDzikir('Allahu Akbar',
-                    'اللَّهُ أَكْبَرُ',
-                    'Allahu Akbar',
-                    'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
-            _zikirTile('LA ILAHA ILLALLAH', '1', AppColors.tertiary, '', Icons.refresh,
-                onTap: () => _showDzikir('La ilaha illallah',
-                    'لَا إِلَهَ إِلَّا اللَّهُ',
-                    'La ilaha illallah',
-                    'Tiada tuhan selain Allah, kalimat tauhid yang paling utama.')),
-          ],
+        // ── Zikir tiles 2×2 — tinggi ngikutin konten (≈ tombol Daily Zikir),
+        // bukan aspect ratio grid yang bikin tile ketinggian. IntrinsicHeight
+        // menyamakan tinggi dua tile dalam satu baris (label bisa 2 baris).
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _zikirTile('SUBHANALLAH', '33', AppColors.primary, '', Icons.refresh,
+                    onTap: () => _showDzikir('Subhanallah',
+                        'سُبْحَانَ اللَّهِ',
+                        'Subhanallah',
+                        'Maha Suci Allah, dzikir yang menumbuhkan pohon-pohon di surga.')),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _zikirTile('ALHAMDULILLAH', '33', AppColors.tertiary, '', Icons.refresh,
+                    onTap: () => _showDzikir('Alhamdulillah',
+                        'الْحَمْدُ لِلَّهِ',
+                        'Alhamdulillah',
+                        'Segala puji bagi Allah, dzikir yang mengisi timbangan amal di hari kiamat.')),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _zikirTile('ALLAHU AKBAR', '33', AppColors.secondaryFixed, '', Icons.refresh,
+                    onTap: () => _showDzikir('Allahu Akbar',
+                        'اللَّهُ أَكْبَرُ',
+                        'Allahu Akbar',
+                        'Allah Maha Besar, dzikir yang membuka keberkahan dan ketenangan hati.')),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _zikirTile('LA ILAHA ILLALLAH', '1', AppColors.tertiary, '', Icons.refresh,
+                    onTap: () => _showDzikir('La ilaha illallah',
+                        'لَا إِلَهَ إِلَّا اللَّهُ',
+                        'La ilaha illallah',
+                        'Tiada tuhan selain Allah, kalimat tauhid yang paling utama.')),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         // ── Zikir Clicker (full-width row below grid, no XP) ──
