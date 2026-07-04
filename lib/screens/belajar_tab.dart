@@ -31,7 +31,7 @@ class _BelajarTabState extends State<BelajarTab> {
     final completed = LearningService.completedCount;
     final total = LearningService.totalModules;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(

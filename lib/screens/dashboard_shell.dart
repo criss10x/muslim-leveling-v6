@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/common.dart';
 import 'home_tab.dart';
 import 'jadwal_tab.dart';
 import 'belajar_tab.dart';
@@ -35,16 +36,18 @@ class _DashboardShellState extends State<DashboardShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       extendBody: true,
-      body: IndexedStack(
-        index: _tab,
-        children: [
-          HomeTab(onSettingsPressed: () => setState(() => _tab = 3)),
-          const JadwalTab(),
-          const BelajarTab(),
-          const ProfilTab(),
-        ],
+      body: AmbientBackground(
+        child: IndexedStack(
+          index: _tab,
+          children: [
+            HomeTab(onSettingsPressed: () => setState(() => _tab = 3)),
+            const JadwalTab(),
+            const BelajarTab(),
+            const ProfilTab(),
+          ],
+        ),
       ),
       bottomNavigationBar: ClipRect(
         child: BackdropFilter(

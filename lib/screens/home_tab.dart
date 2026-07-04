@@ -184,7 +184,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget build(BuildContext context) {
     final info = GameService.getLevelInfo(_state.xp);
     return Container(
-      color: AppColors.background,
+      color: Colors.transparent,
       child: SafeArea(
         bottom: false,
         child: RefreshIndicator(
