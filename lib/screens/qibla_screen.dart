@@ -181,7 +181,17 @@ class _QiblaScreenState extends State<QiblaScreen> {
     var az = orientation[0] * 180 / math.pi;
     az = (az + 360) % 360;
 
-    if (mounted) setState(() => _azimuth = az);
+    // ponytail: low-pass filter agar jarum kompas bergerak halus,
+    // bukan lompat-lompat mengikuti setiap event sensor.
+    if (mounted) {
+      setState(() => _azimuth = _lerpAngle(_azimuth, az, 0.12));
+    }
+  }
+
+  /// Interpolate compass angle across the 0/360 wrap-around.
+  double _lerpAngle(double current, double target, double t) {
+    final diff = (target - current + 180) % 360 - 180;
+    return (current + diff * t + 360) % 360;
   }
 
   /// Port SensorManager.getRotationMatrix dari Android
@@ -313,9 +323,19 @@ class _QiblaScreenState extends State<QiblaScreen> {
     final compassColor = isAligned ? AppColors.primary : AppColors.secondaryFixed;
     final arrowColor = isAligned ? AppColors.primary : AppColors.tertiary;
 
-    return SizedBox(
+    return Container(
       width: 300,
       height: 300,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: compassColor.withValues(alpha: isAligned ? 0.35 : 0.15),
+            blurRadius: 60,
+            spreadRadius: 8,
+          ),
+        ],
+      ),
       child: CustomPaint(
         painter: _CompassPainter(
           azimuth: _azimuth,
@@ -380,19 +400,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   Widget _alignmentCard(bool isAligned, double relativeAngle) {
-    return Container(
+    return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isAligned
-              ? [AppColors.primary.withValues(alpha: 0.2), AppColors.secondaryFixed.withValues(alpha: 0.15)]
-              : [AppColors.surfaceContainer, AppColors.surfaceContainer.withValues(alpha: 0.6)],
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: isAligned ? AppColors.primary.withValues(alpha: 0.5) : AppColors.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
+      borderColor: isAligned
+          ? AppColors.primary.withValues(alpha: 0.5)
+          : AppColors.outlineVariant.withValues(alpha: 0.3),
       child: Row(
         children: [
           Text(isAligned ? '✅' : '🧭', style: const TextStyle(fontSize: 28)),
@@ -421,13 +433,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   Widget _bearingCard() {
-    return Container(
+    return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
