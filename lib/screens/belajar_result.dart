@@ -29,6 +29,14 @@ class _BelajarResultScreenState extends State<BelajarResultScreen> {
   bool _xpClaimed = false;
   bool _processing = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // XP modul ini mungkin sudah diklaim di attempt sebelumnya — tanpa ini
+    // tombol klaim muncul lagi tiap retake dan addXp jalan berulang.
+    _xpClaimed = LearningService.isXpClaimed(widget.moduleId);
+  }
+
   LearningModule get _module => LearningContent.getAllModulesOrdered()
       .where((m) => m.id == widget.moduleId)
       .first;
