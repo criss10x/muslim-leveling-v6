@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/learning_content.dart';
+import '../../services/game_service.dart';
 import 'belajar_result.dart';
+import 'dapet_exp_screen.dart';
+import 'naik_level_screen.dart';
 
 /// Quiz screen — 5 questions per module, ABCD options, instant feedback.
 class BelajarQuizScreen extends StatefulWidget {
@@ -54,14 +57,39 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
     final score = (_correct.where((c) => c).length / _questions.length * 100).round();
     await LearningService.completeModule(widget.moduleId, score);
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (_) => BelajarResultScreen(
-        moduleId: widget.moduleId,
-        score: score,
-        correct: _correct.where((c) => c).length,
-        total: _questions.length,
-      ),
-    ));
+
+    if (score >= LearningService.passScore) {
+      // Auto-claim XP reward and show celebration popup.
+      final alreadyClaimed = LearningService.isXpClaimed(widget.moduleId);
+      if (!alreadyClaimed) {
+        await LearningService.claimXp(widget.moduleId);
+        final (_, didLevelUp) = await GameService.addXp(_module.xpReward);
+        if (!mounted) return;
+        if (didLevelUp) {
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (_) => NaikLevelScreen(xpGained: _module.xpReward),
+          ));
+          return;
+        }
+      }
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => DapetExpScreen(
+          xpGained: _module.xpReward,
+          moduleTitle: _module.title,
+          score: score,
+        ),
+      ));
+    } else {
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => BelajarResultScreen(
+          moduleId: widget.moduleId,
+          score: score,
+          correct: _correct.where((c) => c).length,
+          total: _questions.length,
+        ),
+      ));
+    }
   }
 
   @override

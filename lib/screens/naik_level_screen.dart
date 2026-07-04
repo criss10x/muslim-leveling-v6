@@ -84,17 +84,17 @@ class NaikLevelScreen extends StatelessWidget {
                   Entrance(
                     delay: const Duration(milliseconds: 850),
                     child: HeroButton(
-                      label: 'KEMBALI KE DASHBOARD',
-                      trailingIcon: Icons.arrow_forward,
-                      onPressed: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => const DashboardShell(),
-                          ),
-                          (route) => false,
-                        );
-                      },
-                    ),
+   label: 'KEMBALI KE TAB BELAJAR',
+   trailingIcon: Icons.arrow_forward,
+   onPressed: () {
+     Navigator.of(context).pushAndRemoveUntil(
+       MaterialPageRoute(
+         builder: (_) => const DashboardShell(initialTab: 2),
+       ),
+       (route) => false,
+     );
+   },
+ ),
                   ),
                 ],
               ),

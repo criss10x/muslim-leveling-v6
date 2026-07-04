@@ -9,14 +9,21 @@ import 'profil_tab.dart';
 
 /// Main shell — bottom nav with 4 tabs and the persistent top app bar.
 class DashboardShell extends StatefulWidget {
-  const DashboardShell({super.key});
+  final int initialTab;
+  const DashboardShell({super.key, this.initialTab = 0});
 
   @override
   State<DashboardShell> createState() => _DashboardShellState();
 }
 
 class _DashboardShellState extends State<DashboardShell> {
-  int _tab = 0;
+  late int _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = widget.initialTab;
+  }
 
   static const _items = [
     (Icons.home_outlined, Icons.home, 'HOME'),
