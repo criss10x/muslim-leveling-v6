@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/game_service.dart';
-import 'dashboard_shell.dart';
 
 /// Naik Level — victory celebration, rank-up screen, full-bleed reward.
 /// Reads the latest game state so the displayed rank/level is always live.
@@ -84,17 +83,10 @@ class NaikLevelScreen extends StatelessWidget {
                   Entrance(
                     delay: const Duration(milliseconds: 850),
                     child: HeroButton(
-   label: 'KEMBALI KE TAB BELAJAR',
-   trailingIcon: Icons.arrow_forward,
-   onPressed: () {
-     Navigator.of(context).pushAndRemoveUntil(
-       MaterialPageRoute(
-         builder: (_) => const DashboardShell(initialTab: 2),
-       ),
-       (route) => false,
-     );
-   },
- ),
+                      label: 'KEMBALI',
+                      trailingIcon: Icons.arrow_back,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ),
                 ],
               ),

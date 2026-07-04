@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/game_service.dart';
-import 'dashboard_shell.dart';
 
 /// Dapet EXP — celebration screen after claiming quiz XP (no level-up).
 /// Mirrors the Naik Level victory screen but themed for the Belajar tab:
@@ -91,17 +90,10 @@ class DapetExpScreen extends StatelessWidget {
                   Entrance(
                     delay: const Duration(milliseconds: 850),
                     child: HeroButton(
-       label: 'KEMBALI KE TAB BELAJAR',
-       trailingIcon: Icons.arrow_forward,
-       onPressed: () {
-         Navigator.of(context).pushAndRemoveUntil(
-           MaterialPageRoute(
-             builder: (_) => const DashboardShell(initialTab: 2),
-           ),
-           (route) => false,
-         );
-       },
-     ),
+                      label: 'KEMBALI',
+                      trailingIcon: Icons.arrow_back,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ),
                 ],
               ),
