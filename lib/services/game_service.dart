@@ -412,10 +412,11 @@ class GameService {
     return (name: 'Subuh', time: t.subuh, label: 'Menuju Waktu', isSunnah: false);
   }
 
-  /// Re-evaluate daily quest progress from today's prayer logs.
+  /// Re-evaluate daily quest progress from today's prayer logs + zikir count.
   /// Preserves claimed quests (they stay as-is).
   static List<Quest> _reevaluateQuests(
-      List<Quest> current, List<PrayerLog> logs, StreakState hero, Timings t) {
+      List<Quest> current, List<PrayerLog> logs, StreakState hero, Timings t,
+      int zikirToday) {
     final today = todayStr();
     final todayLogs = logs.where((l) => l.date == today).toList();
     final wajibLogs = todayLogs
@@ -478,6 +479,58 @@ class GameService {
           prog = hero.current.clamp(0, 7);
           done = hero.current >= 7;
           break;
+        case 'quest_dzuhur_tepat':
+          final dzuhurLog = findLog('dzuhur');
+          if (dzuhurLog != null && t.dzuhur.isNotEmpty &&
+              minDiff(dzuhurLog.time, t.dzuhur) <= 30) {
+            prog = 1;
+            done = true;
+          }
+          break;
+        case 'quest_maghrib_tepat':
+          final maghribLog = findLog('maghrib');
+          if (maghribLog != null && t.maghrib.isNotEmpty &&
+              minDiff(maghribLog.time, t.maghrib) <= 30) {
+            prog = 1;
+            done = true;
+          }
+          break;
+        case 'quest_isya_hadir':
+          if (findLog('isya') != null) {
+            prog = 1;
+            done = true;
+          }
+          break;
+        case 'quest_any_three':
+          prog = wajibLogs.length.clamp(0, 3);
+          done = wajibLogs.length >= 3;
+          break;
+        case 'quest_subuh_isya':
+          prog = (findLog('subuh') != null ? 1 : 0) +
+              (findLog('isya') != null ? 1 : 0);
+          done = prog >= 2;
+          break;
+        case 'quest_one_sunnah':
+          final cnt = todayLogs
+              .where((l) => l.type == 'sunnah' || l.prayer.startsWith('rawatib'))
+              .length;
+          prog = cnt.clamp(0, 1);
+          done = cnt >= 1;
+          break;
+        case 'quest_rawatib_one':
+          final cnt =
+              todayLogs.where((l) => l.prayer.startsWith('rawatib')).length;
+          prog = cnt.clamp(0, 1);
+          done = cnt >= 1;
+          break;
+        case 'quest_zikir_33':
+          prog = zikirToday.clamp(0, 33);
+          done = zikirToday >= 33;
+          break;
+        case 'quest_zikir_goal':
+          prog = zikirToday.clamp(0, zikirGoal);
+          done = zikirToday >= zikirGoal;
+          break;
       }
       return q.copyWith(progress: prog, completed: done);
     }).toList();
@@ -531,47 +584,12 @@ class GameService {
     if (isHeroCompletor) hero = _updStreak(hero, today, yest);
     if (prayer == 'tilawah') tilawah = _updStreak(tilawah, today, yest);
 
-    // Update quest progress
-    var quests = state.quests.map((q) {
-      var prog = q.progress; var done = q.completed;
-      switch (q.id) {
-        case 'quest_subuh_tepat':
-          if (prayer == 'subuh' && minDiff(now, state.timings.subuh) <= 30) { prog = 1; done = true; }
-          break;
-        case 'quest_five_rings':
-          if (isHeroCompletor) { prog = 1; done = true; }
-          break;
-        case 'quest_dhuha_before_dzuhur':
-          if (prayer == 'dhuha' && isBefore(now, state.timings.dzuhur)) { prog = 1; done = true; }
-          break;
-        case 'quest_tilawah_today':
-          if (prayer == 'tilawah') { prog = 1; done = true; }
-          break;
-        case 'quest_hero_streak_7':
-          prog = hero.current;
-          if (hero.current >= 7) done = true;
-          break;
-        case 'quest_timely_prayers':
-          final adzan = switch (prayer) {
-            'subuh' => state.timings.subuh, 'dzuhur' => state.timings.dzuhur,
-            'ashar' => state.timings.ashar, 'maghrib' => state.timings.maghrib,
-            'isya' => state.timings.isya, _ => '',
-          };
-          if (adzan.isNotEmpty && minDiff(now, adzan) <= 10) {
-            prog = (prog + 1).clamp(0, 3);
-            if (prog >= 3) done = true;
-          }
-          break;
-        case 'quest_rawatib_two':
-          if (prayer.startsWith('rawatib')) {
-            final cnt = updatedLogs.where((l) => l.date == today && l.prayer.startsWith('rawatib')).length;
-            prog = cnt.clamp(0, 2);
-            if (cnt >= 2) done = true;
-          }
-          break;
-      }
-      return q.copyWith(progress: prog, completed: done);
-    }).toList();
+    // Update quest progress — satu sumber logika di _reevaluateQuests,
+    // supaya semua quest (termasuk yang baru) terlacak dari jalur mana pun.
+    final zikirNow =
+        state.zikirCounter.date == today ? state.zikirCounter.count : 0;
+    final quests = _reevaluateQuests(
+        state.quests, updatedLogs, hero, state.timings, zikirNow);
 
     final newState = state.copyWith(
       xp: state.xp + xpGained, level: newInfo.level,
@@ -640,7 +658,8 @@ class GameService {
           current: (tilawah.current - 1).clamp(0, 999999), lastDate: '');
     }
 
-    final quests = _reevaluateQuests(_cache.quests, updatedLogs, hero, _cache.timings);
+    final quests = _reevaluateQuests(
+        _cache.quests, updatedLogs, hero, _cache.timings, zikirCountToday);
 
     final newState = _cache.copyWith(
       xp: newXp,
@@ -681,7 +700,7 @@ class GameService {
     return (newState, newInfo.level > oldInfo.level);
   }
 
-  // ─── Quest generation (V3 pool, pick 5 random) ───
+  // ─── Quest generation (pool 15, pick 5, rotasi harian) ───
   static List<Quest> generateQuestPool() {
     final pool = [
       Quest(id: 'quest_subuh_tepat', desc: 'Sholat Subuh tepat waktu (≤30 menit setelah adzan)', xpReward: 50, target: 1, progress: 0, completed: false, claimed: false),
@@ -690,13 +709,25 @@ class GameService {
       Quest(id: 'quest_timely_prayers', desc: 'Sholat tepat waktu (≤10 menit), 3x hari ini', xpReward: 60, target: 3, progress: 0, completed: false, claimed: false),
       Quest(id: 'quest_dhuha_before_dzuhur', desc: 'Sholat Dhuha sebelum Dzuhur', xpReward: 40, target: 1, progress: 0, completed: false, claimed: false),
       Quest(id: 'quest_rawatib_two', desc: 'Rawatib 2x hari ini', xpReward: 45, target: 2, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_dzuhur_tepat', desc: 'Sholat Dzuhur tepat waktu (≤30 menit setelah adzan)', xpReward: 40, target: 1, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_maghrib_tepat', desc: 'Sholat Maghrib tepat waktu (≤30 menit setelah adzan)', xpReward: 40, target: 1, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_isya_hadir', desc: 'Jangan lewatkan sholat Isya malam ini', xpReward: 30, target: 1, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_any_three', desc: 'Kerjakan 3 sholat wajib hari ini (bebas yang mana)', xpReward: 50, target: 3, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_subuh_isya', desc: 'Kunci dua ujung hari: Subuh + Isya', xpReward: 60, target: 2, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_one_sunnah', desc: 'Kerjakan 1 sholat sunnah apa saja hari ini', xpReward: 30, target: 1, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_rawatib_one', desc: 'Rawatib 1x hari ini (qobliyah/ba\'diyah bebas)', xpReward: 25, target: 1, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_zikir_33', desc: 'Zikir 33x lewat tombol Daily Zikir', xpReward: 30, target: 33, progress: 0, completed: false, claimed: false),
+      Quest(id: 'quest_zikir_goal', desc: 'Tuntaskan Daily Zikir sampai $zikirGoal', xpReward: 60, target: zikirGoal, progress: 0, completed: false, claimed: false),
     ];
     if (_cache.heroStreak.current >= 6) {
       pool.add(Quest(id: 'quest_hero_streak_7', desc: 'Pertahanin Hero Streak 7 hari! 🔥',
           xpReward: 200, target: 7, progress: _cache.heroStreak.current,
           completed: _cache.heroStreak.current >= 7, claimed: false));
     }
-    pool.shuffle();
+    // Rotasi harian deterministik: seed dari tanggal → kombinasi 5 quest
+    // beda tiap hari, tapi stabil sepanjang hari yang sama (gak bisa
+    // di-reroll dengan restart app).
+    pool.shuffle(Random(todayStr().hashCode));
     return pool.take(5).toList();
   }
 
@@ -810,8 +841,13 @@ class GameService {
     final zc = _cache.zikirCounter;
     final newCount = (zc.date == today ? zc.count : 0) + 1;
 
+    // Quest zikir (quest_zikir_33 / quest_zikir_goal) ikut ter-update.
+    final quests = _reevaluateQuests(_cache.quests, _cache.prayerLog,
+        _cache.heroStreak, _cache.timings, newCount);
+
     final newState = _cache.copyWith(
       zikirCounter: ZikirCounter(date: today, count: newCount),
+      quests: quests,
     );
     await _save(newState);
     await refreshBadges();
