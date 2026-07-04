@@ -1,3 +1,4 @@
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -29,8 +30,10 @@ class NotificationService {
 
   // Channel terpisah untuk notifikasi saat masuk waktu adzan, dengan suara
   // adzan (res/raw/adzan.mp3). Channel Android immutable setelah dibuat,
-  // makanya pakai ID baru, bukan mengubah channel lama.
-  static const _adzanChannelId = 'adhan_sound_v1';
+  // makanya pakai ID baru, bukan mengubah channel lama. v2: channel v1 di
+  // sebagian device terlanjur terbuat tanpa suara — di-bump + v1 dihapus.
+  static const _adzanChannelId = 'adhan_sound_v2';
+  static const _legacyAdzanChannelId = 'adhan_sound_v1';
   static const _adzanChannelName = 'Adzan';
   static const _adzanChannelDesc = 'Notifikasi bersuara adzan saat masuk waktu sholat';
   static const _adzanSound = RawResourceAndroidNotificationSound('adzan');
@@ -106,8 +109,33 @@ class NotificationService {
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
+    // Setting channel gak bisa diubah setelah dibuat — buang versi lama
+    // yang mungkin terlanjur soundless.
+    await androidPlugin?.deleteNotificationChannel(_legacyAdzanChannelId);
     await androidPlugin?.createNotificationChannel(androidChannel);
     await androidPlugin?.createNotificationChannel(adzanChannel);
+  }
+
+  /// Buka layar pengaturan sistem Android untuk channel adzan, supaya user
+  /// bisa cek/atur suaranya langsung. Fallback: pengaturan notifikasi app.
+  static Future<void> openChannelSettings() async {
+    const pkg = 'id.muslimleveling.muslim_leveling';
+    try {
+      const intent = AndroidIntent(
+        action: 'android.settings.CHANNEL_NOTIFICATION_SETTINGS',
+        arguments: {
+          'android.provider.extra.APP_PACKAGE': pkg,
+          'android.provider.extra.CHANNEL_ID': _adzanChannelId,
+        },
+      );
+      await intent.launch();
+    } catch (_) {
+      const fallback = AndroidIntent(
+        action: 'android.settings.APP_NOTIFICATION_SETTINGS',
+        arguments: {'android.provider.extra.APP_PACKAGE': pkg},
+      );
+      await fallback.launch();
+    }
   }
 
   /// Request POST_NOTIFICATIONS permission (Android 13+).
@@ -267,15 +295,20 @@ class NotificationService {
         if (!scheduledTime.isAfter(now)) {
           scheduledTime = scheduledTime.add(const Duration(days: 1));
         }
-        await _scheduleOne(
-          id: notifId + i, // unique ID per reminder
-          title: _titleFor(prayer),
-          body: _bodyFor(prayer, city, mode, i),
-          scheduledTime: scheduledTime,
-          // Elemen terakhir = tepat waktu adzan → pakai suara adzan;
-          // pengingat pra-adzan tetap suara default.
-          adzanSound: i == schedules.length - 1,
-        );
+        try {
+          await _scheduleOne(
+            id: notifId + i, // unique ID per reminder
+            title: _titleFor(prayer),
+            body: _bodyFor(prayer, city, mode, i),
+            scheduledTime: scheduledTime,
+            // Elemen terakhir = tepat waktu adzan → pakai suara adzan;
+            // pengingat pra-adzan tetap suara default.
+            adzanSound: i == schedules.length - 1,
+          );
+        } catch (e) {
+          // Satu reminder gagal total — lanjutkan sisanya, jangan abort.
+          debugPrint('[NotificationService] gagal jadwalkan $prayer+$i: $e');
+        }
       }
     }
   }
@@ -339,59 +372,60 @@ class NotificationService {
     required DateTime scheduledTime,
     bool adzanSound = false,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
-      adzanSound ? _adzanChannelId : _channelId,
-      adzanSound ? _adzanChannelName : _channelName,
-      channelDescription: adzanSound ? _adzanChannelDesc : _channelDesc,
-      importance: Importance.high,
-      priority: Priority.high,
-      category: AndroidNotificationCategory.alarm,
-      sound: adzanSound ? _adzanSound : null,
-      audioAttributesUsage: adzanSound
-          ? AudioAttributesUsage.alarm
-          : AudioAttributesUsage.notification,
-      vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
-      enableVibration: true,
-      autoCancel: true,
-    );
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    NotificationDetails buildDetails(bool withAdzan) {
+      final androidDetails = AndroidNotificationDetails(
+        withAdzan ? _adzanChannelId : _channelId,
+        withAdzan ? _adzanChannelName : _channelName,
+        channelDescription: withAdzan ? _adzanChannelDesc : _channelDesc,
+        importance: Importance.high,
+        priority: Priority.high,
+        category: AndroidNotificationCategory.alarm,
+        sound: withAdzan ? _adzanSound : null,
+        audioAttributesUsage: withAdzan
+            ? AudioAttributesUsage.alarm
+            : AudioAttributesUsage.notification,
+        vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
+        enableVibration: true,
+        autoCancel: true,
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      return NotificationDetails(android: androidDetails, iOS: iosDetails);
+    }
 
-    // Use zonedSchedule for reliable delivery
-    // Convert to TZ — but for simplicity, use the platform's local time
+    Future<void> schedule(AndroidScheduleMode mode, bool withAdzan) {
+      return _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledTime, tz.local),
+        buildDetails(withAdzan),
+        androidScheduleMode: mode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
+
+    // Fallback berlapis — satu pengingat yang gagal gak boleh bikin
+    // seluruh penjadwalan mati diam-diam:
+    // 1) exact  2) inexact (izin "Alarm & pengingat" ditolak)
+    // 3) inexact tanpa suara custom (mis. resource suara bermasalah).
     try {
-      await _plugin.zonedSchedule(
-        id,
-        title,
-        body,
-        tz.TZDateTime.from(scheduledTime, tz.local),
-        details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
+      await schedule(AndroidScheduleMode.exactAllowWhileIdle, adzanSound);
     } on PlatformException catch (e) {
-      // Izin "Alarm & pengingat" ditolak/dicabut → jangan gagal total tanpa
-      // notif sama sekali; jatuhkan ke inexact (bisa telat beberapa menit
-      // tapi tetap bunyi).
-      debugPrint('[NotificationService] exact schedule gagal (${e.code}), '
-          'fallback ke inexact untuk id=$id');
-      await _plugin.zonedSchedule(
-        id,
-        title,
-        body,
-        tz.TZDateTime.from(scheduledTime, tz.local),
-        details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
+      debugPrint('[NotificationService] exact gagal (${e.code}) id=$id, '
+          'coba inexact');
+      try {
+        await schedule(AndroidScheduleMode.inexactAllowWhileIdle, adzanSound);
+      } on PlatformException catch (e2) {
+        debugPrint('[NotificationService] inexact gagal (${e2.code}) id=$id, '
+            'coba tanpa suara adzan');
+        await schedule(AndroidScheduleMode.inexactAllowWhileIdle, false);
+      }
     }
   }
 

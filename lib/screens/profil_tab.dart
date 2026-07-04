@@ -177,6 +177,24 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
+  Future<void> _applyNotifSettings(bool enabled, String mode) async {
+    try {
+      if (enabled) {
+        await NotificationService.setNotifMode(mode);
+        final n = await NotificationService.pendingCount();
+        if (!mounted) return;
+        _showSettingSnackbar(n > 0
+            ? 'Pengingat adzan aktif: mode ${mode[0].toUpperCase()}${mode.substring(1)} — $n pengingat terjadwal 🔔'
+            : 'Mode tersimpan, tapi belum ada pengingat terjadwal — cek izin notifikasi & alarm di pengaturan HP.');
+      } else {
+        _showSettingSnackbar('Pengingat adzan dimatikan');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showSettingSnackbar('Gagal menyimpan pengaturan: $e');
+    }
+  }
+
   Future<void> _showNotifDialog() async {
     bool enabled = await NotificationService.isRemindersEnabled();
     String mode = await NotificationService.getNotifMode();
@@ -212,46 +230,52 @@ class _ProfilTabState extends State<ProfilTab> {
                     Switch(
                       value: enabled,
                       onChanged: (v) async {
-                        if (v) {
-                          // Request permission first
-                          final granted = await NotificationService.requestPermission();
-                          if (!granted) {
-                            _showSettingSnackbar('Izin notifikasi ditolak. Aktifkan manual di pengaturan HP.');
-                            return;
-                          }
-                          // Tanpa izin "Alarm & pengingat" (Android 12+),
-                          // penjadwalan exact gagal total — minta dulu.
-                          final exactOk = await NotificationService.ensureExactAlarmPermission();
-                          if (!exactOk) {
-                            _showSettingSnackbar('Izin "Alarm & pengingat" belum aktif — pengingat bisa telat beberapa menit.');
-                          }
-                          await NotificationService.setRemindersEnabled(true);
-                          // Enable pertama kali belum punya timing tersimpan di
-                          // prefs — jadwalkan langsung dari jadwal kota tersimpan.
-                          final loc = await PrayerService.loadLocation();
-                          if (loc != null) {
-                            final j = await PrayerService.fetchSchedule(
-                                cityId: loc.id, cityName: loc.name);
-                            if (j != null) {
-                              await NotificationService.scheduleAdhanReminders(loc.name, {
-                                'subuh': j['subuh'] ?? '',
-                                'dzuhur': j['dzuhur'] ?? '',
-                                'ashar': j['ashar'] ?? '',
-                                'maghrib': j['maghrib'] ?? '',
-                                'isya': j['isya'] ?? '',
-                              });
+                        try {
+                          if (v) {
+                            // Request permission first
+                            final granted = await NotificationService.requestPermission();
+                            if (!granted) {
+                              _showSettingSnackbar('Izin notifikasi ditolak. Aktifkan manual di pengaturan HP.');
+                              return;
                             }
+                            // Tanpa izin "Alarm & pengingat" (Android 12+),
+                            // penjadwalan exact gagal total — minta dulu.
+                            final exactOk = await NotificationService.ensureExactAlarmPermission();
+                            if (!exactOk) {
+                              _showSettingSnackbar('Izin "Alarm & pengingat" belum aktif — pengingat bisa telat beberapa menit.');
+                            }
+                            await NotificationService.setRemindersEnabled(true);
+                            // Enable pertama kali belum punya timing tersimpan di
+                            // prefs — jadwalkan langsung dari jadwal kota tersimpan.
+                            final loc = await PrayerService.loadLocation();
+                            if (loc != null) {
+                              final j = await PrayerService.fetchSchedule(
+                                  cityId: loc.id, cityName: loc.name);
+                              if (j != null) {
+                                await NotificationService.scheduleAdhanReminders(loc.name, {
+                                  'subuh': j['subuh'] ?? '',
+                                  'dzuhur': j['dzuhur'] ?? '',
+                                  'ashar': j['ashar'] ?? '',
+                                  'maghrib': j['maghrib'] ?? '',
+                                  'isya': j['isya'] ?? '',
+                                });
+                              }
+                            }
+                            // Verifikasi hasil nyata di sistem, bukan cuma
+                            // status toggle.
+                            final n = await NotificationService.pendingCount();
+                            _showSettingSnackbar(n > 0
+                                ? '$n pengingat adzan terjadwal 🔔'
+                                : 'Gagal menjadwalkan pengingat — cek izin notifikasi & alarm di pengaturan HP.');
+                          } else {
+                            await NotificationService.setRemindersEnabled(false);
                           }
-                          // Verifikasi hasil nyata di sistem, bukan cuma
-                          // status toggle.
-                          final n = await NotificationService.pendingCount();
-                          _showSettingSnackbar(n > 0
-                              ? '$n pengingat adzan terjadwal 🔔'
-                              : 'Gagal menjadwalkan pengingat — cek izin notifikasi & alarm di pengaturan HP.');
-                        } else {
-                          await NotificationService.setRemindersEnabled(false);
+                          setSt(() => enabled = v);
+                        } catch (e) {
+                          // Jangan pernah diam — kegagalan apa pun harus
+                          // keliatan user.
+                          _showSettingSnackbar('Gagal mengubah pengingat: $e');
                         }
-                        setSt(() => enabled = v);
                       },
                       activeThumbColor: AppColors.primary,
                     ),
@@ -312,6 +336,18 @@ class _ProfilTabState extends State<ProfilTab> {
                     ),
                   ],
                 ),
+                // Jalan pintas ke pengaturan channel notifikasi Android —
+                // suara channel cuma bisa diubah user lewat sistem.
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () => NotificationService.openChannelSettings(),
+                    icon: const Icon(Icons.settings, size: 16, color: AppColors.onSurfaceVariant),
+                    label: Text('Pengaturan Notifikasi Android', style: AppText.bodyMd().copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    )),
+                  ),
+                ),
               ],
             ),
             actions: [
@@ -320,14 +356,12 @@ class _ProfilTabState extends State<ProfilTab> {
                 child: Text('Tutup', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
               ),
               FilledButton(
-                onPressed: () async {
-                  if (enabled) {
-                    await NotificationService.setNotifMode(mode);
-                    _showSettingSnackbar('Pengingat adzan aktif: mode ${mode[0].toUpperCase()}${mode.substring(1)} 🔔');
-                  } else {
-                    _showSettingSnackbar('Pengingat adzan dimatikan');
-                  }
-                  if (ctx.mounted) Navigator.pop(ctx);
+                onPressed: () {
+                  // Tutup dialog dulu biar tombol terasa responsif; kerja
+                  // async (reschedule bisa >1 detik) jalan setelahnya, dan
+                  // exception apa pun berujung snackbar, bukan diam.
+                  Navigator.pop(ctx);
+                  _applyNotifSettings(enabled, mode);
                 },
                 style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
                 child: Text('Simpan', style: AppText.bodyMd().copyWith(color: AppColors.onPrimary)),
