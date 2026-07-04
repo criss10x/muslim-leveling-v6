@@ -547,77 +547,159 @@ class _ProfilTabState extends State<ProfilTab> {
   }
 
   Widget _hero(BuildContext context) {
+    final state = GameService.current;
+    final levelInfo = GameService.getLevelInfo(state.xp);
+    final rankTitle = GameService.getRankTitle(state.level);
+
     return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.md),
-      borderColor: AppColors.primary.withValues(alpha: 0.2),
+      borderColor: AppColors.primary.withValues(alpha: 0.25),
       child: Column(
         children: [
           Row(
-              children: [
-                GestureDetector(
-                  onTap: _showAvatarOptions,
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      TierProfileAvatar(
+            children: [
+              GestureDetector(
+                onTap: _showAvatarOptions,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.35),
+                            blurRadius: 24,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: TierProfileAvatar(
                         profileImagePath: _avatarPath,
                         tierName: getTierName(_level),
-                        sizeDp: 64,
+                        sizeDp: 72,
                         showEditBadge: true,
                         onTap: _showAvatarOptions,
                       ),
-                      // LVL badge bottom-right
-                      Container(
-                        margin: const EdgeInsets.all(2),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: AppColors.primary, width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          'LVL $_level',
-                          style: AppText.labelCaps().copyWith(
-                            color: AppColors.primary,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
+                    ),
+                    Container(
+                      margin: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: AppColors.primary, width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 6,
                           ),
+                        ],
+                      ),
+                      child: Text(
+                        'LVL $_level',
+                        style: AppText.labelCaps().copyWith(
+                          color: AppColors.primary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _nickname,
-                        style: AppText.headlineMd().copyWith(fontSize: 20),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _nickname,
+                      style: AppText.headlineMd().copyWith(fontSize: 22),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryFixed.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.35)),
                       ),
-                      Text(
-                        GameService.getRankTitle(GameService.current.level),
+                      child: Text(
+                        rankTitle,
                         style: AppText.labelCaps().copyWith(
                           color: AppColors.secondaryFixed,
+                          fontSize: 10,
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit, color: AppColors.primary),
+                onPressed: _editNickname,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // XP Progress bar
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'XP Progress',
+                    style: AppText.labelCaps().copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
+                  ),
+                  Text(
+                    '${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel} XP',
+                    style: AppText.bodyMd().copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                child: Container(
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: levelInfo.progress.clamp(0.0, 1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryFixed],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: AppColors.primary),
-                  onPressed: _editNickname,
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.md),
           const Divider(color: AppColors.outlineVariant),
           const SizedBox(height: AppSpacing.md),
@@ -670,23 +752,30 @@ class _ProfilTabState extends State<ProfilTab> {
   }
 
   Widget _miniStat(String label, String value) {
-    return Column(
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: AppText.titleLg().copyWith(color: AppColors.primary),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: AppText.titleLg().copyWith(color: AppColors.primary),
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: AppText.labelCaps().copyWith(
-            color: AppColors.onSurfaceVariant,
-            fontSize: 10,
+          Text(
+            label,
+            style: AppText.labelCaps().copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontSize: 10,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -713,23 +802,24 @@ class _ProfilTabState extends State<ProfilTab> {
   }
 
   Widget _statCard(String title, String value, String sub, IconData icon, Color color) {
-    return Container(
+    return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border(
-          left: BorderSide(color: color, width: 3),
-        ),
-      ),
+      borderColor: color.withValues(alpha: 0.25),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 16),
-              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
@@ -743,10 +833,10 @@ class _ProfilTabState extends State<ProfilTab> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             value,
-            style: AppText.titleLg().copyWith(color: color, fontSize: 20),
+            style: AppText.titleLg().copyWith(color: color, fontSize: 24),
           ),
           Text(
             sub,
@@ -1050,10 +1140,17 @@ class _ProfilTabState extends State<ProfilTab> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          r.icon,
-                          color: r.color ?? AppColors.onSurface,
-                          size: 20,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: (r.color ?? AppColors.onSurface).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: Icon(
+                            r.icon,
+                            color: r.color ?? AppColors.onSurface,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
