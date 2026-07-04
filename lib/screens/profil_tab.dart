@@ -177,10 +177,10 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
-  Future<void> _applyNotifSettings(bool enabled, String mode) async {
+  Future<void> _applyNotifSettings(bool enabled, String mode, String soundMode) async {
     try {
       if (enabled) {
-        await NotificationService.setNotifMode(mode);
+        await NotificationService.applyNotifSettings(mode: mode, soundMode: soundMode);
         final n = await NotificationService.pendingCount();
         if (!mounted) return;
         _showSettingSnackbar(n > 0
@@ -190,14 +190,17 @@ class _ProfilTabState extends State<ProfilTab> {
         _showSettingSnackbar('Pengingat adzan dimatikan');
       }
     } catch (e) {
+      // Detail teknis ke log aja — user cukup tahu langkah selanjutnya.
+      debugPrint('[Profil] gagal simpan pengaturan notif: $e');
       if (!mounted) return;
-      _showSettingSnackbar('Gagal menyimpan pengaturan: $e');
+      _showSettingSnackbar('Gagal menyimpan pengaturan. Coba lagi, atau cek izin notifikasi & alarm lewat tombol Pengaturan Notifikasi Android.');
     }
   }
 
   Future<void> _showNotifDialog() async {
     bool enabled = await NotificationService.isRemindersEnabled();
     String mode = await NotificationService.getNotifMode();
+    String soundMode = await NotificationService.getSoundMode();
     if (!mounted) return;
 
     showDialog(
@@ -214,7 +217,8 @@ class _ProfilTabState extends State<ProfilTab> {
                 Text('Pengingat Adzan', style: AppText.bodyLg().copyWith(color: AppColors.onSurface)),
               ],
             ),
-            content: Column(
+            content: SingleChildScrollView(
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -273,8 +277,9 @@ class _ProfilTabState extends State<ProfilTab> {
                           setSt(() => enabled = v);
                         } catch (e) {
                           // Jangan pernah diam — kegagalan apa pun harus
-                          // keliatan user.
-                          _showSettingSnackbar('Gagal mengubah pengingat: $e');
+                          // keliatan user (detail teknis ke log aja).
+                          debugPrint('[Profil] gagal ubah pengingat: $e');
+                          _showSettingSnackbar('Gagal mengubah pengingat. Coba lagi, atau cek izin notifikasi & alarm di pengaturan HP.');
                         }
                       },
                       activeThumbColor: AppColors.primary,
@@ -299,6 +304,15 @@ class _ProfilTabState extends State<ProfilTab> {
                         _notifModeOption('fokus', '🎯 Fokus', 'Hanya pengingat utama di waktu adzan', mode, (m) => setSt(() => mode = m)),
                         _notifModeOption('seimbang', '⚖️ Seimbang', 'Diingetin 15 menit sebelum & saat adzan', mode, (m) => setSt(() => mode = m)),
                         _notifModeOption('intensif', '🔥 Intensif', '30 menit, 5 menit sebelum & saat adzan', mode, (m) => setSt(() => mode = m)),
+                        const SizedBox(height: AppSpacing.md),
+                        Text('Suara Notifikasi', style: AppText.bodyMd().copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        )),
+                        const SizedBox(height: AppSpacing.sm),
+                        _notifModeOption('senyap', '🔕 Senyap', 'Hanya muncul notifikasi, tanpa suara', soundMode, (m) => setSt(() => soundMode = m)),
+                        _notifModeOption('suara', '🔔 Suara', 'Notifikasi dengan suara standar HP', soundMode, (m) => setSt(() => soundMode = m)),
+                        _notifModeOption('adzan', '🕌 Adzan', 'Suara adzan penuh saat masuk waktu sholat', soundMode, (m) => setSt(() => soundMode = m)),
                       ],
                     ),
                   ),
@@ -349,6 +363,7 @@ class _ProfilTabState extends State<ProfilTab> {
                   ),
                 ),
               ],
+              ),
             ),
             actions: [
               TextButton(
@@ -361,7 +376,7 @@ class _ProfilTabState extends State<ProfilTab> {
                   // async (reschedule bisa >1 detik) jalan setelahnya, dan
                   // exception apa pun berujung snackbar, bukan diam.
                   Navigator.pop(ctx);
-                  _applyNotifSettings(enabled, mode);
+                  _applyNotifSettings(enabled, mode, soundMode);
                 },
                 style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
                 child: Text('Simpan', style: AppText.bodyMd().copyWith(color: AppColors.onPrimary)),

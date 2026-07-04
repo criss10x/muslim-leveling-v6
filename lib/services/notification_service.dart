@@ -21,6 +21,10 @@ import 'package:timezone/timezone.dart' as tz;
 ///   await NotificationService.cancelAdhanReminders();
 ///   await NotificationService.setRemindersEnabled(true/false);
 
+/// Jenis suara sebuah notifikasi terjadwal — menentukan channel yang dipakai
+/// (suara channel Android immutable, jadi tiap jenis punya channel sendiri).
+enum _NotifSound { silent, normal, adzan }
+
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
@@ -38,11 +42,17 @@ class NotificationService {
   static const _adzanChannelDesc = 'Notifikasi bersuara adzan saat masuk waktu sholat';
   static const _adzanSound = RawResourceAndroidNotificationSound('adzan');
 
+  // Channel senyap — notif muncul tanpa suara (mode suara: senyap).
+  static const _silentChannelId = 'adhan_silent_v1';
+  static const _silentChannelName = 'Pengingat Senyap';
+  static const _silentChannelDesc = 'Notifikasi pengingat sholat tanpa suara';
+
   static const _prefEnabled = 'reminders_enabled';
   static const _prefCity = 'city';
   static const _prefDate = 'date';
   static const _prefTimingsPrefix = 'timing_';
   static const _prefNotifMode = 'notif_mode'; // fokus/seimbang/intensif
+  static const _prefSoundMode = 'notif_sound_mode'; // senyap/suara/adzan
 
   static const _wajibList = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
 
@@ -109,11 +119,22 @@ class NotificationService {
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
+    final silentChannel = AndroidNotificationChannel(
+      _silentChannelId,
+      _silentChannelName,
+      description: _silentChannelDesc,
+      importance: Importance.high,
+      playSound: false,
+      vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
+      enableVibration: true,
+    );
+
     // Setting channel gak bisa diubah setelah dibuat — buang versi lama
     // yang mungkin terlanjur soundless.
     await androidPlugin?.deleteNotificationChannel(_legacyAdzanChannelId);
     await androidPlugin?.createNotificationChannel(androidChannel);
     await androidPlugin?.createNotificationChannel(adzanChannel);
+    await androidPlugin?.createNotificationChannel(silentChannel);
   }
 
   /// Buka layar pengaturan sistem Android untuk channel adzan, supaya user
@@ -261,6 +282,32 @@ class NotificationService {
     }
   }
 
+  /// Mode suara notifikasi: senyap (notif saja), suara (suara standar),
+  /// adzan (suara adzan penuh saat masuk waktu sholat).
+  static Future<String> getSoundMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_prefSoundMode) ?? 'adzan';
+  }
+
+  /// Simpan mode pengingat + mode suara sekaligus, lalu reschedule SEKALI
+  /// kalau pengingat aktif — dipakai tombol Simpan di profil supaya gak
+  /// reschedule dua kali.
+  static Future<void> applyNotifSettings({
+    required String mode,
+    required String soundMode,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefNotifMode, mode);
+    await prefs.setString(_prefSoundMode, soundMode);
+    if (await isRemindersEnabled()) {
+      final city = prefs.getString(_prefCity) ?? '';
+      final timings = await _readTimingsFromPrefs(prefs);
+      if (city.isNotEmpty && timings.isNotEmpty) {
+        await scheduleAdhanReminders(city, timings);
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════
   //  Internal: scheduling logic
   // ═══════════════════════════════════════════
@@ -271,6 +318,7 @@ class NotificationService {
   ) async {
     final now = DateTime.now();
     final mode = await getNotifMode();
+    final soundMode = await getSoundMode();
 
     for (final prayer in _wajibList) {
       final timeStr = timings[prayer];
@@ -295,15 +343,22 @@ class NotificationService {
         if (!scheduledTime.isAfter(now)) {
           scheduledTime = scheduledTime.add(const Duration(days: 1));
         }
+        // Elemen terakhir = tepat waktu adzan. Jenis suara mengikuti
+        // pilihan user: senyap semua / suara standar semua / adzan hanya
+        // saat masuk waktu (pra-adzan tetap suara standar).
+        final isMain = i == schedules.length - 1;
+        final sound = switch (soundMode) {
+          'senyap' => _NotifSound.silent,
+          'suara' => _NotifSound.normal,
+          _ => isMain ? _NotifSound.adzan : _NotifSound.normal,
+        };
         try {
           await _scheduleOne(
             id: notifId + i, // unique ID per reminder
             title: _titleFor(prayer),
             body: _bodyFor(prayer, city, mode, i),
             scheduledTime: scheduledTime,
-            // Elemen terakhir = tepat waktu adzan → pakai suara adzan;
-            // pengingat pra-adzan tetap suara default.
-            adzanSound: i == schedules.length - 1,
+            sound: sound,
           );
         } catch (e) {
           // Satu reminder gagal total — lanjutkan sisanya, jangan abort.
@@ -365,44 +420,57 @@ class NotificationService {
     }
   }
 
+  static NotificationDetails _detailsFor(_NotifSound sound) {
+    final androidDetails = AndroidNotificationDetails(
+      switch (sound) {
+        _NotifSound.silent => _silentChannelId,
+        _NotifSound.normal => _channelId,
+        _NotifSound.adzan => _adzanChannelId,
+      },
+      switch (sound) {
+        _NotifSound.silent => _silentChannelName,
+        _NotifSound.normal => _channelName,
+        _NotifSound.adzan => _adzanChannelName,
+      },
+      channelDescription: switch (sound) {
+        _NotifSound.silent => _silentChannelDesc,
+        _NotifSound.normal => _channelDesc,
+        _NotifSound.adzan => _adzanChannelDesc,
+      },
+      importance: Importance.high,
+      priority: Priority.high,
+      category: AndroidNotificationCategory.alarm,
+      playSound: sound != _NotifSound.silent,
+      sound: sound == _NotifSound.adzan ? _adzanSound : null,
+      audioAttributesUsage: sound == _NotifSound.adzan
+          ? AudioAttributesUsage.alarm
+          : AudioAttributesUsage.notification,
+      vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
+      enableVibration: true,
+      autoCancel: true,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    return NotificationDetails(android: androidDetails, iOS: iosDetails);
+  }
+
   static Future<void> _scheduleOne({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledTime,
-    bool adzanSound = false,
+    required _NotifSound sound,
   }) async {
-    NotificationDetails buildDetails(bool withAdzan) {
-      final androidDetails = AndroidNotificationDetails(
-        withAdzan ? _adzanChannelId : _channelId,
-        withAdzan ? _adzanChannelName : _channelName,
-        channelDescription: withAdzan ? _adzanChannelDesc : _channelDesc,
-        importance: Importance.high,
-        priority: Priority.high,
-        category: AndroidNotificationCategory.alarm,
-        sound: withAdzan ? _adzanSound : null,
-        audioAttributesUsage: withAdzan
-            ? AudioAttributesUsage.alarm
-            : AudioAttributesUsage.notification,
-        vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
-        enableVibration: true,
-        autoCancel: true,
-      );
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-      return NotificationDetails(android: androidDetails, iOS: iosDetails);
-    }
-
-    Future<void> schedule(AndroidScheduleMode mode, bool withAdzan) {
+    Future<void> schedule(AndroidScheduleMode mode, _NotifSound s) {
       return _plugin.zonedSchedule(
         id,
         title,
         body,
         tz.TZDateTime.from(scheduledTime, tz.local),
-        buildDetails(withAdzan),
+        _detailsFor(s),
         androidScheduleMode: mode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -413,18 +481,19 @@ class NotificationService {
     // Fallback berlapis — satu pengingat yang gagal gak boleh bikin
     // seluruh penjadwalan mati diam-diam:
     // 1) exact  2) inexact (izin "Alarm & pengingat" ditolak)
-    // 3) inexact tanpa suara custom (mis. resource suara bermasalah).
+    // 3) inexact dengan suara standar (mis. resource suara adzan bermasalah).
     try {
-      await schedule(AndroidScheduleMode.exactAllowWhileIdle, adzanSound);
+      await schedule(AndroidScheduleMode.exactAllowWhileIdle, sound);
     } on PlatformException catch (e) {
       debugPrint('[NotificationService] exact gagal (${e.code}) id=$id, '
           'coba inexact');
       try {
-        await schedule(AndroidScheduleMode.inexactAllowWhileIdle, adzanSound);
+        await schedule(AndroidScheduleMode.inexactAllowWhileIdle, sound);
       } on PlatformException catch (e2) {
         debugPrint('[NotificationService] inexact gagal (${e2.code}) id=$id, '
-            'coba tanpa suara adzan');
-        await schedule(AndroidScheduleMode.inexactAllowWhileIdle, false);
+            'coba suara standar');
+        await schedule(
+            AndroidScheduleMode.inexactAllowWhileIdle, _NotifSound.normal);
       }
     }
   }
@@ -462,6 +531,8 @@ class NotificationService {
   }
 
   /// Send a test notification (for settings dialog).
+  /// Channel/suaranya mengikuti mode suara yang sedang dipilih, jadi user
+  /// langsung dengar hasil setting-nya.
   static Future<void> sendTestNotification(String mode) async {
     if (!_initialized) await init();
 
@@ -472,16 +543,12 @@ class NotificationService {
       _ => 'Notifikasi Muslim Leveling siap! 🔔',
     };
 
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDesc,
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      autoCancel: true,
-    );
-    const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final soundMode = await getSoundMode();
+    final details = _detailsFor(switch (soundMode) {
+      'senyap' => _NotifSound.silent,
+      'adzan' => _NotifSound.adzan,
+      _ => _NotifSound.normal,
+    });
 
     final cap = mode[0].toUpperCase() + mode.substring(1);
     await _plugin.show(
@@ -497,28 +564,11 @@ class NotificationService {
   static Future<void> sendTestAdzanSound() async {
     if (!_initialized) await init();
 
-    final androidDetails = AndroidNotificationDetails(
-      _adzanChannelId,
-      _adzanChannelName,
-      channelDescription: _adzanChannelDesc,
-      importance: Importance.high,
-      priority: Priority.high,
-      category: AndroidNotificationCategory.alarm,
-      sound: _adzanSound,
-      audioAttributesUsage: AudioAttributesUsage.alarm,
-      vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
-      enableVibration: true,
-      autoCancel: true,
-    );
-    const iosDetails = DarwinNotificationDetails(presentSound: true);
-    final details =
-        NotificationDetails(android: androidDetails, iOS: iosDetails);
-
     await _plugin.show(
       98,
       '🕌 Tes Suara Adzan',
       'Kalau adzan terdengar, notifikasi kamu siap! Kalau tidak, cek volume alarm HP.',
-      details,
+      _detailsFor(_NotifSound.adzan),
     );
   }
 }
