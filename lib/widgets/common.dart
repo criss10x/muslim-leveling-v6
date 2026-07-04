@@ -478,36 +478,25 @@ class GhostButton extends StatelessWidget {
   }
 }
 
-/// Reusable background — animated radial glow blobs + floating fireflies + neon cursor glow.
+/// Reusable background — subtle dark gradient + small floating fireflies.
 class AmbientBackground extends StatefulWidget {
   final Widget child;
-  final bool showCursorGlow;
-  final bool showFireflies;
-  const AmbientBackground({
-    super.key,
-    required this.child,
-    this.showCursorGlow = true,
-    this.showFireflies = true,
-  });
+  const AmbientBackground({super.key, required this.child});
 
   @override
   State<AmbientBackground> createState() => _AmbientBackgroundState();
 }
 
 class _AmbientBackgroundState extends State<AmbientBackground>
-    with TickerProviderStateMixin {
-  late final AnimationController _blobController;
+    with SingleTickerProviderStateMixin {
   late final AnimationController _fireflyController;
-  Offset _cursor = Offset.zero;
-  final _key = GlobalKey();
 
-  // ponytail: pre-baked firefly orbits, cheap to animate with CustomPainter
+  // ponytail: 8 small fireflies, cheap CustomPainter animation
   final List<_Firefly> _fireflies = List.generate(
-    12,
+    8,
     (i) => _Firefly(
-      phase: i * 0.5,
-      speed: 0.3 + (i % 4) * 0.1,
-      radius: 0.15 + (i % 5) * 0.04,
+      phase: i * 0.6,
+      speed: 0.25 + (i % 3) * 0.08,
       color: i.isEven ? AppColors.primary : AppColors.tertiary,
     ),
   );
@@ -515,10 +504,6 @@ class _AmbientBackgroundState extends State<AmbientBackground>
   @override
   void initState() {
     super.initState();
-    _blobController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat();
     _fireflyController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 12),
@@ -527,91 +512,51 @@ class _AmbientBackgroundState extends State<AmbientBackground>
 
   @override
   void dispose() {
-    _blobController.dispose();
     _fireflyController.dispose();
     super.dispose();
   }
 
-  void _onPointer(Offset position) {
-    final renderBox = _key.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    _cursor = renderBox.globalToLocal(position);
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      key: _key,
-      onPointerHover: (e) => _onPointer(e.position),
-      onPointerMove: (e) => _onPointer(e.position),
-      behavior: HitTestBehavior.translucent,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.topLeft,
-                  radius: 1.5,
-                  colors: [
-                    AppColors.surfaceContainer.withValues(alpha: 0.5),
-                    AppColors.background,
-                    AppColors.background,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          AnimatedBuilder(
-            animation: _blobController,
-            builder: (_, __) {
-              final t = _blobController.value * 2 * math.pi;
-              return Stack(
-                children: [
-                  Positioned(
-                    top: -120 + math.sin(t * 0.7) * 20,
-                    left: -100 + math.cos(t * 0.5) * 30,
-                    child: _blur(AppColors.primary, 300, 0.06),
-                  ),
-                  Positioned(
-                    bottom: -180 + math.cos(t * 0.6) * 25,
-                    right: -120 + math.sin(t * 0.8) * 35,
-                    child: _blur(AppColors.tertiary, 320, 0.05),
-                  ),
-                  Positioned(
-                    top: 120,
-                    right: -80 + math.sin(t * 0.9) * 40,
-                    child: _blur(AppColors.secondaryFixed, 240, 0.04),
-                  ),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topLeft,
+                radius: 1.5,
+                colors: [
+                  AppColors.surfaceContainer.withValues(alpha: 0.5),
+                  AppColors.background,
+                  AppColors.background,
                 ],
-              );
-            },
-          ),
-          if (widget.showFireflies)
-            AnimatedBuilder(
-              animation: _fireflyController,
-              builder: (_, __) => CustomPaint(
-                painter: _FireflyPainter(
-                  fireflies: _fireflies,
-                  time: _fireflyController.value,
-                ),
-                size: Size.infinite,
               ),
             ),
-          if (widget.showCursorGlow)
-            AnimatedBuilder(
-              animation: _blobController,
-              builder: (_, __) {
-                return CustomPaint(
-                  painter: _CursorGlowPainter(cursor: _cursor),
-                  size: Size.infinite,
-                );
-              },
+          ),
+        ),
+        Positioned(
+          top: -120,
+          left: -100,
+          child: _blur(AppColors.primary, 300, 0.06),
+        ),
+        Positioned(
+          bottom: -180,
+          right: -120,
+          child: _blur(AppColors.tertiary, 320, 0.05),
+        ),
+        AnimatedBuilder(
+          animation: _fireflyController,
+          builder: (_, __) => CustomPaint(
+            painter: _FireflyPainter(
+              fireflies: _fireflies,
+              time: _fireflyController.value,
             ),
-          widget.child,
-        ],
-      ),
+            size: Size.infinite,
+          ),
+        ),
+        widget.child,
+      ],
     );
   }
 
@@ -635,12 +580,10 @@ class _AmbientBackgroundState extends State<AmbientBackground>
 class _Firefly {
   final double phase;
   final double speed;
-  final double radius;
   final Color color;
   const _Firefly({
     required this.phase,
     required this.speed,
-    required this.radius,
     required this.color,
   });
 }
@@ -657,29 +600,12 @@ class _FireflyPainter extends CustomPainter {
       final t = (time * f.speed + f.phase) % 1.0;
       final x = size.width * (0.1 + 0.8 * ((t + f.phase * 0.3) % 1.0));
       final y = size.height * (0.2 + 0.6 * math.sin(t * 2 * math.pi + f.phase));
-      final opacity = 0.2 + 0.3 * math.sin(t * 2 * math.pi).abs();
+      final opacity = 0.15 + 0.25 * math.sin(t * 2 * math.pi).abs();
       final paint = Paint()
         ..color = f.color.withValues(alpha: opacity)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-      canvas.drawCircle(Offset(x, y), 3, paint);
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      canvas.drawCircle(Offset(x, y), 2, paint);
     }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class _CursorGlowPainter extends CustomPainter {
-  final Offset cursor;
-  _CursorGlowPainter({required this.cursor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (cursor == Offset.zero) return;
-    final paint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.08)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 80);
-    canvas.drawCircle(cursor, 120, paint);
   }
 
   @override
