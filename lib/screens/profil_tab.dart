@@ -10,6 +10,8 @@ import '../../widgets/city_picker.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/achievement_service.dart';
+import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
 import 'statistik_sheet.dart';
 import 'welcome_pejuang.dart';
@@ -40,6 +42,7 @@ class _ProfilTabState extends State<ProfilTab> {
 
   Future<void> _loadProfile() async {
     await GameService.load();
+    await AchievementService.refresh(); // sinkron medali dengan state terkini
     final p = await SharedPreferences.getInstance();
     final loc = await PrayerService.loadLocation();
     final state = GameService.current;
@@ -531,6 +534,8 @@ class _ProfilTabState extends State<ProfilTab> {
                 onPressed: () => StatistikSheet.show(context),
               ),
               const SizedBox(height: AppSpacing.md),
+              _achievements(),
+              const SizedBox(height: AppSpacing.md),
               _badges(),
               const SizedBox(height: AppSpacing.lg),
               _settings(),
@@ -840,6 +845,82 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
+  /// Grid medali achievement ala Mobile Legends. Tap medali → detail.
+  Widget _achievements() {
+    final defs = AchievementService.defs;
+    final unlockedCount = AchievementService.unlockedCount;
+
+    return GlassPanel(
+      borderColor: AppColors.secondaryFixed.withValues(alpha: 0.2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.emoji_events,
+                  color: AppColors.secondaryFixed, size: 16),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'ACHIEVEMENTS',
+                style: AppText.labelCaps()
+                    .copyWith(color: AppColors.secondaryFixed),
+              ),
+              const Spacer(),
+              Text(
+                '$unlockedCount/${defs.length}',
+                style: AppText.labelCaps().copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 4,
+            mainAxisSpacing: AppSpacing.md,
+            crossAxisSpacing: AppSpacing.xs,
+            childAspectRatio: 0.72,
+            children: defs.map((d) {
+              final unlocked = AchievementService.isUnlocked(d.id);
+              return PressableScale(
+                onTap: () => showAchievementDetail(
+                  context,
+                  d,
+                  unlocked: unlocked,
+                  unlockedDate: AchievementService.unlockedDate(d.id),
+                ),
+                child: Column(
+                  children: [
+                    AchievementMedal(def: d, unlocked: unlocked, size: 60),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: Text(
+                        d.title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.labelCaps().copyWith(
+                          fontSize: 8,
+                          color: unlocked
+                              ? tierColors(d.tier).$1
+                              : AppColors.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _badges() {
     final unlocked = GameService.current.badges.toSet();
     final defs = GameService.badgeDefs;
@@ -851,7 +932,7 @@ class _ProfilTabState extends State<ProfilTab> {
           Row(
             children: [
               Text(
-                'ACHIEVEMENTS',
+                'BADGES',
                 style: AppText.labelCaps().copyWith(color: AppColors.primary),
               ),
               const Spacer(),

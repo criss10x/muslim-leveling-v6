@@ -8,6 +8,8 @@ import '../../widgets/tier_avatar.dart';
 import '../../services/game_service.dart';
 import '../../services/prayer_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/achievement_service.dart';
+import '../../widgets/achievement_medal.dart';
 import 'naik_level_screen.dart';
 
 extension _StringExt on String {
@@ -60,6 +62,9 @@ class _HomeTabState extends State<HomeTab> {
       await GameService.load();
       await GameService.runDailyCheck();
       await GameService.ensureDailyQuests();
+      // Backfill diam-diam: progress lama (mis. streak sebelum update app)
+      // langsung terisi di grid profil tanpa memberondong popup saat buka.
+      await AchievementService.refresh();
       final p = await SharedPreferences.getInstance();
       await _fetchTimingsSilently();
       if (mounted) {
@@ -138,6 +143,12 @@ class _HomeTabState extends State<HomeTab> {
     setState(() => _state = res.$1);
     final (_, xp, levelUp) = res;
     _toast('+$xp XP!${levelUp ? " 🎉 LEVEL UP!" : ""}');
+    // Announcer achievement tampil dulu (di home), baru layar naik level.
+    final newAch = await AchievementService.refresh();
+    for (final a in newAch) {
+      if (!mounted) break;
+      await showAchievementUnlock(context, a);
+    }
     if (levelUp && mounted) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaikLevelScreen(xpGained: xp)));
     }
