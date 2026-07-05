@@ -614,9 +614,29 @@ class _ProfilTabState extends State<ProfilTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _nickname,
-                      style: AppText.headlineMd().copyWith(fontSize: 22),
+                        Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _nickname,
+                            style: AppText.headlineMd().copyWith(fontSize: 22),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: GestureDetector(
+                            onTap: _editNickname,
+                            child: Icon(
+                              Icons.edit,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Container(
@@ -636,10 +656,6 @@ class _ProfilTabState extends State<ProfilTab> {
                     ),
                   ],
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit, color: AppColors.primary),
-                onPressed: _editNickname,
               ),
             ],
           ),
@@ -738,12 +754,14 @@ class _ProfilTabState extends State<ProfilTab> {
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _miniStat('Level', '${GameService.current.level}'),
-              _miniStat('XP', '${GameService.current.xp}'),
-              _miniStat('Streak', '${GameService.current.heroStreak.current}🔥'),
-              _miniStat('Rank', GameService.getRankTitle(GameService.current.level)),
+              Expanded(child: _miniStat('Level', '${GameService.current.level}')),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: _miniStat('XP', '${GameService.current.xp}')),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: _miniStat('Streak', '${GameService.current.heroStreak.current}🔥')),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(child: _miniStat('Rank', GameService.getRankTitle(GameService.current.level))),
             ],
           ),
         ],
@@ -753,22 +771,29 @@ class _ProfilTabState extends State<ProfilTab> {
 
   Widget _miniStat(String label, String value) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLow.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppText.titleLg().copyWith(color: AppColors.primary),
             ),
           ),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: AppText.labelCaps().copyWith(
               color: AppColors.onSurfaceVariant,
               fontSize: 10,
@@ -791,7 +816,7 @@ class _ProfilTabState extends State<ProfilTab> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: AppSpacing.sm,
       crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 1.6,
+      childAspectRatio: 1.4,
       children: [
         _statCard('Sholat Selesai', '$wajibTotal', 'total', Icons.mosque, AppColors.primary),
         _statCard('Tilawah', '$tilawahTotal', 'kali', Icons.menu_book, AppColors.tertiary),
@@ -807,7 +832,7 @@ class _ProfilTabState extends State<ProfilTab> {
       borderColor: color.withValues(alpha: 0.25),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -874,15 +899,15 @@ class _ProfilTabState extends State<ProfilTab> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: prayers.map((p) {
-                final label = p.$1;
-                final key = p.$2;
+              children: prayers.asMap().entries.map((entry) {
+                final label = entry.value.$1;
+                final key = entry.value.$2;
                 final count = streaks[key]?.current ?? 0;
                 final active = count > 0;
                 return Container(
-                  margin: const EdgeInsets.only(right: AppSpacing.sm),
+                  margin: EdgeInsets.only(right: entry.key == prayers.length - 1 ? 0 : AppSpacing.xs),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                      horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: active
                         ? AppColors.primary.withValues(alpha: 0.15)
@@ -904,6 +929,7 @@ class _ProfilTabState extends State<ProfilTab> {
                               ? AppColors.primaryFixed
                               : AppColors.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
+                          fontSize: 12,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -912,13 +938,13 @@ class _ProfilTabState extends State<ProfilTab> {
                         children: [
                           Icon(
                             Icons.local_fire_department,
-                            size: 14,
+                            size: 12,
                             color: active ? AppColors.secondaryFixed : AppColors.onSurfaceVariant,
                           ),
                           const SizedBox(width: 2),
                           Text(
                             '$count',
-                            style: AppText.bodyLg().copyWith(
+                            style: AppText.bodyMd().copyWith(
                               color: active ? AppColors.onSurface : AppColors.onSurfaceVariant,
                             ),
                           ),

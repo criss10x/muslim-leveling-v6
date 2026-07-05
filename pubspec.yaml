@@ -30,3 +30,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/mosque_bg.jpg
+    - assets/google_fonts/
