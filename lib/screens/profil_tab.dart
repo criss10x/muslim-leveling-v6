@@ -528,12 +528,6 @@ class _ProfilTabState extends State<ProfilTab> {
               const SizedBox(height: AppSpacing.md),
               _prayerStreaks(),
               const SizedBox(height: AppSpacing.md),
-              HeroButton(
-                label: 'Lihat Statistik',
-                trailingIcon: Icons.bar_chart,
-                onPressed: () => StatistikSheet.show(context),
-              ),
-              const SizedBox(height: AppSpacing.md),
               _achievements(),
               const SizedBox(height: AppSpacing.md),
               _badges(),
