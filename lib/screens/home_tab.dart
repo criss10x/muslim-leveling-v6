@@ -164,6 +164,12 @@ class _HomeTabState extends State<HomeTab> {
       _claimingQuestId = '';
     });
     _toast('+${q.xpReward} XP dari quest!', top: true);
+    // XP quest bisa memicu medali rank (WARRIOR..MYTHIC).
+    final newAch = await AchievementService.refresh();
+    for (final a in newAch) {
+      if (!mounted) break;
+      await showAchievementUnlock(context, a);
+    }
     if (didLevelUp && mounted) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaikLevelScreen(xpGained: q.xpReward)));
     }
@@ -1001,6 +1007,12 @@ class _HomeTabState extends State<HomeTab> {
             setState(() {});
             if (newCount == goal) {
               _showZikirComplete();
+              // Zikir 100 pertama → medali WOMBO COMBO.
+              final newAch = await AchievementService.refresh();
+              for (final a in newAch) {
+                if (!mounted) break;
+                await showAchievementUnlock(context, a);
+              }
             }
           },
           child: Container(
