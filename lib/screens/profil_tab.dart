@@ -13,7 +13,6 @@ import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
-import 'statistik_sheet.dart';
 import 'welcome_pejuang.dart';
 
 
