@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
@@ -108,7 +109,14 @@ List<double>? _findCityCoords(String cityName) {
   return null;
 }
 
-/// Qibla Screen — full screen compass dengan arrow ke Ka'bah
+/// Interpolasi sudut lewat busur TERPENDEK (350°→10° lewat utara, bukan
+/// muter balik 340°). Kunci kompas yang smooth tanpa "lompat" di 0/360.
+double _lerpAngle(double a, double b, double t) {
+  final diff = (b - a + 540) % 360 - 180;
+  return (a + diff * t + 360) % 360;
+}
+
+/// Qibla Screen — kompas neon full screen dengan arrow ke Ka'bah.
 class QiblaScreen extends StatefulWidget {
   final String cityName;
 
@@ -118,9 +126,15 @@ class QiblaScreen extends StatefulWidget {
   State<QiblaScreen> createState() => _QiblaScreenState();
 }
 
-class _QiblaScreenState extends State<QiblaScreen> {
-  double _azimuth = 0;
+class _QiblaScreenState extends State<QiblaScreen>
+    with SingleTickerProviderStateMixin {
+  /// Azimuth mentah hasil sensor (target), dan yang dirender (smoothed).
+  double _targetAzimuth = 0;
+  double _displayAzimuth = 0;
+  bool _hasFix = false;
   bool _sensorAvailable = true;
+  bool _wasAligned = false;
+
   StreamSubscription<AccelerometerEvent>? _accelSub;
   StreamSubscription<MagnetometerEvent>? _magSub;
 
@@ -131,6 +145,13 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   late final double _qiblaBearing;
   late final double _distance;
+  late final AnimationController _pulse;
+
+  /// Low-pass sensor (0..1, kecil = makin halus tapi makin "berat").
+  static const _sensorAlpha = 0.15;
+
+  /// Kecepatan jarum mengejar target per event sensor.
+  static const _needleLerp = 0.22;
 
   @override
   void initState() {
@@ -138,15 +159,20 @@ class _QiblaScreenState extends State<QiblaScreen> {
     final coords = _findCityCoords(widget.cityName) ?? [-6.2088, 106.8456];
     _qiblaBearing = _calculateQiblaBearing(coords[0], coords[1]);
     _distance = _haversineDistance(coords[0], coords[1], _kaabaLat, _kaabaLon);
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    );
     _initSensors();
   }
 
-  void _initSensors() async {
+  void _initSensors() {
     _accelSub = accelerometerEventStream(samplingPeriod: SensorInterval.uiInterval).listen(
       (event) {
-        _gravity[0] = event.x;
-        _gravity[1] = event.y;
-        _gravity[2] = event.z;
+        // Low-pass filter — buang jitter frekuensi tinggi dari tangan.
+        _gravity[0] += _sensorAlpha * (event.x - _gravity[0]);
+        _gravity[1] += _sensorAlpha * (event.y - _gravity[1]);
+        _gravity[2] += _sensorAlpha * (event.z - _gravity[2]);
         _hasAccel = true;
         _updateOrientation();
       },
@@ -157,9 +183,9 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
     _magSub = magnetometerEventStream(samplingPeriod: SensorInterval.uiInterval).listen(
       (event) {
-        _geomagnetic[0] = event.x;
-        _geomagnetic[1] = event.y;
-        _geomagnetic[2] = event.z;
+        _geomagnetic[0] += _sensorAlpha * (event.x - _geomagnetic[0]);
+        _geomagnetic[1] += _sensorAlpha * (event.y - _geomagnetic[1]);
+        _geomagnetic[2] += _sensorAlpha * (event.z - _geomagnetic[2]);
         _hasMag = true;
         _updateOrientation();
       },
@@ -172,27 +198,45 @@ class _QiblaScreenState extends State<QiblaScreen> {
   void _updateOrientation() {
     if (!_hasAccel || !_hasMag) return;
 
-    // Hitung rotation matrix dari gravity + geomagnetic
     final r = _getRotationMatrix(_gravity, _geomagnetic);
     if (r == null) return;
 
-    // Ekstrak azimuth dari rotation matrix
     final orientation = _getOrientation(r);
     var az = orientation[0] * 180 / math.pi;
     az = (az + 360) % 360;
+    _targetAzimuth = az;
 
-    // ponytail: low-pass filter agar jarum kompas bergerak halus,
-    // bukan lompat-lompat mengikuti setiap event sensor.
-    if (mounted) {
-      setState(() => _azimuth = _lerpAngle(_azimuth, az, 0.12));
+    // Fix pertama: langsung snap biar gak muter dari 0. Setelahnya jarum
+    // mengejar target lewat busur terpendek — gerakan jadi smooth.
+    final next = _hasFix
+        ? _lerpAngle(_displayAzimuth, _targetAzimuth, _needleLerp)
+        : _targetAzimuth;
+    _hasFix = true;
+
+    // Skip repaint kalau pergeseran tak kasat mata (hemat frame).
+    final delta = ((next - _displayAzimuth + 540) % 360 - 180).abs();
+    if (delta < 0.05) return;
+
+    if (!mounted) return;
+    setState(() => _displayAzimuth = next);
+
+    // Haptic + pulse saat masuk/keluar posisi sejajar kiblat.
+    final aligned = _isAligned;
+    if (aligned && !_wasAligned) {
+      HapticFeedback.mediumImpact();
+      _pulse.repeat(reverse: true);
+    } else if (!aligned && _wasAligned) {
+      _pulse.stop();
+      _pulse.value = 0;
     }
+    _wasAligned = aligned;
   }
 
-  /// Interpolate compass angle across the 0/360 wrap-around.
-  double _lerpAngle(double current, double target, double t) {
-    final diff = (target - current + 180) % 360 - 180;
-    return (current + diff * t + 360) % 360;
-  }
+  /// Selisih sudut ke kiblat, dinormalisasi -180..180.
+  double get _relativeAngle =>
+      (_qiblaBearing - _displayAzimuth + 540) % 360 - 180;
+
+  bool get _isAligned => _relativeAngle.abs() < 5;
 
   /// Port SensorManager.getRotationMatrix dari Android
   List<double>? _getRotationMatrix(List<double> g, List<double> m) {
@@ -222,11 +266,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   /// Port SensorManager.getOrientation
   List<double> _getOrientation(List<double> r) {
-    // r adalah 3x3 matrix (row-major)
-    // r[0]=hnx, r[1]=hny, r[2]=hnz
-    // r[3]=mx,  r[4]=my,  r[5]=mz
-    // r[6]=nx,  r[7]=ny,  r[8]=nz
-    final azimuth = math.atan2(r[1], r[4]); // arctan2(R[1], R[4])
+    final azimuth = math.atan2(r[1], r[4]);
     return [azimuth, 0, 0];
   }
 
@@ -234,116 +274,166 @@ class _QiblaScreenState extends State<QiblaScreen> {
   void dispose() {
     _accelSub?.cancel();
     _magSub?.cancel();
+    _pulse.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final relativeAngle = _qiblaBearing - _azimuth;
-    final isAligned = (relativeAngle % 360).abs() < 5 || (relativeAngle % 360).abs() > 355;
+    final aligned = _isAligned;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerHigh,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+      body: AmbientBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Entrance(child: _header()),
+              if (!_sensorAvailable)
+                _sensorUnavailableCard()
+              else ...[
+                Expanded(
+                  child: Center(
+                    child: Entrance(
+                      delay: const Duration(milliseconds: 120),
+                      child: _compass(aligned),
+                    ),
+                  ),
+                ),
+                Entrance(
+                  delay: const Duration(milliseconds: 200),
+                  child: _turnHint(aligned),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+                child: Column(
+                  children: [
+                    Entrance(
+                      delay: const Duration(milliseconds: 280),
+                      child: _alignmentCard(aligned),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Entrance(
+                      delay: const Duration(milliseconds: 360),
+                      child: _statChips(),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '💡 Kalibrasi kompas: putar perangkat membentuk angka 8 beberapa kali untuk akurasi terbaik.',
+                      textAlign: TextAlign.center,
+                      style: AppText.bodyMd().copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 10,
+                        height: 1.5,
                       ),
-                      child: const Icon(Icons.arrow_back, color: AppColors.onSurface, size: 20),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('🧭 Kompas Kiblat', style: AppText.titleLg()),
-                        Text(
-                          '📍 ${widget.cityName}',
-                          style: AppText.bodyMd().copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (!_sensorAvailable)
-              _sensorUnavailableCard()
-            else
-              Expanded(
-                child: Center(
-                  child: _compass(isAligned, relativeAngle),
+                  ],
                 ),
               ),
-            // Info cards
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                children: [
-                  _alignmentCard(isAligned, relativeAngle),
-                  const SizedBox(height: AppSpacing.sm),
-                  _bearingCard(),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '💡 Kalibrasi kompas: putar perangkat dalam pola angka 8 beberapa kali untuk akurasi terbaik.',
-                    textAlign: TextAlign.center,
-                    style: AppText.bodyMd().copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 10,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _compass(bool isAligned, double relativeAngle) {
-    final compassColor = isAligned ? AppColors.primary : AppColors.secondaryFixed;
-    final arrowColor = isAligned ? AppColors.primary : AppColors.tertiary;
-
-    return Container(
-      width: 300,
-      height: 300,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: compassColor.withValues(alpha: isAligned ? 0.35 : 0.15),
-            blurRadius: 60,
-            spreadRadius: 8,
+  Widget _header() {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          PressableScale(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerHigh,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: const Icon(Icons.arrow_back,
+                  color: AppColors.onSurface, size: 20),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('KOMPAS KIBLAT',
+                    style: AppText.labelCaps()
+                        .copyWith(color: AppColors.primary, fontSize: 10)),
+                const SizedBox(height: 2),
+                Text('Arah Kiblat', style: AppText.displayHero(24)),
+                Text(
+                  '📍 ${widget.cityName} • ${_distance.toStringAsFixed(0)} km ke Ka\'bah',
+                  style: AppText.bodyMd().copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      child: CustomPaint(
-        painter: _CompassPainter(
-          azimuth: _azimuth,
-          qiblaBearing: _qiblaBearing,
-          isAligned: isAligned,
-          compassColor: compassColor,
-          arrowColor: arrowColor,
+    );
+  }
+
+  Widget _compass(bool aligned) {
+    final compassColor = aligned ? AppColors.primary : AppColors.secondaryFixed;
+    final arrowColor = aligned ? AppColors.primary : AppColors.tertiary;
+
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) => SizedBox(
+        width: 300,
+        height: 300,
+        child: CustomPaint(
+          painter: _CompassPainter(
+            azimuth: _displayAzimuth,
+            qiblaBearing: _qiblaBearing,
+            isAligned: aligned,
+            // 0..1 — menguatkan glow ring saat sejajar (pulse bernapas).
+            glow: aligned ? 0.45 + 0.55 * _pulse.value : 0.0,
+            compassColor: compassColor,
+            arrowColor: arrowColor,
+          ),
         ),
+      ),
+    );
+  }
+
+  /// Chip petunjuk arah putar — memberi tahu aksi konkret, bukan cuma angka.
+  Widget _turnHint(bool aligned) {
+    final rel = _relativeAngle;
+    final degrees = rel.abs().round();
+    final (label, color) = aligned
+        ? ('🎯 Pas! Tahan posisi ini', AppColors.primary)
+        : rel > 0
+            ? ('Putar $degrees° ke kanan →', AppColors.tertiary)
+            : ('← Putar $degrees° ke kiri', AppColors.tertiary);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: aligned ? 0.18 : 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+        boxShadow: aligned
+            ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 16)]
+            : null,
+      ),
+      child: Text(
+        label,
+        style: AppText.titleLg().copyWith(color: color, fontSize: 14),
       ),
     );
   }
@@ -351,47 +441,51 @@ class _QiblaScreenState extends State<QiblaScreen> {
   Widget _sensorUnavailableCard() {
     return Expanded(
       child: Center(
-        child: GlassPanel(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('⚠️', style: TextStyle(fontSize: 48)),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Sensor Kompas Tidak Tersedia',
-                  style: AppText.titleLg().copyWith(color: AppColors.tertiary),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Perangkat ini tidak memiliki sensor magnetometer. Gunakan kalkulator arah kiblat di bawah ini sebagai alternatif.',
-                  textAlign: TextAlign.center,
-                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, height: 1.5),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Text('Arah Kiblat dari ${widget.cityName}:', style: AppText.bodyMd()),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '${_qiblaBearing.toInt()}° dari Utara',
-                  style: AppText.displayHero(36).copyWith(
-                    color: AppColors.secondaryFixed,
-                    fontFamily: 'monospace',
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: GlassPanel(
+            borderColor: AppColors.tertiary.withValues(alpha: 0.3),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('⚠️', style: TextStyle(fontSize: 48)),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Sensor Kompas Tidak Tersedia',
+                    style: AppText.titleLg().copyWith(color: AppColors.tertiary),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '🌐 Jarak ke Ka\'bah: ${_distance.toStringAsFixed(0)} km',
-                  style: AppText.bodyMd().copyWith(color: AppColors.primary),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Putar perangkat ${_qiblaBearing.toInt()}° searah jarum jam dari utara untuk menghadap kiblat.',
-                  textAlign: TextAlign.center,
-                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 11, height: 1.5),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Perangkat ini tidak memiliki sensor magnetometer. Gunakan panduan arah di bawah ini sebagai alternatif.',
+                    textAlign: TextAlign.center,
+                    style: AppText.bodyMd().copyWith(
+                        color: AppColors.onSurfaceVariant, height: 1.5),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text('Arah Kiblat dari ${widget.cityName}:',
+                      style: AppText.bodyMd()),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '${_qiblaBearing.toInt()}° dari Utara',
+                    style: AppText.displayHero(36).copyWith(
+                      color: AppColors.secondaryFixed,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Putar perangkat ${_qiblaBearing.toInt()}° searah jarum jam dari utara untuk menghadap kiblat.',
+                    textAlign: TextAlign.center,
+                    style: AppText.bodyMd().copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 11,
+                        height: 1.5),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -399,30 +493,64 @@ class _QiblaScreenState extends State<QiblaScreen> {
     );
   }
 
-  Widget _alignmentCard(bool isAligned, double relativeAngle) {
-    return GlassPanel(
+  Widget _alignmentCard(bool aligned) {
+    final color = aligned ? AppColors.primary : AppColors.onSurface;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(AppSpacing.md),
-      borderColor: isAligned
-          ? AppColors.primary.withValues(alpha: 0.5)
-          : AppColors.outlineVariant.withValues(alpha: 0.3),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: aligned
+              ? [
+                  AppColors.primary.withValues(alpha: 0.2),
+                  AppColors.secondaryFixed.withValues(alpha: 0.15)
+                ]
+              : [
+                  AppColors.surfaceContainer,
+                  AppColors.surfaceContainer.withValues(alpha: 0.6)
+                ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: aligned
+              ? AppColors.primary.withValues(alpha: 0.5)
+              : AppColors.outlineVariant.withValues(alpha: 0.3),
+        ),
+        boxShadow: aligned
+            ? [
+                BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 20)
+              ]
+            : null,
+      ),
       child: Row(
         children: [
-          Text(isAligned ? '✅' : '🧭', style: const TextStyle(fontSize: 28)),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            transitionBuilder: (child, anim) =>
+                ScaleTransition(scale: anim, child: child),
+            child: Text(
+              aligned ? '✅' : '🧭',
+              key: ValueKey(aligned),
+              style: const TextStyle(fontSize: 28),
+            ),
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isAligned ? 'Sudah Menghadap Kiblat!' : 'Arahkan Perangkat ke Kiblat',
-                  style: AppText.titleLg().copyWith(
-                    color: isAligned ? AppColors.primary : AppColors.onSurface,
-                    fontSize: 15,
-                  ),
+                  aligned
+                      ? 'Sudah Menghadap Kiblat!'
+                      : 'Arahkan Perangkat ke Kiblat',
+                  style: AppText.titleLg().copyWith(color: color, fontSize: 15),
                 ),
                 Text(
-                  'Sudut: ${(relativeAngle % 360).toStringAsFixed(1)}° dari kiblat',
-                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 11),
+                  'Selisih ${_relativeAngle.abs().toStringAsFixed(1)}° dari kiblat',
+                  style: AppText.bodyMd().copyWith(
+                      color: AppColors.onSurfaceVariant, fontSize: 11),
                 ),
               ],
             ),
@@ -432,49 +560,46 @@ class _QiblaScreenState extends State<QiblaScreen> {
     );
   }
 
-  Widget _bearingCard() {
-    return GlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _statChips() {
+    Widget chip(String label, String value, Color color) {
+      return Expanded(
+        child: GlassPanel(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          borderColor: color.withValues(alpha: 0.35),
+          child: Column(
             children: [
-              Text('Arah Kiblat', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 11)),
+              Text(label,
+                  style: AppText.labelCaps().copyWith(
+                      color: AppColors.onSurfaceVariant, fontSize: 10)),
+              const SizedBox(height: 2),
               Text(
-                '${_qiblaBearing.toInt()}°',
-                style: AppText.displayHero(22).copyWith(
-                  color: AppColors.secondaryFixed,
-                  fontFamily: 'monospace',
-                ),
+                value,
+                style: AppText.displayHero(20)
+                    .copyWith(color: color, fontFamily: 'monospace'),
               ),
             ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('Jarak ke Ka\'bah', style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 11)),
-              Text(
-                '${_distance.toStringAsFixed(0)} km',
-                style: AppText.displayHero(22).copyWith(
-                  color: AppColors.primary,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        chip('ARAH KIBLAT', '${_qiblaBearing.toInt()}°', AppColors.secondaryFixed),
+        const SizedBox(width: AppSpacing.sm),
+        chip('JARAK KA\'BAH', '${_distance.toStringAsFixed(0)} km', AppColors.primary),
+      ],
     );
   }
 }
 
-/// Custom painter untuk kompas — port dari V3 QiblaComposable
+/// Custom painter kompas — dial neon bergaya tema app.
 class _CompassPainter extends CustomPainter {
   final double azimuth;
   final double qiblaBearing;
   final bool isAligned;
+  final double glow; // 0..1, ekstra glow saat sejajar (pulse)
   final Color compassColor;
   final Color arrowColor;
 
@@ -482,6 +607,7 @@ class _CompassPainter extends CustomPainter {
     required this.azimuth,
     required this.qiblaBearing,
     required this.isAligned,
+    required this.glow,
     required this.compassColor,
     required this.arrowColor,
   });
@@ -490,61 +616,80 @@ class _CompassPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final centerX = size.width / 2;
     final centerY = size.height / 2;
+    final center = Offset(centerX, centerY);
     final radius = math.min(centerX, centerY) - 20;
 
-    // ─── Background circle ───
+    // ─── Background dial ───
     final bgPaint = Paint()
       ..shader = RadialGradient(
-        colors: [AppColors.surfaceContainerHigh, AppColors.background],
-      ).createShader(Rect.fromCircle(center: Offset(centerX, centerY), radius: radius + 20));
-    canvas.drawCircle(Offset(centerX, centerY), radius + 18, bgPaint);
+        colors: [
+          AppColors.surfaceContainerHigh,
+          AppColors.background,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: radius + 20));
+    canvas.drawCircle(center, radius + 18, bgPaint);
 
-    // Border
+    // ─── Neon ring + glow (menguat saat sejajar) ───
+    final glowPaint = Paint()
+      ..color = compassColor.withValues(alpha: 0.25 + 0.45 * glow)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4 + 4 * glow
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+    canvas.drawCircle(center, radius + 18, glowPaint);
+
     final borderPaint = Paint()
-      ..color = compassColor.withValues(alpha: 0.4)
+      ..color = compassColor.withValues(alpha: 0.55)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-    canvas.drawCircle(Offset(centerX, centerY), radius + 18, borderPaint);
+    canvas.drawCircle(center, radius + 18, borderPaint);
 
-    // ─── Outer ring tick marks (0-360, every 30°) ───
+    // ─── Dial berputar: ticks + huruf mata angin ───
     canvas.save();
     canvas.translate(centerX, centerY);
     canvas.rotate(-azimuth * math.pi / 180);
 
-    for (var i = 0; i < 360; i += 30) {
+    for (var i = 0; i < 360; i += 15) {
+      final isMain = i % 90 == 0;
+      final isMid = i % 45 == 0;
       final angle = (i - 90) * math.pi / 180;
+      final len = isMain ? 16.0 : (isMid ? 12.0 : 7.0);
       final startX = math.cos(angle) * radius;
       final startY = math.sin(angle) * radius;
-      final endX = math.cos(angle) * (radius - 15);
-      final endY = math.sin(angle) * (radius - 15);
-      final isMain = i % 90 == 0;
+      final endX = math.cos(angle) * (radius - len);
+      final endY = math.sin(angle) * (radius - len);
 
       final tickPaint = Paint()
-        ..color = isMain ? compassColor.withValues(alpha: 0.8) : AppColors.onSurfaceVariant.withValues(alpha: 0.5)
+        ..strokeCap = StrokeCap.round
+        ..color = isMain
+            ? compassColor.withValues(alpha: 0.9)
+            : AppColors.onSurfaceVariant.withValues(alpha: isMid ? 0.55 : 0.3)
         ..strokeWidth = isMain ? 3 : 1.5;
       canvas.drawLine(Offset(startX, startY), Offset(endX, endY), tickPaint);
     }
 
-    // ─── Cardinal directions (N, E, S, W) ───
+    // Huruf mata angin — N menonjol dengan glow.
     final cardinals = [
-      ('N', 0, compassColor),
-      ('E', 90, AppColors.onSurfaceVariant),
-      ('S', 180, AppColors.onSurfaceVariant),
-      ('W', 270, AppColors.onSurfaceVariant),
+      ('N', 0, compassColor, true),
+      ('E', 90, AppColors.onSurfaceVariant, false),
+      ('S', 180, AppColors.onSurfaceVariant, false),
+      ('W', 270, AppColors.onSurfaceVariant, false),
     ];
 
-    for (final (label, angle, color) in cardinals) {
+    for (final (label, angle, color, emphasize) in cardinals) {
       final radAngle = (angle - 90) * math.pi / 180;
-      final textX = math.cos(radAngle) * (radius - 35);
-      final textY = math.sin(radAngle) * (radius - 35);
+      final textX = math.cos(radAngle) * (radius - 34);
+      final textY = math.sin(radAngle) * (radius - 34);
 
       final tp = TextPainter(
         text: TextSpan(
           text: label,
           style: TextStyle(
             color: color,
-            fontSize: 16,
+            fontSize: emphasize ? 18 : 15,
             fontWeight: FontWeight.bold,
+            shadows: emphasize
+                ? [Shadow(color: color.withValues(alpha: 0.8), blurRadius: 10)]
+                : null,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -554,24 +699,14 @@ class _CompassPainter extends CustomPainter {
     }
     canvas.restore();
 
-    // ─── Inner circle ───
+    // ─── Inner ring halus ───
     final innerPaint = Paint()
-      ..color = AppColors.outlineVariant.withValues(alpha: 0.3)
+      ..color = AppColors.outlineVariant.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    canvas.drawCircle(Offset(centerX, centerY), radius - 50, innerPaint);
+    canvas.drawCircle(center, radius - 48, innerPaint);
 
-    // ─── Center Ka'bah icon ───
-    final centerBgPaint = Paint()..color = compassColor.withValues(alpha: 0.15);
-    canvas.drawCircle(Offset(centerX, centerY), 30, centerBgPaint);
-
-    final centerBorderPaint = Paint()
-      ..color = compassColor.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawCircle(Offset(centerX, centerY), 20, centerBorderPaint);
-
-    // ─── Qibla arrow ───
+    // ─── Jarum kiblat (gradient + glow) ───
     final relativeAngle = qiblaBearing - azimuth;
     canvas.save();
     canvas.translate(centerX, centerY);
@@ -579,42 +714,77 @@ class _CompassPainter extends CustomPainter {
 
     final arrowLength = radius - 55;
 
-    // Arrow line
-    final arrowPaint = Paint()
-      ..color = arrowColor
+    // Glow di belakang jarum
+    final needleGlow = Paint()
+      ..color = arrowColor.withValues(alpha: 0.4 + 0.3 * glow)
+      ..strokeWidth = 10
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawLine(const Offset(0, 14), Offset(0, -arrowLength), needleGlow);
+
+    // Badan jarum: gradient dari ekor transparan ke ujung solid
+    final needlePaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [arrowColor.withValues(alpha: 0.25), arrowColor],
+      ).createShader(Rect.fromLTRB(-3, -arrowLength, 3, 14))
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(0, 10), Offset(0, -arrowLength), arrowPaint);
+    canvas.drawLine(const Offset(0, 14), Offset(0, -arrowLength), needlePaint);
 
-    // Arrow head (triangle)
+    // Kepala panah
     final headPath = Path()
-      ..moveTo(0, -arrowLength - 5)
-      ..lineTo(-12, -arrowLength + 18)
-      ..lineTo(12, -arrowLength + 18)
+      ..moveTo(0, -arrowLength - 6)
+      ..lineTo(-11, -arrowLength + 16)
+      ..lineTo(11, -arrowLength + 16)
       ..close();
-    final headPaint = Paint()..color = arrowColor;
-    canvas.drawPath(headPath, headPaint);
+    canvas.drawPath(headPath, Paint()..color = arrowColor);
 
-    // Small tail circle
-    final tailPaint = Paint()..color = arrowColor.withValues(alpha: 0.6);
-    canvas.drawCircle(const Offset(0, 10), 6, tailPaint);
-
+    // Ekor kecil
+    canvas.drawCircle(
+        const Offset(0, 14), 5, Paint()..color = arrowColor.withValues(alpha: 0.5));
     canvas.restore();
 
-    // ─── Ka'bah emoji at arrow tip ───
+    // ─── Pusat: dot glassy ───
+    canvas.drawCircle(
+        center, 26, Paint()..color = compassColor.withValues(alpha: 0.12));
+    canvas.drawCircle(
+      center,
+      16,
+      Paint()
+        ..color = compassColor.withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    canvas.drawCircle(center, 4, Paint()..color = compassColor);
+
+    // ─── Ka'bah di ujung jarum ───
     final tipRadAngle = (relativeAngle - 90) * math.pi / 180;
     final tipX = centerX + math.cos(tipRadAngle) * (radius - 80);
     final tipY = centerY + math.sin(tipRadAngle) * (radius - 80);
+
+    // Halo lembut di belakang emoji biar kebaca di atas dial gelap.
+    canvas.drawCircle(
+      Offset(tipX, tipY),
+      20,
+      Paint()
+        ..color = arrowColor.withValues(alpha: 0.15 + 0.2 * glow)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
 
     final kaabaTp = TextPainter(
       text: const TextSpan(text: '🕋', style: TextStyle(fontSize: 28)),
       textDirection: TextDirection.ltr,
     )..layout();
-    kaabaTp.paint(canvas, Offset(tipX - kaabaTp.width / 2, tipY - kaabaTp.height / 2));
+    kaabaTp.paint(
+        canvas, Offset(tipX - kaabaTp.width / 2, tipY - kaabaTp.height / 2));
   }
 
   @override
   bool shouldRepaint(covariant _CompassPainter oldDelegate) {
-    return oldDelegate.azimuth != azimuth || oldDelegate.isAligned != isAligned;
+    return oldDelegate.azimuth != azimuth ||
+        oldDelegate.isAligned != isAligned ||
+        oldDelegate.glow != glow;
   }
 }
