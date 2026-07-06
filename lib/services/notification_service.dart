@@ -2,6 +2,7 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -186,6 +187,22 @@ class NotificationService {
     if (canExact) return true;
     final granted = await androidPlugin.requestExactAlarmsPermission();
     return granted ?? false;
+  }
+
+  /// Minta pengecualian battery optimization (dialog sistem). Penyebab
+  /// paling umum notif terjadwal tidak pernah muncul: OEM (Xiaomi/Oppo/
+  /// Vivo/Realme dkk) membunuh alarm app yang "dioptimalkan" saat app
+  /// ditutup. Return true kalau sudah dikecualikan.
+  static Future<bool> ensureBatteryUnrestricted() async {
+    try {
+      final status = await Permission.ignoreBatteryOptimizations.status;
+      if (status.isGranted) return true;
+      final res = await Permission.ignoreBatteryOptimizations.request();
+      return res.isGranted;
+    } catch (e) {
+      debugPrint('[NotificationService] battery optimization check gagal: $e');
+      return false;
+    }
   }
 
   /// Jumlah notifikasi yang benar-benar terjadwal di sistem —
