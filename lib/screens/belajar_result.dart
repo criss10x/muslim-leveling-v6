@@ -226,8 +226,8 @@ class _BelajarResultScreenState extends State<BelajarResultScreen> {
         if (!_passed)
           Expanded(
             child: HeroButton(
-              label: 'COBA LAGI',
-              trailingIcon: Icons.refresh,
+              label: 'BALIK KE ARTIKEL',
+              trailingIcon: Icons.arrow_back,
               onPressed: () {
                 Navigator.of(context).pop(); // pop result
                 Navigator.of(context).pop(); // pop quiz

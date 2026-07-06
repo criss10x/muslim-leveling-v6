@@ -194,12 +194,9 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
           label: 'LANJUT KE QUIZ',
           trailingIcon: Icons.quiz,
           onPressed: () {
-            final navigator = Navigator.of(context);
-            navigator.push(MaterialPageRoute(
+            Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => BelajarQuizScreen(moduleId: widget.moduleId),
-            )).then((_) {
-              if (mounted) navigator.pop();
-            });
+            ));
           },
         ),
       ),
