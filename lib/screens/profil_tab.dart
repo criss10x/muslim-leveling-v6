@@ -251,6 +251,12 @@ class _ProfilTabState extends State<ProfilTab> {
                             if (!exactOk) {
                               _showSettingSnackbar('Izin "Alarm & pengingat" belum aktif — pengingat bisa telat beberapa menit.');
                             }
+                            // Battery optimization = penyebab #1 notif
+                            // terjadwal tak pernah muncul saat app ditutup.
+                            final battOk = await NotificationService.ensureBatteryUnrestricted();
+                            if (!battOk) {
+                              _showSettingSnackbar('Izinkan "Tanpa batasan baterai" supaya pengingat tetap bunyi saat app ditutup.');
+                            }
                             await NotificationService.setRemindersEnabled(true);
                             // Enable pertama kali belum punya timing tersimpan di
                             // prefs — jadwalkan langsung dari jadwal kota tersimpan.

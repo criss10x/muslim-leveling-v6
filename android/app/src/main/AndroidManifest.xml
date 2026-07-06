@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Minta pengecualian battery optimization — tanpa ini banyak OEM
+         (Xiaomi/Oppo/Vivo dkk) membunuh alarm terjadwal saat app ditutup. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <application
         android:label="muslim_leveling"
         android:name="${applicationName}"
