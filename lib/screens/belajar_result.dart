@@ -145,7 +145,7 @@ class _BelajarResultScreenState extends State<BelajarResultScreen> {
     await LearningService.claimXp(widget.moduleId);
 
     // Add XP to game state + check level up
-    final (_, didLevelUp) = await GameService.addXp(_module.xpReward);
+    final (_, levelsGained) = await GameService.addXp(_module.xpReward);
 
     setState(() {
       _xpClaimed = true;
@@ -153,9 +153,9 @@ class _BelajarResultScreenState extends State<BelajarResultScreen> {
     });
 
     if (!mounted) return;
-    if (didLevelUp) {
+    if (levelsGained > 0) {
       Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => NaikLevelScreen(xpGained: _module.xpReward),
+        builder: (_) => NaikLevelScreen(xpGained: _module.xpReward, levelsGained: levelsGained),
       ));
     } else {
       Navigator.of(context).push(MaterialPageRoute(

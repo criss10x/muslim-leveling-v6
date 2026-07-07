@@ -4,17 +4,29 @@ import '../../widgets/common.dart';
 import '../../services/game_service.dart';
 
 /// Naik Level — victory celebration, rank-up screen, full-bleed reward.
-/// Reads the latest game state so the displayed rank/level is always live.
-class NaikLevelScreen extends StatelessWidget {
+/// Now supports multi-level-up sequences: shows one level-up at a time.
+class NaikLevelScreen extends StatefulWidget {
   final int? xpGained;
+  final int levelsGained;
 
-  const NaikLevelScreen({super.key, this.xpGained});
+  const NaikLevelScreen({super.key, this.xpGained, this.levelsGained = 1});
+
+  @override
+  State<NaikLevelScreen> createState() => _NaikLevelScreenState();
+}
+
+class _NaikLevelScreenState extends State<NaikLevelScreen> {
+  int _step = 0;
 
   @override
   Widget build(BuildContext context) {
     final state = GameService.current;
     final info = GameService.getLevelInfo(state.xp);
-    final rankTitle = GameService.getRankTitle(info.level);
+    final currentLevel = info.level;
+    final startLevel = currentLevel - widget.levelsGained + 1;
+    final shownLevel = startLevel + _step;
+    final rankTitle = GameService.getRankTitle(shownLevel);
+    final isLast = _step >= widget.levelsGained - 1;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -62,30 +74,45 @@ class NaikLevelScreen extends StatelessWidget {
                   Entrance(
                     delay: const Duration(milliseconds: 400),
                     child: Text(
-                      'Kamu mencapai $rankTitle — Level ${info.level}',
+                      'Kamu mencapai $rankTitle — Level $shownLevel',
                       textAlign: TextAlign.center,
                       style: AppText.bodyLg().copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
                     ),
                   ),
+                  if (widget.levelsGained > 1) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '${_step + 1} / ${widget.levelsGained}',
+                      style: AppText.labelCaps().copyWith(
+                        color: AppColors.secondaryFixed,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.xl),
                   Entrance(
                     delay: const Duration(milliseconds: 550),
-                    child: _rewards(info, rankTitle),
+                    child: _rewards(shownLevel, rankTitle),
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   Entrance(
                     delay: const Duration(milliseconds: 700),
-                    child: _unlocked(info),
+                    child: _unlocked(shownLevel),
                   ),
                   const Spacer(),
                   Entrance(
                     delay: const Duration(milliseconds: 850),
                     child: HeroButton(
-                      label: 'KEMBALI',
-                      trailingIcon: Icons.arrow_back,
-                      onPressed: () => Navigator.of(context).pop(),
+                      label: isLast ? 'KEMBALI' : 'LANJUT',
+                      trailingIcon: isLast ? Icons.arrow_back : Icons.arrow_forward,
+                      onPressed: () {
+                        if (isLast) {
+                          Navigator.of(context).pop();
+                        } else {
+                          setState(() => _step += 1);
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -101,6 +128,7 @@ class NaikLevelScreen extends StatelessWidget {
 
   Widget _badge(BuildContext context) {
     return TweenAnimationBuilder<double>(
+      key: ValueKey<int>(_step),
       tween: Tween(begin: 0.8, end: 1.0),
       duration: const Duration(milliseconds: 800),
       curve: Curves.elasticOut,
@@ -130,12 +158,12 @@ class NaikLevelScreen extends StatelessWidget {
     );
   }
 
-  Widget _rewards(LevelInfo info, String rankTitle) {
+  Widget _rewards(int shownLevel, String rankTitle) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _rewardChip('+${xpGained ?? 0}', 'XP', AppColors.primary, Icons.bolt),
-        _rewardChip('Lv ${info.level}', 'Level', AppColors.secondaryFixed, Icons.trending_up),
+        _rewardChip('+${widget.xpGained ?? 0}', 'XP', AppColors.primary, Icons.bolt),
+        _rewardChip('Lv $shownLevel', 'Level', AppColors.secondaryFixed, Icons.trending_up),
         _rewardChip('NEW', rankTitle, AppColors.tertiary, Icons.auto_awesome),
       ],
     );
@@ -178,7 +206,8 @@ class NaikLevelScreen extends StatelessWidget {
     );
   }
 
-  Widget _unlocked(LevelInfo info) {
+  Widget _unlocked(int shownLevel) {
+    final info = GameService.getLevelInfo(GameService.current.xp);
     final xpToNext = info.xpNeededForNextLevel - info.xpInCurrentLevel;
     return GlassPanel(
       padding: const EdgeInsets.all(AppSpacing.lg),

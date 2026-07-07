@@ -83,13 +83,13 @@ void main() {
   });
 
   group('level-up detection', () {
-    test('crossing level boundary sets didLevelUp=true', () {
+    test('crossing level boundary sets levelsGained > 0', () {
       // Level 1 needs ~49 XP. Put state at 40 XP, gain 30 (subuh) → should level up.
       final s = GameState(timings: fakeTimings(), xp: 40, level: 1);
       final res = GameService.logPrayer(s, 'subuh', 'wajib');
       expect(res, isNotNull);
       // 40 + 30 = 70 ≥ 49 → level 2
-      expect(res!.$3, isTrue, reason: 'should level up from 40→70 (need 49 for L2)');
+      expect(res!.$3, greaterThan(0), reason: 'should level up from 40→70 (need 49 for L2)');
       expect(res.$1.level, greaterThan(1));
     });
 
@@ -98,7 +98,7 @@ void main() {
       // Gain 25 XP (maghrib) — under 49, no level up
       final res = GameService.logPrayer(s, 'maghrib', 'wajib');
       expect(res, isNotNull);
-      expect(res!.$3, isFalse);
+      expect(res!.$3, 0);
       expect(res.$1.level, 1);
     });
   });

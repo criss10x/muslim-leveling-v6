@@ -537,8 +537,8 @@ class GameService {
   }
 
   // ─── Log prayer (core V3 logic) ───
-  /// Returns (newState, xpGained, didLevelUp) or null if rejected (already logged / not on time).
-  static (GameState, int, bool)? logPrayer(GameState state, String prayer, String type) {
+  /// Returns (newState, xpGained, levelsGained) or null if rejected (already logged / not on time).
+  static (GameState, int, int)? logPrayer(GameState state, String prayer, String type) {
     final today = todayStr();
     final yest = yesterdayStr();
     final now = nowHHmm();
@@ -572,7 +572,7 @@ class GameService {
 
     final oldInfo = getLevelInfo(state.xp);
     final newInfo = getLevelInfo(state.xp + xpGained);
-    final didLevelUp = newInfo.level > oldInfo.level;
+    final levelsGained = newInfo.level - oldInfo.level;
 
     var hero = state.heroStreak;
     var pstr = Map<String, StreakState>.from(state.perPrayerStreaks);
@@ -596,10 +596,10 @@ class GameService {
       prayerLog: updatedLogs, heroStreak: hero,
       perPrayerStreaks: pstr, tilawahStreak: tilawah, quests: quests,
     );
-    return (newState, xpGained, didLevelUp);
+    return (newState, xpGained, levelsGained);
   }
 
-  static Future<(GameState, int, bool)?> logPrayerAsync(String prayer, String type) async {
+  static Future<(GameState, int, int)?> logPrayerAsync(String prayer, String type) async {
     final res = logPrayer(_cache, prayer, type);
     if (res == null) return null;
     await _save(res.$1);
@@ -675,10 +675,10 @@ class GameService {
     return current;
   }
 
-  /// Claim a completed quest. Returns new state and whether the user leveled up.
-  static Future<(GameState, bool)> claimQuest(String questId) async {
+  /// Claim a completed quest. Returns new state and number of levels gained.
+  static Future<(GameState, int)> claimQuest(String questId) async {
     final q = _cache.quests.where((x) => x.id == questId).firstOrNull;
-    if (q == null || !q.completed || q.claimed) return (_cache, false);
+    if (q == null || !q.completed || q.claimed) return (_cache, 0);
     final oldInfo = getLevelInfo(_cache.xp);
     final quests = _cache.quests.map((x) => x.id == questId ? x.copyWith(claimed: true) : x).toList();
     final newXp = _cache.xp + q.xpReward;
@@ -687,17 +687,17 @@ class GameService {
       xp: newXp, level: newInfo.level, quests: quests);
     await _save(newState);
     await refreshBadges(); // level-up may unlock mythic_reached
-    return (current, newInfo.level > oldInfo.level);
+    return (current, newInfo.level - oldInfo.level);
   }
 
-  /// Add arbitrary XP (e.g. from learning modules). Returns new state + didLevelUp.
-  static Future<(GameState, bool)> addXp(int amount) async {
+  /// Add arbitrary XP (e.g. from learning modules). Returns new state + levelsGained.
+  static Future<(GameState, int)> addXp(int amount) async {
     final oldInfo = getLevelInfo(_cache.xp);
     final newInfo = getLevelInfo(_cache.xp + amount);
     final newState = _cache.copyWith(
       xp: _cache.xp + amount, level: newInfo.level);
     await _save(newState);
-    return (newState, newInfo.level > oldInfo.level);
+    return (newState, newInfo.level - oldInfo.level);
   }
 
   // ─── Quest generation (pool 15, pick 5, rotasi harian) ───
@@ -1082,7 +1082,7 @@ class GameService {
       rewardName: pick.$1,
       rewardEmoji: pick.$2,
       isDuplicate: isDuplicate,
-      didLevelUp: newInfo.level > oldInfo.level,
+      levelsGained: newInfo.level - oldInfo.level,
     );
   }
 }
@@ -1093,14 +1093,14 @@ class ChestRevealState {
   final String rewardName;
   final String rewardEmoji;
   final bool isDuplicate;
-  final bool didLevelUp;
+  final int levelsGained;
 
   const ChestRevealState({
     required this.xpReward,
     required this.rewardName,
     required this.rewardEmoji,
     required this.isDuplicate,
-    required this.didLevelUp,
+    required this.levelsGained,
   });
 }
 

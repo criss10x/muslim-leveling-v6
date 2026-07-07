@@ -141,23 +141,25 @@ class _HomeTabState extends State<HomeTab> {
       return;
     }
     setState(() => _state = res.$1);
-    final (_, xp, levelUp) = res;
-    _toast('+$xp XP!${levelUp ? " 🎉 LEVEL UP!" : ""}');
+    final (_, xp, levelsGained) = res;
+    _toast('+$xp XP!${levelsGained > 0 ? " 🎉 LEVEL UP!" : ""}');
     // Announcer achievement tampil dulu (di home), baru layar naik level.
     final newAch = await AchievementService.refresh();
     for (final a in newAch) {
       if (!mounted) break;
       await showAchievementUnlock(context, a);
     }
-    if (levelUp && mounted) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaikLevelScreen(xpGained: xp)));
+    if (levelsGained > 0 && mounted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => NaikLevelScreen(xpGained: xp, levelsGained: levelsGained),
+      ));
     }
   }
 
   Future<void> _claimQuest(Quest q) async {
     if (!q.completed || q.claimed || _claimingQuestId.isNotEmpty) return;
     setState(() => _claimingQuestId = q.id);
-    final (s, didLevelUp) = await GameService.claimQuest(q.id);
+    final (s, levelsGained) = await GameService.claimQuest(q.id);
     if (!mounted) return;
     setState(() {
       _state = s;
@@ -170,8 +172,10 @@ class _HomeTabState extends State<HomeTab> {
       if (!mounted) break;
       await showAchievementUnlock(context, a);
     }
-    if (didLevelUp && mounted) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaikLevelScreen(xpGained: q.xpReward)));
+    if (levelsGained > 0 && mounted) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => NaikLevelScreen(xpGained: q.xpReward, levelsGained: levelsGained),
+      ));
     }
   }
 
@@ -1282,9 +1286,9 @@ class _HomeTabState extends State<HomeTab> {
                         fontSize: 12,
                       )),
                 ],
-                if (reveal.didLevelUp) ...[
+                if (reveal.levelsGained > 0) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  Text('⬆️ Level Up!',
+                  Text('⬆️ Level Up!${reveal.levelsGained > 1 ? ' x${reveal.levelsGained}' : ''}',
                       style: AppText.labelCaps().copyWith(
                         color: AppColors.tertiary,
                         fontSize: 14,
