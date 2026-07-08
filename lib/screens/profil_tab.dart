@@ -534,8 +534,6 @@ class _ProfilTabState extends State<ProfilTab> {
               _prayerStreaks(),
               const SizedBox(height: AppSpacing.md),
               _achievements(),
-              const SizedBox(height: AppSpacing.md),
-              _badges(),
               const SizedBox(height: AppSpacing.lg),
               _settings(),
             ],
@@ -1032,106 +1030,6 @@ class _ProfilTabState extends State<ProfilTab> {
             }).toList(),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _badges() {
-    final unlocked = GameService.current.badges.toSet();
-    final defs = GameService.badgeDefs;
-
-    return GlassPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'BADGES',
-                style: AppText.labelCaps().copyWith(color: AppColors.primary),
-              ),
-              const Spacer(),
-              Text(
-                '${unlocked.length}/${defs.length}',
-                style: AppText.labelCaps().copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 4,
-            mainAxisSpacing: AppSpacing.sm,
-            crossAxisSpacing: AppSpacing.xs,
-            childAspectRatio: 0.82,
-            children: defs.map((b) {
-              final isUnlocked = unlocked.contains(b.$1);
-              return _badgeTile(
-                emoji: b.$3,
-                title: b.$2,
-                desc: b.$4,
-                unlocked: isUnlocked,
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _badgeTile({
-    required String emoji,
-    required String title,
-    required String desc,
-    required bool unlocked,
-  }) {
-    return Tooltip(
-      message: unlocked ? desc : '???',
-      child: Opacity(
-        opacity: unlocked ? 1.0 : 0.35,
-        child: Column(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: (unlocked ? AppColors.primary : AppColors.onSurfaceVariant)
-                    .withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: (unlocked ? AppColors.primary : AppColors.onSurfaceVariant)
-                      .withValues(alpha: 0.4),
-                ),
-                boxShadow: unlocked
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Center(
-                child: Text(
-                  unlocked ? emoji : '🔒',
-                  style: const TextStyle(fontSize: 20),
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppText.labelCaps().copyWith(fontSize: 8),
-            ),
-          ],
-        ),
       ),
     );
   }
