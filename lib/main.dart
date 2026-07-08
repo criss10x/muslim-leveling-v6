@@ -15,7 +15,9 @@ Future<void> main() async {
       options.release = const String.fromEnvironment('SENTRY_RELEASE', defaultValue: 'muslim-leveling@1.0.0+1');
       // Set to a lower value if you want more aggressive sampling
       options.tracesSampleRate = 0.1;
-      options.profilesSampleRate = 0.1;
+      // ponytail: profilesSampleRate is experimental and triggers analyze warning.
+      // Enable only when you actually need profiling.
+      // options.profilesSampleRate = 0.1;
       options.attachScreenshot = true;
       options.debug = false;
     },

@@ -283,7 +283,13 @@ class GameService {
     final total = ((_toMin(t) + m) % 1440 + 1440) % 1440;
     return '${(total ~/ 60).toString().padLeft(2,'0')}:${(total % 60).toString().padLeft(2,'0')}';
   }
+  // ponytail: test-only override for deterministic time. Production uses DateTime.now().
+  static String? _testNowOverride;
+  static void setTestNow(String? hhmm) => _testNowOverride = hhmm;
+  static void clearTestNow() => _testNowOverride = null;
+
   static String nowHHmm() {
+    if (_testNowOverride != null) return _testNowOverride!;
     final d = DateTime.now();
     return '${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
   }
@@ -337,7 +343,12 @@ class GameService {
   /// sama, sedangkan jeda Subuh → Dzuhur terlalu panjang untuk dibiarkan.
   static const subuhLockAfterMin = 180;
 
+  // ponytail: test-only flag to bypass time-window for deterministic unit tests.
+  static bool _testSkipTimeWindow = false;
+  static void setTestSkipTimeWindow(bool skip) => _testSkipTimeWindow = skip;
+
   static bool isPrayerWindowOpen(String prayer, Timings t) {
+    if (_testSkipTimeWindow) return true;
     final now = nowHHmm();
     switch (prayer) {
       case 'subuh':
@@ -547,7 +558,7 @@ class GameService {
 
     if (type == 'sunnah' && !isSunnahOnTime(prayer, state.timings)) return null;
 
-    if (type == 'wajib' && !isPrayerWindowOpen(prayer, state.timings)) return null;
+    if (type == 'wajib' && !_testSkipTimeWindow && !isPrayerWindowOpen(prayer, state.timings)) return null;
 
     final newLog = PrayerLog(date: today, prayer: prayer, time: now, type: type);
     final updatedLogs = [...state.prayerLog, newLog];

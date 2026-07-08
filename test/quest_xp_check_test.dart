@@ -5,6 +5,17 @@ import 'package:muslim_leveling/services/game_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(() {
+    // 13:00 keeps all wajib loggable (with time-window skipped) while avoiding
+    // the +15 timely bonus, which only applies within 30 min of adzan.
+    GameService.setTestNow('13:00');
+    GameService.setTestSkipTimeWindow(true);
+  });
+  tearDown(() {
+    GameService.clearTestNow();
+    GameService.setTestSkipTimeWindow(false);
+  });
+
   Timings fakeTimings() => Timings(
         imsak: '04:30', subuh: '04:42', terbit: '05:55', dhuha: '06:20',
         dzuhur: '12:01', ashar: '15:20', maghrib: '17:55', isya: '19:08',
@@ -71,14 +82,11 @@ void main() {
     });
 
     test('sunnah rejected when out of window returns null', () {
-      // We can't easily control nowHHmm; this is a smoke check that the function
-      // signature is wired. The real coverage is the window logic in isSunnahOnTime
-      // which is exercised by the missing-case test below.
+      GameService.setTestNow('18:00'); // outside Dhuha window
       final s = fresh();
-      // Whatever now is, calling logPrayer with a sunnah key should either succeed (15 XP)
-      // or reject (null) — never throw.
       final res = GameService.logPrayer(s, 'dhuha', 'sunnah');
-      expect(res == null || res.$2 == 15, isTrue);
+      expect(res, isNull);
+      GameService.setTestNow('12:00');
     });
   });
 
