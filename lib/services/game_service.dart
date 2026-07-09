@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -209,6 +210,10 @@ class GameService {
   static const _key = 'game_state_v1';
   static GameState _cache = GameState();
   static GameState get current => _cache;
+
+  /// Bump on every state write so passive tabs (Jadwal) rebuild their
+  /// derived UI. Mirrors PrayerService.locationVersion pattern.
+  static final ValueNotifier<int> stateVersion = ValueNotifier(0);
   static final _rng = Random();
 
   static Future<GameState> load() async {
@@ -222,6 +227,7 @@ class GameService {
 
   static Future<void> _save(GameState s) async {
     _cache = s;
+    stateVersion.value++; // broadcast to passive listeners (Jadwal tab)
     final p = await SharedPreferences.getInstance();
     await p.setString(_key, jsonEncode(s.toMap()));
   }

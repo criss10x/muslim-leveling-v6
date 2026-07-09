@@ -29,12 +29,19 @@ class _JadwalTabState extends State<JadwalTab> {
     _loadAndFetch();
     // Refetch saat kota diganti dari tab lain (profil/onboarding).
     PrayerService.locationVersion.addListener(_loadAndFetch);
+    // Rebuild status "sudah dilog" saat sholat dicentang di tab Home.
+    GameService.stateVersion.addListener(_onStateChanged);
   }
 
   @override
   void dispose() {
     PrayerService.locationVersion.removeListener(_loadAndFetch);
+    GameService.stateVersion.removeListener(_onStateChanged);
     super.dispose();
+  }
+
+  void _onStateChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadAndFetch() async {
