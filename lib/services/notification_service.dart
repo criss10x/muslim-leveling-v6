@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -527,7 +528,17 @@ class NotificationService {
   static Future<void> cancelAlarms() async {
     // App ini cuma menjadwalkan pengingat adzan, jadi cancelAll aman —
     // sekaligus bersih-bersih jadwal lama ber-ID hashCode dari versi sebelumnya.
-    await _plugin.cancelAll();
+    try {
+      await _plugin.cancelAll();
+    } catch (e, st) {
+      // Gagal cancel TIDAK boleh menggagalkan reschedule: ID notif
+      // deterministik (10..52), jadi jadwal baru menimpa yang lama.
+      // Ini juga satu-satunya panggilan tak terlindungi yang dilewati
+      // Simpan & Tes Notifikasi — kirim ke Sentry biar akar masalah
+      // kelihatan di dashboard.
+      debugPrint('[NotificationService] cancelAll gagal: $e');
+      await Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   // ═══════════════════════════════════════════
@@ -559,7 +570,10 @@ class NotificationService {
   /// Send a test notification (for settings dialog).
   /// Channel/suaranya mengikuti mode suara yang sedang dipilih, jadi user
   /// langsung dengar hasil setting-nya.
-  static Future<void> sendTestNotification(String mode) async {
+  /// [soundModeOverride]: preview pilihan di dialog TANPA menyimpan/
+  /// reschedule apa pun — tombol Tes murni menampilkan notif.
+  static Future<void> sendTestNotification(String mode,
+      {String? soundModeOverride}) async {
     if (!_initialized) await init();
 
     final message = switch (mode) {
@@ -569,7 +583,7 @@ class NotificationService {
       _ => 'Notifikasi Muslim Leveling siap! 🔔',
     };
 
-    final soundMode = await getSoundMode();
+    final soundMode = soundModeOverride ?? await getSoundMode();
     final details = _detailsFor(switch (soundMode) {
       'senyap' => _NotifSound.silent,
       'adzan' => _NotifSound.adzan,
