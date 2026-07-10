@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
@@ -179,6 +180,12 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
+  /// Ringkas exception buat snackbar diagnosa: tipe + potongan pesan.
+  String _shortError(Object e) {
+    final s = e.toString();
+    return s.length > 110 ? '${s.substring(0, 110)}…' : s;
+  }
+
   Future<void> _applyNotifSettings(bool enabled, String mode, String soundMode) async {
     try {
       if (enabled) {
@@ -191,11 +198,13 @@ class _ProfilTabState extends State<ProfilTab> {
       } else {
         _showSettingSnackbar('Pengingat adzan dimatikan');
       }
-    } catch (e) {
-      // Detail teknis ke log aja — user cukup tahu langkah selanjutnya.
+    } catch (e, st) {
+      // Tampilkan error asli (dipendekkan) — sebelumnya disembunyikan dan
+      // bikin debugging buta. Full stacktrace ke Sentry.
       debugPrint('[Profil] gagal simpan pengaturan notif: $e');
+      await Sentry.captureException(e, stackTrace: st);
       if (!mounted) return;
-      _showSettingSnackbar('Gagal menyimpan pengaturan. Coba lagi, atau cek izin notifikasi & alarm lewat tombol Pengaturan Notifikasi Android.');
+      _showSettingSnackbar('Gagal menyimpan: ${_shortError(e)}');
     }
   }
 
@@ -283,11 +292,12 @@ class _ProfilTabState extends State<ProfilTab> {
                             await NotificationService.setRemindersEnabled(false);
                           }
                           setSt(() => enabled = v);
-                        } catch (e) {
-                          // Jangan pernah diam — kegagalan apa pun harus
-                          // keliatan user (detail teknis ke log aja).
+                        } catch (e, st) {
+                          // Jangan pernah diam — tampilkan error asli
+                          // (dipendekkan), full stacktrace ke Sentry.
                           debugPrint('[Profil] gagal ubah pengingat: $e');
-                          _showSettingSnackbar('Gagal mengubah pengingat. Coba lagi, atau cek izin notifikasi & alarm di pengaturan HP.');
+                          await Sentry.captureException(e, stackTrace: st);
+                          _showSettingSnackbar('Gagal mengubah pengingat: ${_shortError(e)}');
                         }
                       },
                       activeThumbColor: AppColors.primary,
@@ -333,8 +343,17 @@ class _ProfilTabState extends State<ProfilTab> {
                       child: TextButton.icon(
                         onPressed: enabled
                             ? () async {
-                                await NotificationService.setNotifMode(mode);
-                                await NotificationService.sendTestNotification(mode);
+                                // Tes = preview murni; tidak menyimpan/
+                                // reschedule (itu tugas Simpan). Dulu tombol
+                                // ini mati diam-diam saat reschedule throw.
+                                try {
+                                  await NotificationService.sendTestNotification(
+                                      mode, soundModeOverride: soundMode);
+                                } catch (e, st) {
+                                  debugPrint('[Profil] tes notif gagal: $e');
+                                  await Sentry.captureException(e, stackTrace: st);
+                                  _showSettingSnackbar('Tes notifikasi gagal: ${_shortError(e)}');
+                                }
                               }
                             : null,
                         icon: Icon(Icons.send, size: 16, color: enabled ? AppColors.primary : AppColors.onSurfaceVariant),
