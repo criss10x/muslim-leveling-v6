@@ -3,8 +3,6 @@ name: Flutter CI
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -29,10 +27,20 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build release APK (arm64-v8a)
+        run: flutter build apk --release --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload to GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+          name: Latest Build
+          tag_name: latest
+          prerelease: true
+          make_latest: false
