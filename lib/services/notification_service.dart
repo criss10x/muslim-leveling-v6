@@ -29,7 +29,11 @@ enum _NotifSound { silent, normal, adzan }
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'adhan_reminders';
+  // v2: channel v1 di sebagian device (Xiaomi/OEM A15) terlanjur terbuat
+  // ambigu tanpa playSound eksplisit → dipin senyap & notif tak muncul.
+  // Channel Android immutable, jadi bump ID + hapus v1.
+  static const _channelId = 'adhan_reminders_v2';
+  static const _legacyChannelId = 'adhan_reminders';
   static const _channelName = 'Pengingat Adzan';
   static const _channelDesc = 'Notifikasi pengingat waktu sholat';
 
@@ -100,6 +104,7 @@ class NotificationService {
       _channelName,
       description: _channelDesc,
       importance: Importance.high,
+      playSound: true,
       vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
       enableVibration: true,
     );
@@ -131,8 +136,9 @@ class NotificationService {
     );
 
     // Setting channel gak bisa diubah setelah dibuat — buang versi lama
-    // yang mungkin terlanjur soundless.
+    // yang mungkin terlanjur soundless/senyap-dipin.
     await androidPlugin?.deleteNotificationChannel(_legacyAdzanChannelId);
+    await androidPlugin?.deleteNotificationChannel(_legacyChannelId);
     await androidPlugin?.createNotificationChannel(androidChannel);
     await androidPlugin?.createNotificationChannel(adzanChannel);
     await androidPlugin?.createNotificationChannel(silentChannel);
@@ -257,6 +263,7 @@ class NotificationService {
 
   /// Enable/disable without clearing saved timings.
   static Future<void> setRemindersEnabled(bool enabled) async {
+    if (!_initialized) await init();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefEnabled, enabled);
 
@@ -287,6 +294,7 @@ class NotificationService {
   }
 
   static Future<void> setNotifMode(String mode) async {
+    if (!_initialized) await init();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefNotifMode, mode);
     // Reschedule with new mode if enabled
@@ -313,6 +321,7 @@ class NotificationService {
     required String mode,
     required String soundMode,
   }) async {
+    if (!_initialized) await init();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefNotifMode, mode);
     await prefs.setString(_prefSoundMode, soundMode);
