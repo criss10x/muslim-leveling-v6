@@ -207,34 +207,22 @@ class _HomeTabState extends State<HomeTab> {
               _section(0, _appBar(context)),
               const SizedBox(height: AppSpacing.md),
               _section(1, _heroRank(info)),
-              const SizedBox(height: AppSpacing.md),
-              _section(2, _activePrayerCard()),
-              const SizedBox(height: AppSpacing.md),
-              _section(
-                3,
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _countdownCard()),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(child: _streakCard()),
-                  ],
-                ),
-              ),
+              const SizedBox(height: AppSpacing.sm),
+              _section(2, _hudStrip()),
               const SizedBox(height: AppSpacing.lg),
-              _section(4, _ritualRings()),
+              _section(3, _ritualRings()),
               const SizedBox(height: AppSpacing.lg),
-              _section(5, _prayerQuests()),
+              _section(4, _prayerQuests()),
               const SizedBox(height: AppSpacing.lg),
-              _section(6, _dailyChest()),
+              _section(5, _dailyChest()),
               const SizedBox(height: AppSpacing.lg),
-              _section(7, _bonusQuest()),
+              _section(6, _bonusQuest()),
               const SizedBox(height: AppSpacing.lg),
-              if (_state.quests.isNotEmpty) _section(8, _questList()),
+              if (_state.quests.isNotEmpty) _section(7, _questList()),
               if (_state.quests.isNotEmpty) const SizedBox(height: AppSpacing.lg),
-              _section(9, _sideQuest(context)),
+              _section(8, _sideQuest(context)),
               const SizedBox(height: AppSpacing.lg),
-              _section(10, _dailyBento()),
+              _section(9, _dailyBento()),
               if (_error.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -258,32 +246,65 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
+  // ── HUD chrome budget ─────────────────────────────────────────────
+  // Redesign minimalis: glow & border HANYA di (1) hero Status Window,
+  // (2) baris "aktif sekarang" (cyan hairline), (3) shimmer claimable.
+  // Semua kartu lain: datar surfaceContainerLow, radius xxl, tanpa border.
+
+  /// Header section gaya HUD: label mono + garis tipis + meta live.
+  /// Meta membawa data nyata (mis. "3/5") — struktur = informasi.
+  Widget _sectionHeader(String label, {String? meta, Color? accent}) {
+    final color = accent ?? AppColors.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Text(label,
+              style: AppText.labelCaps().copyWith(color: color, fontSize: 11)),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: AppColors.outlineVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          if (meta != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Text(meta,
+                style: AppText.labelCaps()
+                    .copyWith(color: color, fontSize: 11)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Kartu datar standar redesign — satu bentuk untuk semua konten tenang.
+  Widget _flatCard({required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+      ),
+      child: child,
+    );
+  }
+
   Widget _appBar(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.surfaceContainer,
-            border: Border.all(color: AppColors.primary, width: 2),
-          ),
-          child: const Icon(Icons.shield, size: 20, color: AppColors.primary),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
-            colors: [AppColors.primary, AppColors.tertiary],
-          ).createShader(rect),
-          child: Text(
-            'MUSLIM LEVELING',
-            style: AppText.headlineMd().copyWith(color: Colors.white, fontSize: 18, height: 1.0),
-          ),
+        const Icon(Icons.shield, size: 20, color: AppColors.primary),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          'MUSLIM LEVELING',
+          style: AppText.labelCaps()
+              .copyWith(color: AppColors.onSurface, fontSize: 13),
         ),
         const Spacer(),
         IconButton(
-          icon: const Icon(Icons.settings, color: AppColors.primary),
+          icon: const Icon(Icons.settings_outlined,
+              color: AppColors.onSurfaceVariant),
           onPressed: widget.onSettingsPressed,
         ),
       ],
@@ -413,128 +434,80 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _activePrayerCard() {
+  /// Satu strip HUD datar menggantikan 3 kartu (sholat aktif, next, streak).
+  /// Cyan hanya untuk "sekarang", gold hanya untuk streak — disiplin warna.
+  Widget _hudStrip() {
     final current = GameService.currentPrayerInfo(_state.timings);
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.surfaceContainer.withValues(alpha: 0.6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  current.label.toUpperCase(),
-                  style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  current.name.toUpperCase(),
-                  style: AppText.headlineMd().copyWith(color: AppColors.onBackground),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            current.time,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 20,
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _countdownCard() {
     final np = GameService.nextPrayerInfo(_state.timings);
     final parts = np.split('|');
-    final name = parts[0];
-    final time = parts.length > 1 ? parts[1] : '--:--';
-    final countdown = parts.length > 2 ? parts[2] : '';
-    return NeonPulse(
-      color: AppColors.primary,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-        ),
+    final nextName = parts[0];
+    final nextIn = parts.length > 2 ? parts[2] : '';
+
+    Widget cell(String label, String value, String sub, Color valueColor) {
+      return Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('NEXT PRAYER', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
-            const SizedBox(height: AppSpacing.xs),
-            Text(name.toUpperCase(), style: AppText.headlineMd().copyWith(color: AppColors.tertiary)),
+            Text(label,
+                style: AppText.labelCaps()
+                    .copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
             const SizedBox(height: 4),
-            Text(time, style: const TextStyle(fontFamily: 'monospace', fontSize: 18, color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+            Text(value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.titleLg()
+                    .copyWith(color: valueColor, fontSize: 16, height: 1.1)),
             const SizedBox(height: 2),
-            Text(countdown, style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
+            Text(sub,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.bodyMd().copyWith(
+                    color: AppColors.onSurfaceVariant, fontSize: 11)),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _streakCard() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surfaceContainer.withValues(alpha: 0.8),
-            AppColors.surfaceContainer.withValues(alpha: 0.4),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.3)),
-        boxShadow: [BoxShadow(color: AppColors.secondaryFixed.withValues(alpha: 0.15), blurRadius: 16, offset: const Offset(0, 6))],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+    Widget vDivider() => Container(
+          width: 1,
+          height: 40,
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          color: AppColors.outlineVariant.withValues(alpha: 0.35),
+        );
+
+    return _flatCard(
+      child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.secondaryFixed.withValues(alpha: 0.15),
-              border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.4)),
-              boxShadow: [BoxShadow(color: AppColors.secondaryFixed.withValues(alpha: 0.3), blurRadius: 12)],
-            ),
-            child: const Icon(Icons.local_fire_department, color: AppColors.secondaryFixed, size: 28),
+          cell(current.label.toUpperCase(), current.name,
+              current.time, AppColors.tertiary),
+          vDivider(),
+          cell('BERIKUTNYA', nextName, nextIn, AppColors.onSurface),
+          vDivider(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('STREAK',
+                  style: AppText.labelCaps().copyWith(
+                      color: AppColors.onSurfaceVariant, fontSize: 9)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.local_fire_department,
+                      color: AppColors.secondaryFixed, size: 16),
+                  const SizedBox(width: 2),
+                  Text('${_state.heroStreak.current}',
+                      style: AppText.titleLg().copyWith(
+                          color: AppColors.secondaryFixed,
+                          fontSize: 16,
+                          height: 1.1)),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text('hari',
+                  style: AppText.bodyMd().copyWith(
+                      color: AppColors.onSurfaceVariant, fontSize: 11)),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text('${_state.heroStreak.current}', style: AppText.displayHero(28).copyWith(color: AppColors.secondaryFixed, height: 1.0)),
-          const SizedBox(height: 2),
-          Text('HARI STREAK',
-              textAlign: TextAlign.center,
-              style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10)),
         ],
       ),
     );
@@ -547,20 +520,13 @@ class _HomeTabState extends State<HomeTab> {
     final wProgress = (wajib / 5).clamp(0.0, 1.0);
     final sProgress = (sunnah / 8).clamp(0.0, 1.0);
     final tProgress = tilawah ? 1.0 : 0.0;
-    return GlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.track_changes, color: AppColors.primary, size: 16),
-              const SizedBox(width: AppSpacing.xs),
-              Text('RITUAL RINGS', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('RITUAL HARI INI'),
+        _flatCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
             children: [
               SizedBox(
                 width: 130,
@@ -581,8 +547,8 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -604,17 +570,13 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _prayerQuests() {
     final wajib = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+    final done = GameService.checkedWajibToday;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.flag, color: AppColors.primary, size: 16),
-            const SizedBox(width: AppSpacing.xs),
-            Text('WAJIB QUEST', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
+        _sectionHeader('WAJIB QUEST',
+            meta: '$done/5',
+            accent: done == 5 ? AppColors.primary : null),
         ...wajib.map((p) {
           final done = GameService.isPrayerCheckedToday(p);
           final t = _state.timings;
@@ -631,26 +593,21 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   /// ponytail: one pill, three callers — wajib/sunnah/tilawah share this.
-  /// Locked state: lock glyph + neutral grey (no glow). Done: check + muted.
+  /// Flat tint (tanpa shadow) — kosakata RPG tetap, chrome hilang.
   Widget _xpPill(int xp, Color accent, Color onAccent,
       {bool done = false, bool locked = false}) {
-    final bg = locked
-        ? AppColors.onSurfaceVariant.withValues(alpha: 0.25)
-        : (done ? AppColors.onSurfaceVariant.withValues(alpha: 0.35) : accent);
-    final fg = locked
-        ? AppColors.onSurfaceVariant
-        : (done ? AppColors.onSurface : onAccent);
+    final muted = AppColors.onSurfaceVariant;
+    final fg = locked ? muted.withValues(alpha: 0.7) : (done ? muted : accent);
+    final bg = locked || done
+        ? AppColors.surfaceContainerHigh.withValues(alpha: 0.6)
+        : accent.withValues(alpha: 0.14);
     final label = locked ? 'LOCKED' : (done ? 'DONE' : '+$xp XP');
     final glyph = locked ? Icons.lock : (done ? Icons.check : Icons.bolt);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 2, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: locked ? Border.all(color: AppColors.onSurfaceVariant.withValues(alpha: 0.3), width: 1) : null,
-        boxShadow: done || locked
-            ? null
-            : [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 2))],
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -682,29 +639,35 @@ class _HomeTabState extends State<HomeTab> {
     return PressableScale(
       onTap: locked ? null : onTap,
       child: Opacity(
-        opacity: dimmed ? 0.5 : 1.0,
+        opacity: dimmed ? 0.45 : 1.0,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.all(AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: done
-                  ? AppColors.primary.withValues(alpha: 0.6)
-                  : (active ? AppColors.tertiary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
-              width: done || active ? 2 : 1,
-            ),
-            boxShadow: active
-                ? [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.15), blurRadius: 12)]
+            // Datar; hairline cyan HANYA di baris yang aktif sekarang —
+            // satu-satunya sorotan dalam daftar.
+            color: active
+                ? AppColors.tertiary.withValues(alpha: 0.06)
+                : AppColors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
+            border: active
+                ? Border.all(
+                    color: AppColors.tertiary.withValues(alpha: 0.5))
                 : null,
           ),
           child: Row(
             children: [
-              Icon(_prayerIcon(key),
-                  color: iconColor, size: 24),
+              Icon(_prayerIcon(key), color: iconColor, size: 22),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: Text(name, style: AppText.bodyMd())),
+              Expanded(
+                child: Text(name,
+                    style: AppText.bodyMd().copyWith(
+                      color: done
+                          ? AppColors.onSurfaceVariant
+                          : AppColors.onSurface,
+                    )),
+              ),
               _xpPill(xp, AppColors.primary, AppColors.onPrimary, done: done, locked: locked),
             ],
           ),
@@ -726,17 +689,13 @@ class _HomeTabState extends State<HomeTab> {
       ("Ba'diyah Maghrib", 'rawatib_maghrib_ba_diyyah', 'Sunnah sesudah Maghrib', Icons.history),
       ("Ba'diyah Isya", 'rawatib_isya_ba_diyyah', 'Sunnah sesudah Isya', Icons.history),
     ];
+    final doneCount =
+        items.where((it) => GameService.isPrayerCheckedToday(it.$2)).length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.stars, color: AppColors.secondaryFixed, size: 16),
-            const SizedBox(width: AppSpacing.xs),
-            Text('BONUS QUEST — SUNNAH', style: AppText.labelCaps().copyWith(color: AppColors.secondaryFixed)),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
+        _sectionHeader('BONUS QUEST · SUNNAH',
+            meta: '$doneCount/${items.length}'),
         ...items.map((it) {
           final checked = GameService.isPrayerCheckedToday(it.$2);
           final onTime = GameService.isSunnahOnTime(it.$2, t);
@@ -760,34 +719,37 @@ class _HomeTabState extends State<HomeTab> {
     return PressableScale(
       onTap: locked ? null : onTap,
       child: Opacity(
-        opacity: dimmed ? 0.5 : 1.0,
+        opacity: dimmed ? 0.45 : 1.0,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.all(AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: completed
-                  ? color.withValues(alpha: 0.6)
-                  : (active ? color.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
-              width: completed || active ? 2 : 1,
-            ),
-            boxShadow: active
-                ? [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 12)]
+            color: active
+                ? color.withValues(alpha: 0.06)
+                : AppColors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
+            border: active
+                ? Border.all(color: color.withValues(alpha: 0.45))
                 : null,
           ),
           child: Row(
             children: [
-              Icon(icon, color: iconColor, size: 24),
+              Icon(icon, color: iconColor, size: 22),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: AppText.bodyMd()),
+                    Text(name,
+                        style: AppText.bodyMd().copyWith(
+                          color: completed
+                              ? AppColors.onSurfaceVariant
+                              : AppColors.onSurface,
+                        )),
                     Text(sub,
-                        style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant, fontSize: 10, fontWeight: FontWeight.w500)),
+                        style: AppText.bodyMd().copyWith(
+                            color: AppColors.onSurfaceVariant, fontSize: 11)),
                   ],
                 ),
               ),
@@ -800,17 +762,14 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _questList() {
+    final claimable =
+        _state.quests.where((q) => q.completed && !q.claimed).length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.military_tech, color: AppColors.primary, size: 16),
-            const SizedBox(width: AppSpacing.xs),
-            Text('QUEST HARIAN', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
+        _sectionHeader('QUEST HARIAN',
+            meta: claimable > 0 ? '$claimable SIAP KLAIM' : null,
+            accent: claimable > 0 ? AppColors.primary : null),
         ..._state.quests.map((q) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: _questCard(q),
@@ -836,17 +795,15 @@ class _HomeTabState extends State<HomeTab> {
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: q.claimed
-              ? AppColors.surfaceContainer.withValues(alpha: 0.3)
-              : (claimable ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surfaceContainer.withValues(alpha: 0.6)),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: isClaiming
-                ? AppColors.primary
-                : (claimable ? AppColors.primary.withValues(alpha: 0.6) : AppColors.outlineVariant.withValues(alpha: 0.2)),
-            width: isClaiming ? 2 : 1,
-          ),
-          boxShadow: isClaiming
-              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, spreadRadius: 1)]
+              ? AppColors.surfaceContainerLow.withValues(alpha: 0.5)
+              : (claimable
+                  ? AppColors.primary.withValues(alpha: 0.08)
+                  : AppColors.surfaceContainerLow),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          border: claimable
+              ? Border.all(
+                  color: AppColors.primary
+                      .withValues(alpha: isClaiming ? 0.9 : 0.45))
               : null,
         ),
           child: Row(
@@ -890,49 +847,27 @@ class _HomeTabState extends State<HomeTab> {
     final done = GameService.tilawahDoneToday;
     const xp = 15;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Expanded(child: Divider(color: AppColors.outlineVariant)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text('📜 SIDE QUEST', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
-            ),
-            const Expanded(child: Divider(color: AppColors.outlineVariant)),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
+        _sectionHeader('SIDE QUEST'),
         PressableScale(
           onTap: () => _togglePrayer('tilawah', 'tilawah'),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                AppColors.tertiary.withValues(alpha: 0.2),
-                AppColors.primary.withValues(alpha: 0.1),
-              ]),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.tertiary.withValues(alpha: 0.4)),
-              boxShadow: [BoxShadow(color: AppColors.tertiary.withValues(alpha: 0.15), blurRadius: 32, offset: const Offset(0, 8))],
-            ),
+          child: _flatCard(
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.tertiary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.tertiary.withValues(alpha: 0.3)),
-                  ),
-                  child: const Icon(Icons.menu_book, color: AppColors.tertiary, size: 32),
-                ),
+                const Icon(Icons.menu_book, color: AppColors.tertiary, size: 26),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Tilawah & Dzikir', style: AppText.headlineMd().copyWith(fontSize: 18)),
+                      Text('Tilawah & Dzikir',
+                          style: AppText.titleLg().copyWith(
+                            fontSize: 16,
+                            color: done
+                                ? AppColors.onSurfaceVariant
+                                : AppColors.onSurface,
+                          )),
                       Text(done ? 'Selesai hari ini ✓' : 'Baca Al-Qur\'an / Dzikir',
                           style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12)),
                     ],
@@ -952,7 +887,11 @@ class _HomeTabState extends State<HomeTab> {
     final goal = GameService.zikirGoal;
     final progress = (zikirCount / goal).clamp(0.0, 1.0);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _sectionHeader('DAILY ZIKIR',
+            meta: '$zikirCount/$goal',
+            accent: zikirCount >= goal ? AppColors.primary : null),
         // ── Zikir tiles 2×2 — tinggi ngikutin konten (≈ tombol Daily Zikir),
         // bukan aspect ratio grid yang bikin tile ketinggian. IntrinsicHeight
         // menyamakan tinggi dua tile dalam satu baris (label bisa 2 baris).
@@ -1022,9 +961,9 @@ class _HomeTabState extends State<HomeTab> {
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              // Satu-satunya CTA di bagian bawah — tint primary tanpa border.
+              color: AppColors.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
             ),
             child: Row(
               children: [
@@ -1032,7 +971,7 @@ class _HomeTabState extends State<HomeTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('DAILY ZIKIR', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10)),
+                      Text('TAP UNTUK ZIKIR', style: AppText.labelCaps().copyWith(color: AppColors.primary, fontSize: 10)),
                       const SizedBox(height: 4),
                       AnimatedCount(
                           value: zikirCount,
@@ -1113,98 +1052,79 @@ class _HomeTabState extends State<HomeTab> {
       canTap = false;
     }
 
-    return PressableScale(
-      onTap: canTap ? _claimChest : null,
-      child: ShimmerSweep(
-        enabled: isReady,
-        color: AppColors.tertiary,
-        child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          gradient: isReady
-              ? LinearGradient(
-                  colors: [
-                    AppColors.tertiary.withValues(alpha: 0.15),
-                    AppColors.tertiary.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isReady ? null : AppColors.surfaceContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(
-            color: isReady ? AppColors.tertiary : accent.withValues(alpha: 0.3),
-            width: isReady ? 2 : 1,
-          ),
-          boxShadow: isReady
-              ? [
-                  BoxShadow(
-                    color: AppColors.tertiary.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            // Emoji chest
-            Container(
-              width: 56,
-              height: 56,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('DAILY CHEST',
+            meta: isOpened ? 'DIBUKA' : '$wajibDone/$totalWajib WAJIB',
+            accent: isReady ? AppColors.tertiary : null),
+        PressableScale(
+          onTap: canTap ? _claimChest : null,
+          child: ShimmerSweep(
+            enabled: isReady,
+            color: AppColors.tertiary,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accent.withValues(alpha: 0.12),
+                color: isReady
+                    ? AppColors.tertiary.withValues(alpha: 0.08)
+                    : AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
+                border: isReady
+                    ? Border.all(
+                        color: AppColors.tertiary.withValues(alpha: 0.5))
+                    : null,
               ),
-              child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 28)),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            // Text content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(label,
-                      style: AppText.labelCaps().copyWith(color: accent, fontSize: 11)),
-                  const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: AppText.bodyMd().copyWith(
-                        color: AppColors.onSurface,
-                        fontWeight: FontWeight.w600,
-                      )),
-                  const SizedBox(height: 8),
-                  // Progress dots: 5 wajib
-                  Row(
-                    children: List.generate(totalWajib, (i) {
-                      final done = i < wajibDone;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: done ? accent : accent.withValues(alpha: 0.2),
-                          ),
+                  Text(emoji, style: const TextStyle(fontSize: 30)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(label,
+                            style: AppText.labelCaps()
+                                .copyWith(color: accent, fontSize: 11)),
+                        const SizedBox(height: 2),
+                        Text(subtitle,
+                            style: AppText.bodyMd().copyWith(
+                              color: AppColors.onSurface,
+                              fontWeight: FontWeight.w600,
+                            )),
+                        const SizedBox(height: 8),
+                        // Progress dots: 5 wajib
+                        Row(
+                          children: List.generate(totalWajib, (i) {
+                            final done = i < wajibDone;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: done
+                                      ? accent
+                                      : accent.withValues(alpha: 0.2),
+                                ),
+                              ),
+                            );
+                          }),
                         ),
-                      );
-                    }),
+                      ],
+                    ),
                   ),
+                  if (canTap)
+                    Icon(Icons.arrow_forward_ios, color: accent, size: 18),
                 ],
               ),
             ),
-            // CTA arrow
-            if (canTap)
-              Icon(Icons.arrow_forward_ios, color: accent, size: 20),
-          ],
+          ),
         ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -1323,8 +1243,8 @@ class _HomeTabState extends State<HomeTab> {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.surfaceContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+          color: AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
