@@ -21,6 +21,7 @@ dependencies:
   timezone: ^0.10.0
   android_intent_plus: ^5.1.0
   sentry_flutter: ^9.23.0
+  supabase_flutter: ^2.8.4
 
 dev_dependencies:
   flutter_test:

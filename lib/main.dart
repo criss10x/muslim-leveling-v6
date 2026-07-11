@@ -14,7 +14,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: 'https://hiywlsqaurqvbwwuutbo.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpeXdsc3FhdXJxdmJ3d3V1dGJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTI3ODUsImV4cCI6MjA5OTIyODc4NX0.LDwpQooQKG5ehIENQ7qXPp1XJIkOq3BLXIUL2lOEfTw',
+    anonKey: 'eyJhbG...EfTw',
   );
 
   final prefs = await SharedPreferences.getInstance();
@@ -51,6 +51,7 @@ Future<void> main() async {
   );
 }
 
+// ponytail: base-36 is enough entropy for offline device id
 String _rand36() => BigInt.from(Random().nextInt(1 << 48)).toRadixString(36).padLeft(8, '0');
 
 class MuslimLevelingApp extends StatelessWidget {

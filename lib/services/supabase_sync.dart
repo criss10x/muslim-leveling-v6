@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Sync 3 JSON blobs to Supabase. One table, one row per device.
+/// Silent on network errors — local persistence always works.
 class SupabaseSync {
   static final _client = Supabase.instance.client;
   static String? _deviceId;
@@ -22,15 +24,20 @@ class SupabaseSync {
           .eq('device_id', _id)
           .maybeSingle();
       return res as Map<String, dynamic>?;
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<void> _upsert(Map<String, dynamic> extra) async {
     try {
       await _client.from('user_data').upsert({
-        'device_id': _id, ...extra,
+        'device_id': _id,
+        ...extra,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
-    } catch (_) {}
+    } catch (_) {
+      // silent: local is source of truth
+    }
   }
 }

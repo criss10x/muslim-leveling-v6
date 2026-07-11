@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'supabase_sync.dart';
 
 // Auto-generated from V3 BelajarScreen.kt — do not edit manually.
 // 19 modules, +3 modul akidah tambahan (keajaiban angka & bukti lain).
@@ -2107,6 +2108,7 @@ class LearningService {
     _cache = s;
     final p = await SharedPreferences.getInstance();
     await p.setString(_key, jsonEncode(s.toMap()));
+    SupabaseSync.saveLearning(s.toMap()); // fire-and-forget
   }
 
   static ModuleProgress? getProgress(String moduleId) {
