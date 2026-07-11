@@ -249,47 +249,7 @@ class _HomeTabState extends State<HomeTab> {
   // ── HUD chrome budget ─────────────────────────────────────────────
   // Redesign minimalis: glow & border HANYA di (1) hero Status Window,
   // (2) baris "aktif sekarang" (cyan hairline), (3) shimmer claimable.
-  // Semua kartu lain: datar surfaceContainerLow, radius xxl, tanpa border.
-
-  /// Header section gaya HUD: label mono + garis tipis + meta live.
-  /// Meta membawa data nyata (mis. "3/5") — struktur = informasi.
-  Widget _sectionHeader(String label, {String? meta, Color? accent}) {
-    final color = accent ?? AppColors.onSurfaceVariant;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Text(label,
-              style: AppText.labelCaps().copyWith(color: color, fontSize: 11)),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: AppColors.outlineVariant.withValues(alpha: 0.35),
-            ),
-          ),
-          if (meta != null) ...[
-            const SizedBox(width: AppSpacing.sm),
-            Text(meta,
-                style: AppText.labelCaps()
-                    .copyWith(color: color, fontSize: 11)),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// Kartu datar standar redesign — satu bentuk untuk semua konten tenang.
-  Widget _flatCard({required Widget child, EdgeInsetsGeometry? padding}) {
-    return Container(
-      padding: padding ?? const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-      ),
-      child: child,
-    );
-  }
+  // Kartu tenang pakai FlatCard, header pakai HudHeader (common.dart).
 
   Widget _appBar(BuildContext context) {
     return Row(
@@ -475,7 +435,7 @@ class _HomeTabState extends State<HomeTab> {
           color: AppColors.outlineVariant.withValues(alpha: 0.35),
         );
 
-    return _flatCard(
+    return FlatCard(
       child: Row(
         children: [
           cell(current.label.toUpperCase(), current.name,
@@ -523,8 +483,8 @@ class _HomeTabState extends State<HomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('RITUAL HARI INI'),
-        _flatCard(
+        HudHeader('RITUAL HARI INI'),
+        FlatCard(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Row(
             children: [
@@ -574,7 +534,7 @@ class _HomeTabState extends State<HomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('WAJIB QUEST',
+        HudHeader('WAJIB QUEST',
             meta: '$done/5',
             accent: done == 5 ? AppColors.primary : null),
         ...wajib.map((p) {
@@ -694,7 +654,7 @@ class _HomeTabState extends State<HomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('BONUS QUEST · SUNNAH',
+        HudHeader('BONUS QUEST · SUNNAH',
             meta: '$doneCount/${items.length}'),
         ...items.map((it) {
           final checked = GameService.isPrayerCheckedToday(it.$2);
@@ -767,7 +727,7 @@ class _HomeTabState extends State<HomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('QUEST HARIAN',
+        HudHeader('QUEST HARIAN',
             meta: claimable > 0 ? '$claimable SIAP KLAIM' : null,
             accent: claimable > 0 ? AppColors.primary : null),
         ..._state.quests.map((q) => Padding(
@@ -849,10 +809,10 @@ class _HomeTabState extends State<HomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('SIDE QUEST'),
+        HudHeader('SIDE QUEST'),
         PressableScale(
           onTap: () => _togglePrayer('tilawah', 'tilawah'),
-          child: _flatCard(
+          child: FlatCard(
             child: Row(
               children: [
                 const Icon(Icons.menu_book, color: AppColors.tertiary, size: 26),
@@ -889,7 +849,7 @@ class _HomeTabState extends State<HomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('DAILY ZIKIR',
+        HudHeader('DAILY ZIKIR',
             meta: '$zikirCount/$goal',
             accent: zikirCount >= goal ? AppColors.primary : null),
         // ── Zikir tiles 2×2 — tinggi ngikutin konten (≈ tombol Daily Zikir),
@@ -1055,7 +1015,7 @@ class _HomeTabState extends State<HomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('DAILY CHEST',
+        HudHeader('DAILY CHEST',
             meta: isOpened ? 'DIBUKA' : '$wajibDone/$totalWajib WAJIB',
             accent: isReady ? AppColors.tertiary : null),
         PressableScale(

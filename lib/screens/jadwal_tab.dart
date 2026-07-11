@@ -160,19 +160,17 @@ class _JadwalTabState extends State<JadwalTab> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 100),
             children: [
-              const SizedBox(height: AppSpacing.md),
-              _pill(),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.lg),
               _header(),
               const SizedBox(height: AppSpacing.lg),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: _qiblaButton(),
+                child: _nextPrayerCard(),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.sm),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: _nextPrayerCard(),
+                child: _qiblaButton(),
               ),
               const SizedBox(height: AppSpacing.lg),
               Padding(
@@ -191,33 +189,13 @@ class _JadwalTabState extends State<JadwalTab> {
     );
   }
 
-  Widget _pill() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.secondaryContainer.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.secondaryContainer.withValues(alpha: 0.3)),
-        ),
-        child: Text('JADWAL SHOLAT', style: AppText.labelCaps().copyWith(color: AppColors.secondaryContainer)),
-      ),
-    );
-  }
-
   Widget _header() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.schedule, color: AppColors.onSurface, size: 32),
-              const SizedBox(width: 4),
-              Text('Waktu Sholat', style: AppText.displayHero(32)),
-            ],
-          ),
+          Text('Waktu Sholat', style: AppText.displayHero(32)),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -251,7 +229,7 @@ class _JadwalTabState extends State<JadwalTab> {
   }
 
   Widget _qiblaButton() {
-    return GestureDetector(
+    return PressableScale(
       onTap: () {
         Navigator.push(
           context,
@@ -260,34 +238,25 @@ class _JadwalTabState extends State<JadwalTab> {
           ),
         );
       },
+      // Tint gold tenang — kiblat = item spesial tab ini, tapi bukan hero.
       child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm + 2),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [AppColors.secondaryContainer, AppColors.secondaryFixed]),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.secondaryContainer.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: AppColors.secondaryContainer.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
         ),
-        padding: const EdgeInsets.all(2),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.secondaryContainer,
-            borderRadius: BorderRadius.circular(AppRadius.xl - 2),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.explore, size: 24, color: AppColors.onSecondaryContainer),
-              const SizedBox(width: AppSpacing.sm),
-              Text('Kompas Kiblat', style: AppText.titleLg().copyWith(color: AppColors.onSecondaryContainer)),
-              const Spacer(),
-              const Icon(Icons.arrow_forward, color: AppColors.onSecondaryContainer),
-            ],
-          ),
+        child: Row(
+          children: [
+            const Icon(Icons.explore, size: 22, color: AppColors.secondaryFixed),
+            const SizedBox(width: AppSpacing.sm),
+            Text('Kompas Kiblat',
+                style: AppText.titleLg()
+                    .copyWith(fontSize: 15, color: AppColors.onSurface)),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios,
+                size: 14, color: AppColors.secondaryFixed),
+          ],
         ),
       ),
     );
@@ -296,10 +265,21 @@ class _JadwalTabState extends State<JadwalTab> {
   Widget _nextPrayerCard() {
     final next = _nextPrayer();
 
-    return NeonPulse(
-      color: AppColors.primary,
+    // Hero tab ini — satu-satunya elemen dengan foto + glow (statis,
+    // konsisten dengan hero Status Window di Home).
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         child: Container(
           color: AppColors.surfaceContainerHigh,
           child: Stack(
@@ -358,9 +338,8 @@ class _JadwalTabState extends State<JadwalTab> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: AppColors.surfaceBright.withValues(alpha: 0.8),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: AppColors.secondaryContainer.withValues(alpha: 0.5)),
+                                      color: Colors.black.withValues(alpha: 0.45),
+                                      borderRadius: BorderRadius.circular(AppRadius.pill),
                                     ),
                                     child: Row(
                                       children: [
@@ -438,11 +417,13 @@ class _JadwalTabState extends State<JadwalTab> {
       row('Isya', 'isya', j?['isya'] ?? '', Icons.nightlight),
     ];
 
+    final logged = items.where((it) => it.isLogged).length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('5 WAKTU SHOLAT', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
-        const SizedBox(height: AppSpacing.sm),
+        HudHeader('5 WAKTU SHOLAT',
+            meta: '$logged/5',
+            accent: logged == 5 ? AppColors.primary : null),
         ...items.map((it) => Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: _scheduleRow(it.name, it.time, it.icon, it.isNext, it.isLogged),
@@ -452,39 +433,28 @@ class _JadwalTabState extends State<JadwalTab> {
   }
 
   Widget _scheduleRow(String name, String time, IconData icon, bool isNext, bool isLogged) {
-    final accentColor = isNext
-        ? AppColors.primary
+    // Disiplin warna redesign: cyan = berikutnya/sekarang, primary = selesai.
+    final iconColor = isNext
+        ? AppColors.tertiary
         : isLogged
-            ? AppColors.secondaryFixed
-            : AppColors.onSurface;
+            ? AppColors.primary
+            : AppColors.onSurfaceVariant;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: isNext
-            ? AppColors.primary.withValues(alpha: 0.1)
-            : isLogged
-                ? AppColors.secondaryContainer.withValues(alpha: 0.06)
-                : AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+            ? AppColors.tertiary.withValues(alpha: 0.06)
+            : AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: isNext
-            ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
-            : isLogged
-                ? Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.3))
-                : Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
+            ? Border.all(color: AppColors.tertiary.withValues(alpha: 0.5))
+            : null,
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-              border: Border.all(color: accentColor.withValues(alpha: 0.3)),
-            ),
-            child: Icon(icon, color: accentColor, size: 20),
-          ),
+          Icon(icon, color: iconColor, size: 22),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -492,21 +462,26 @@ class _JadwalTabState extends State<JadwalTab> {
               children: [
                 Text(
                   name,
-                  style: AppText.titleLg().copyWith(color: accentColor),
+                  style: AppText.titleLg().copyWith(
+                    fontSize: 16,
+                    color: isLogged
+                        ? AppColors.onSurfaceVariant
+                        : AppColors.onSurface,
+                  ),
                 ),
                 if (isNext)
                   Text(
-                    'Berikutnya',
+                    'BERIKUTNYA',
                     style: AppText.labelCaps().copyWith(
-                      color: AppColors.primary.withValues(alpha: 0.8),
+                      color: AppColors.tertiary,
                       fontSize: 9,
                     ),
                   )
                 else if (isLogged)
                   Text(
-                    '✓ Sudah dilog',
+                    '✓ SUDAH DILOG',
                     style: AppText.labelCaps().copyWith(
-                      color: AppColors.secondaryFixed.withValues(alpha: 0.8),
+                      color: AppColors.primary.withValues(alpha: 0.7),
                       fontSize: 9,
                     ),
                   ),
@@ -517,9 +492,9 @@ class _JadwalTabState extends State<JadwalTab> {
             time,
             style: TextStyle(
               fontFamily: 'monospace',
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: accentColor,
+              color: isNext ? AppColors.tertiary : AppColors.onSurface,
             ),
           ),
         ],
@@ -528,36 +503,14 @@ class _JadwalTabState extends State<JadwalTab> {
   }
 
   Widget _infoCard() {
-    return GlassPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.info_outline, color: AppColors.secondaryFixed, size: 16),
-              const SizedBox(width: 4),
-              Text('Info', style: AppText.titleLg().copyWith(color: AppColors.secondaryFixed, fontSize: 13)),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Jadwal sholat diambil dari data KEMENAG (Kementerian Agama RI) via api.myquran.com, berdasarkan kota yang dipilih di profil. Data otomatis ter-update saat tab dibuka.',
-            style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 11, height: 1.5),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              const Icon(Icons.lightbulb_outline, color: AppColors.primary, size: 14),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  'Untuk ganti kota, buka tab Profil → pilih lokasi.',
-                  style: AppText.bodyMd().copyWith(color: AppColors.primary, fontSize: 11, height: 1.5),
-                ),
-              ),
-            ],
-          ),
-        ],
+    // Footnote tenang, bukan kartu — sumber data cukup sekali dibaca.
+    return Text(
+      'Jadwal dari data KEMENAG RI via api.myquran.com untuk $_cityName. '
+      'Ter-update otomatis saat tab dibuka; tap nama kota di atas untuk ganti lokasi.',
+      style: AppText.bodyMd().copyWith(
+        color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+        fontSize: 11,
+        height: 1.5,
       ),
     );
   }
