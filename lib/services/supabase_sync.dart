@@ -3,11 +3,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Sync 3 JSON blobs to Supabase. One table, one row per device.
 /// Silent on network errors — local persistence always works.
 class SupabaseSync {
-  static final _client = Supabase.instance.client;
   static String? _deviceId;
 
   static String get _id => _deviceId ?? 'noop';
   static void init(String id) => _deviceId = id;
+
+  // ponytail: lazy — Supabase.initialize() bisa gagal di offline-first launch
+  static SupabaseClient? get _client {
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return null;
+    }
+  }
 
   static Future<void> saveGame(Map<String, dynamic> data) =>
       _upsert({'game': data});
@@ -17,8 +25,10 @@ class SupabaseSync {
       _upsert({'achievements': data});
 
   static Future<Map<String, dynamic>?> load() async {
+    final c = _client;
+    if (c == null) return null;
     try {
-      final res = await _client
+      final res = await c
           .from('user_data')
           .select()
           .eq('device_id', _id)
@@ -30,8 +40,10 @@ class SupabaseSync {
   }
 
   static Future<void> _upsert(Map<String, dynamic> extra) async {
+    final c = _client;
+    if (c == null) return;
     try {
-      await _client.from('user_data').upsert({
+      await c.from('user_data').upsert({
         'device_id': _id,
         ...extra,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
