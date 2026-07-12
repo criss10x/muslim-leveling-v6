@@ -53,6 +53,68 @@ class GlassPanel extends StatelessWidget {
   }
 }
 
+/// HudHeader — header section bahasa desain minimalis (redesign 2026-07):
+/// label mono + hairline + meta live (mis. "3/5"). Struktur = informasi.
+class HudHeader extends StatelessWidget {
+  final String label;
+  final String? meta;
+  final Color? accent;
+
+  const HudHeader(this.label, {super.key, this.meta, this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = accent ?? AppColors.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Text(label,
+              style: AppText.labelCaps().copyWith(color: color, fontSize: 11)),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: AppColors.outlineVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          if (meta != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Text(meta!,
+                style:
+                    AppText.labelCaps().copyWith(color: color, fontSize: 11)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// FlatCard — kartu datar standar redesign: surfaceContainerLow, radius 16,
+/// tanpa border/shadow. Sorotan (hairline/tint) hanya untuk state bermakna.
+class FlatCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const FlatCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(AppSpacing.md),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+      ),
+      child: child,
+    );
+  }
+}
+
 /// Entrance — fades and slides a child up into place on first build.
 /// Give each section an increasing [delay] for a staggered "HUD boot" feel.
 class Entrance extends StatefulWidget {

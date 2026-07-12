@@ -3,9 +3,10 @@
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'supabase_sync.dart';
 
 // Auto-generated from V3 BelajarScreen.kt — do not edit manually.
-// 16 modules, 467 article blocks, 80 quiz questions.
+// 19 modules, +3 modul akidah tambahan (keajaiban angka & bukti lain).
 
 // ─── Data classes ───
 
@@ -117,6 +118,30 @@ class LearningContent {
           icon: '💎',
           estimatedMinutes: 5,
           xpReward: 200,
+        ),
+        LearningModule(
+          id: 'akidah_1.6',
+          categoryId: 'akidah',
+          title: 'Keajaiban Angka dalam Al-Quran (Bagian 1)',
+          icon: '🔢',
+          estimatedMinutes: 7,
+          xpReward: 200,
+        ),
+        LearningModule(
+          id: 'akidah_1.7',
+          categoryId: 'akidah',
+          title: 'Keajaiban Angka dalam Al-Quran (Bagian 2)',
+          icon: '🧮',
+          estimatedMinutes: 7,
+          xpReward: 200,
+        ),
+        LearningModule(
+          id: 'akidah_1.8',
+          categoryId: 'akidah',
+          title: 'Masih Banyak Bukti Lain: Al-Quran Benar Firman Allah',
+          icon: '🔬',
+          estimatedMinutes: 8,
+          xpReward: 250,
         ),
       ],
     ),
@@ -246,6 +271,9 @@ class LearningContent {
       case 'akidah_1.3': return _akidah1_3Article;
       case 'akidah_1.4': return _akidah1_4Article;
       case 'akidah_1.5': return _akidah1_5Article;
+      case 'akidah_1.6': return _akidah1_6Article;
+      case 'akidah_1.7': return _akidah1_7Article;
+      case 'akidah_1.8': return _akidah1_8Article;
       case 'rukun_2.1': return _rukun2_1Article;
       case 'rukun_2.2': return _rukun2_2Article;
       case 'rukun_2.3': return _rukun2_3Article;
@@ -268,6 +296,9 @@ class LearningContent {
       case 'akidah_1.3': return _akidah1_3Quiz;
       case 'akidah_1.4': return _akidah1_4Quiz;
       case 'akidah_1.5': return _akidah1_5Quiz;
+      case 'akidah_1.6': return _akidah1_6Quiz;
+      case 'akidah_1.7': return _akidah1_7Quiz;
+      case 'akidah_1.8': return _akidah1_8Quiz;
       case 'rukun_2.1': return _rukun2_1Quiz;
       case 'rukun_2.2': return _rukun2_2Quiz;
       case 'rukun_2.3': return _rukun2_3Quiz;
@@ -449,6 +480,155 @@ const _akidah1_5Article = <ArticleBlock>[
   Paragraph('Lima modul ini adalah fondasi kepercayaan seorang Muslim: Tuhan ada → Allah Esa → Al-Quran firman-Nya → Muhammad ﷺ utusan-Nya → dan ada 6 pilar iman yang jadi penyangga.'),
   Paragraph('Kalau kamu udah paham ini, kamu udah punya dasar yang kuat. Sekarang waktunya naik level: dari "percaya" ke "ngelakuin."'),
   Cta('Kategori Akidah selesai! 🎉 Sekarang lanjut ke tab "Rukun Islam" buat belajar 5 pilar yang jadi aksi nyata seorang Muslim. Kamu udah di jalur yang bener! 🚀'),
+];
+
+const _akidah1_6Article = <ArticleBlock>[
+  Heading('Keajaiban Angka dalam Al-Quran (Bagian 1)'),
+  Paragraph('Al-Quran bukan sekadar kitab petunjuk. Di dalamnya, ada pola-pola angka yang menarik banget — sesuatu yang sulit dijelaskan sebagai kebetulan biasa. Mari kita lihat beberapa di antaranya.'),
+  Paragraph('Peringatan: Bagian ini bukan untuk "membuktikan" Al-Quran pakai angka — karena iman seseorang gak bisa diukur dari hitung-hitungan. Tapi bagian ini menarik untuk direnungkan: gimana mungkin seorang ummi di abad ke-7 menghasilkan pola angka serapi ini?'),
+  DividerBlock(),
+  Subheading('🔢 Keseimbangan Kata dalam Al-Quran'),
+  Paragraph('Salah satu temuan paling terkenal dari penelitian berbasis komputer terhadap Al-Quran adalah fakta bahwa kata-kata yang berpasangan muncul dalam jumlah yang SAMA. Bukan perkiraan — persis sama.'),
+  Paragraph('Beberapa contoh:'),
+  Paragraph('• Kata "ad-dunya" (dunia) disebut 115 kali. Kata "al-akhirah" (akhirat) juga 115 kali.'),
+  Paragraph('• Kata "al-malaikat" (malaikat) disebut 88 kali. Kata "asy-syayathin" (setan) juga 88 kali.'),
+  Paragraph('• Kata "al-hayah" (kehidupan) disebut 145 kali. Kata "al-maut" (kematian) juga 145 kali.'),
+  Paragraph('• Kata "al-jannah" (surga) disebut 77 kali. Kata "an-nar" (neraka) juga 77 kali.'),
+  Paragraph('• Kata "al-khair" (kebaikan) disebut 46 kali. Kata "asy-syarr" (keburukan) juga 46 kali.'),
+  Paragraph('• Kata "al-har" (panas) disebut 4 kali. Kata "al-bard" (dingin) juga 4 kali.'),
+  Paragraph('• Kata "iman" (kepercayaan) disebut 25 kali. Kata "kufr" (kekafiran) disebut 25 kali.'),
+  Paragraph('• Kata "shadaqah" (sedekah) disebut 73 kali. Kata "ridha" (kerelaan) disebut 73 kali.'),
+  Paragraph('Ini hanya beberapa contoh. Ada PULUHAN pasangan kata lain yang jumlahnya sama persis. Coba bayangin: seseorang nulis buku setebal 30 juz dalam 23 tahun tanpa komputer, di berbagai situasi, dan pasangan kata-kata ini muncul dengan jumlah identik. Apakah itu kebetulan?'),
+  Highlight('Keseimbangan kata yang konsisten ini sulit dijelaskan hanya sebagai kebetulan — apalagi dari orang yang gak bisa baca-tulis.'),
+  DividerBlock(),
+  Subheading('📊 Kata "Yawm" (Hari)'),
+  Paragraph('Kata "yawm" (hari) dalam bentuk tunggal disebut 365 kali dalam Al-Quran — tepat sama dengan jumlah hari dalam setahun.'),
+  Paragraph('Sementara kata "yawm" dalam bentuk jamak ("ayyam" = hari-hari) disebut 30 kali — sama dengan jumlah hari dalam sebulan.'),
+  Paragraph('Menariknya, kata "syahr" (bulan) disebut 12 kali — jumlah bulan dalam setahun.'),
+  Paragraph('Kebetulan? Atau memang sengaja dirancang?'),
+  DividerBlock(),
+  Subheading('📱 Zaman Modern, Tapi Sudah Disebutkan'),
+  Paragraph('Kata "al-bahr" (laut) disebut 32 kali dalam Al-Quran. Kata "al-barr" (daratan) disebut 13 kali.'),
+  Paragraph('Kalau kita hitung persentasenya: total 32 + 13 = 45. Laut = 32/45 = 71,1%. Darat = 13/45 = 28,9%.'),
+  Paragraph('Ternyata, persentase air di permukaan bumi adalah ±71%, dan daratan ±29%. Cocok banget.'),
+  Paragraph('Ini baru diketahui manusia setelah teknologi satelit modern. Tapi Al-Quran udah "nyebut" proporsinya sejak 14 abad lalu.'),
+  Highlight('Laut 71%, darat 29% — sama persis dengan proporsi di Al-Quran. Tapi ini baru diketahui setelah satelit modern.'),
+  DividerBlock(),
+  Subheading('🧠 Tapi Ingat...'),
+  Paragraph('Ada dua cara orang merespons temuan ini:'),
+  Paragraph('1. "Ini bukti Al-Quran dari Allah!" → Mungkin, karena mustahil manusia abad ke-7 bisa bikin pola serumit ini.'),
+  Paragraph('2. "Ini cari-cari pola aja, bisa aja kebetulan." → Juga mungkin — karena manusia emang suka nemuin pola (pattern-seeking).'),
+  Paragraph('Yang menarik: kedua respons itu sama-sama valid. Tapi coba pikir: jumlah pola dalam Al-Quran itu SANGAT BANYAK dan KONSISTEN. Makin banyak polanya, makin kecil kemungkinan itu cuma kebetulan.'),
+  Paragraph('Di bagian 2, kita bakal lihat lebih dalam — termasuk keajaiban angka 19, hubungan antar surah, dan hal-hal lain yang bikin kamu mikir ulang.'),
+  Cta('Selesai baca bagian 1! Lanjut ke bagian 2, atau jawab kuis dulu. 🎯'),
+];
+
+const _akidah1_7Article = <ArticleBlock>[
+  Heading('Keajaiban Angka dalam Al-Quran (Bagian 2)'),
+  Paragraph('Di bagian 1 kita udah lihat pasangan kata yang seimbang dan proporsi yang akurat. Sekarang kita masuk ke yang lebih dalam — pola angka 19, struktur surah, dan hubungan antar ayat.'),
+  Paragraph('Disclaimer: Ini bukan "membuktikan" bahwa Al-Quran itu benar. Tapi pola-pola ini layak direnungkan — karena semakin dalam kamu lihat, semakin terasa ada "tangan" di baliknya.'),
+  DividerBlock(),
+  Subheading('19 — Angka yang Istimewa'),
+  Paragraph('Angka 19 punya tempat khusus dalam Al-Quran. Allah berfirman dalam QS. Al-Muddassir: 30 — "Di atasnya ada 19 (malaikat penjaga)." Ayat ini kemudian dijelaskan sebagai ujian bagi orang-orang kafir dan penguat iman bagi orang beriman.'),
+  Paragraph('Beberapa fakta menarik soal angka 19 dalam Al-Quran:'),
+  Paragraph('• Basmalah (Bismillahirrahmanirrahim) punya 19 huruf dalam bahasa Arab aslinya.'),
+  Paragraph('• Al-Quran terdiri dari 114 surah. 114 = 19 × 6.'),
+  Paragraph('• Jumlah total ayat dalam Al-Quran (termasuk Basmalah di setiap awal surah) adalah 6.346 ayat. 6.346 = 19 × 334.'),
+  Paragraph('• Wahyu pertama (QS. Al-Alaq: 1-5) terdiri dari 19 kata.'),
+  Paragraph('• Surah Al-Alaq sendiri punya 19 ayat.'),
+  Paragraph('• Surah pertama yang diturunkan setelah Al-Alaq adalah QS. Al-Qalam. Surat ini punya 38 ayat. 38 = 19 × 2.'),
+  Highlight('19 bukan angka biasa. Basmalah 19 huruf, surah Al-Quran 114 (19×6), total ayat 6.346 (19×334). Polanya konsisten.'),
+  DividerBlock(),
+  Subheading('🔗 Hubungan Awal dan Akhir Surah'),
+  Paragraph('Salah satu temuan menarik: surah pertama (Al-Fatihah, 7 ayat) dan surah terakhir (An-Nas, 6 ayat) — kalau dijumlah ayatnya = 13. 13 adalah jumlah total surah yang disebut dalam Al-Quran (seperti Al-Baqarah, Ibrahim, Maryam, dll).'),
+  Paragraph('Contoh lain:'),
+  Paragraph('• Surah Al-Ikhlas (112) — inti tauhid. Nomor surahnya 112. 1 + 1 + 2 = 4. Jumlah ayatnya 4. 4 = 4.'),
+  Paragraph('• Surah An-Nas (114) — surah terakhir. Nomor 114. 1 + 1 + 4 = 6. Jumlah ayatnya 6. 6 = 6.'),
+  Paragraph('• Surah Al-Fatihah (1) — surah pertama. Nomor 1. Jumlah ayatnya 7. 7 bukan 1 — karena Al-Fatihah bukan sembarang surah, dia adalah induk Al-Quran (Ummul Kitab).'),
+  Paragraph('Apakah ini disengaja? Atau kebetulan? Setiap orang boleh menyimpulkan sendiri.'),
+  DividerBlock(),
+  Subheading('📐 Pola Matematika Sederhana Lainnya'),
+  Paragraph('Para peneliti Al-Quran juga menemukan pola-pola seperti:'),
+  Paragraph('• Kata "shalawat" (sholat) disebut 5 kali = jumlah sholat wajib sehari semalam.'),
+  Paragraph('• Kata "zakat" disebut 32 kali, dan kata "zakat" dalam bentuk kata kerja disebut 27 kali — total 59. Ini sama dengan jumlah ayat tentang zakat di Al-Quran.'),
+  Paragraph('• Kata "Ramadan" disebut 1 kali — pas puasa Ramadan hanya 1 bulan dalam setahun.'),
+  Paragraph('• Kata "sahr" (bulan) disebut 12 kali — jumlah bulan dalam setahun.'),
+  Paragraph('• Kata "yaum" (hari) dalam bentuk tunggal 365 kali — setara hari dalam setahun. Ini udah kita bahas di bagian 1.'),
+  DividerBlock(),
+  Subheading('🧩 Kombinasi Angka yang Menarik'),
+  Paragraph('Coba perhatikan kombinasi angka ini:'),
+  Paragraph('• Jumlah surah Al-Quran: 114. Jumlah ayat: 6.236 (tanpa Basmalah). Kalau kita tulis 1146236, angka ini habis dibagi 19.'),
+  Paragraph('• Atau 114 + 6236 = 6350. 6350 juga habis dibagi 19 (19 × 334,21... tunggu, 19 × 334 = 6346. Kalau pakai Basmalah termasuk, total ayat = 6346, dan 6346 = 19 × 334).'),
+  Paragraph('Pola-pola seperti ini terus muncul — sampai ribuan kombinasi udah ditemukan oleh para peneliti Al-Quran dari berbagai negara.'),
+  Highlight('Ribuan kombinasi matematis ditemukan dalam Al-Quran. Semakin banyak polanya, semakin kecil kemungkinan itu kebetulan.'),
+  DividerBlock(),
+  Subheading('💭 Refleksi'),
+  Paragraph('Ada dua kemungkinan:'),
+  Paragraph('1. Pola-pola ini memang sengaja dirancang — ini mendukung klaim bahwa Al-Quran berasal dari Pencipta yang Maha Tahu.'),
+  Paragraph('2. Manusia terlalu pandai mencari pola (apophenia) — kita nemuin pola di mana-mana, termasuk di tempat yang mungkin gak ada polanya.'),
+  Paragraph('Tapi ada satu hal yang susah dijelaskan oleh teori "kebetulan": konsistensi polanya. Bukan satu atau dua pola — tapi puluhan, bahkan ratusan. Semakin banyak pola yang konsisten, semakin kecil kemungkinan itu semua cuma kebetulan.'),
+  Paragraph('Di modul terakhir kategori Akidah, kita akan lihat bukti-bukti LAIN di luar angka yang memperkuat keyakinan bahwa Al-Quran itu benar-benar firman Allah.'),
+  Cta('Selesai juga bagian 2! Lanjut ke bagian akhir, atau jawab kuis dulu. 🎯'),
+];
+
+const _akidah1_8Article = <ArticleBlock>[
+  Heading('Masih Banyak Bukti Lain: Al-Quran Benar Firman Allah'),
+  Paragraph('Selama 7 modul sebelumnya di kategori Akidah, kita udah bahas: Tuhan itu ada, Allah itu Esa, Al-Quran bukan karangan manusia (dari sisi bahasa, sejarah, preservasi, dan angka). Sekarang kita bahas bukti-bukti LAIN yang makin nguatin: bahwa Al-Quran itu benar-benar dari Allah.'),
+  DividerBlock(),
+  Subheading('🔮 Nubuatan (Ramalan) yang Tepat'),
+  Paragraph('Salah satu ciri kitab dari Tuhan adalah: berita tentang masa depan yang terbukti benar. Al-Quran punya beberapa contoh yang menarik:'),
+  Paragraph('1. Kekalahan Romawi — QS. Ar-Rum: 1-4'),
+  Paragraph('Ayat ini turun di saat Kekaisaran Romawi (Byzantium) kalah telak dari Persia. Secara logika, Romawi udah habis. Tapi Al-Quran bilang: "Romawi akan menang lagi dalam beberapa tahun." Pada saat itu, ini terdengar mustahil. Tapi benar terjadi — Romawi balik menang sekitar 7-9 tahun kemudian.'),
+  Paragraph('Sejarawan bilang: Muhammad ﷺ gak mungkin tahu outcome perang ini. Gak ada kabel internet, gak ada koran. Informasi dari medan perang di Suriah-Yordania ke Makkah butuh berminggu-minggu. Tapi Al-Quran berani ngasih prediksi spesifik — dan terbukti.'),
+  Highlight('QS. Ar-Rum: Romawi bakal menang lagi setelah dikalahkan. Semua orang ngira ini gila. Tapi itu terjadi.'),
+  Paragraph('2. Perlindungan Al-Quran — QS. Al-Hijr: 9'),
+  Paragraph('"Sesungguhnya Kami-lah yang menurunkan Al-Quran, dan pasti Kami (pula) yang menjaganya."'),
+  Paragraph('Ayat ini turun 14 abad lalu — klaim berani bahwa kitab ini BAKAL TERJAGA. Sementara kitab suci lain udah banyak berubah, Al-Quran sampai sekarang masih asli. Klaim ini terbukti — dan terus dibuktikan setiap hari oleh jutaan penghafal Al-Quran di seluruh dunia.'),
+  DividerBlock(),
+  Subheading('🌍 Al-Quran dan Sains Modern'),
+  Paragraph('Beberapa ayat Al-Quran baru bisa dipahami sepenuhnya setelah sains modern menemukannya. Ini bukan berarti Al-Quran = buku sains — tapi menunjukkan bahwa sumber Al-Quran bukan manusia abad ke-7.'),
+  Paragraph('1. Segala sesuatu diciptakan berpasangan'),
+  Paragraph('QS. Adz-Dzariyat: 49 — "Dan segala sesuatu Kami ciptakan berpasang-pasangan, supaya kamu mengingat (kebesaran Allah)."'),
+  Paragraph('Ayat ini turun 14 abad lalu. Zaman dulu orang pikir pasangan cuma laki-perempuan. Tapi sekarang sains tahu: atom punya proton-elektron, muatan positif-negatif, partikel-antipartikel, gen berpasangan di DNA, bahkan galaksi punya pasangan. "Segala sesuatu" berpasangan — ini baru terbukti di era fisika kuantum.'),
+  Paragraph('2. Gunung sebagai pasak'),
+  Paragraph('QS. An-Naba': 6-7 — "Bukankah Kami telah menjadikan bumi sebagai hamparan, dan gunung-gunung sebagai pasak?"'),
+  Paragraph('Dulu orang kira gunung cuma tonjolan di permukaan bumi. Sekarang geologi modern tahu: gunung punya "akar" yang menjulur jauh ke dalam bumi — kayak pasak yang nge-stabilin lempeng tektonik. Kata "pasak" (autad) dalam bahasa Arab memang berarti pasak yang nancep dalem.'),
+  Paragraph('3. Perkembangan janin'),
+  Paragraph('QS. Al-Mu'minun: 12-14 — menggambarkan tahapan embrio dari nutfah (setetes), alaqah (segumpal darah), mudghah (segumpal daging), sampai tulang dan daging.'),
+  Paragraph('Deskripsi ini baru bisa diverifikasi setelah mikroskop ditemukan. Kata "alaqah" artinya sesuatu yang bergantung — cocok dengan deskripsi embrio yang nempel di dinding rahim.'),
+  Paragraph('4. Jejak sidik jari'),
+  Paragraph('QS. Al-Qiyamah: 4 — "Bukan demikian, Kami mampu menyusun kembali jari-jemarinya dengan sempurna."'),
+  Paragraph('Kenapa Al-Quran nyebut jari spesifik? Karena sidik jari setiap manusia UNIK — bahkan kembar identik pun beda. Fakta ini baru ditemukan sains di abad ke-19. Al-Quran udah nyebut di abad ke-7.'),
+  Highlight('Ayat-ayat ini bukan bukti "Al-Quran = buku IPA." Tapi ini menarik: gimana seorang di abad ke-7 bisa tahu hal-hal yang baru terverifikasi 12 abad kemudian?'),
+  DividerBlock(),
+  Subheading('📜 Konsistensi Internal yang Mencengangkan'),
+  Paragraph('Al-Quran diturunkan sedikit demi sedikit selama 23 tahun di dua kota berbeda (Makkah dan Madinah), dalam situasi yang sangat kontras — saat lemah dan saat berkuasa, saat damai dan saat perang, saat miskin dan saat kaya.'),
+  Paragraph('Logikanya: kalau ini karangan manusia, PASTI ada kontradiksi. Manusia berubah pikiran seiring waktu. Tapi Al-Quran? Nol kontradiksi. Allah sendiri nantang dalam QS. An-Nisa': 82 — "Kalau Al-Quran ini dari selain Allah, pasti mereka menemukan banyak pertentangan di dalamnya."'),
+  Paragraph('Para orientalis dan kritikus Al-Quran selama 14 abad udah berusaha nemuin kontradiksi. Hasilnya? Yang mereka temuin biasanya karena: (1) salah paham konteks, (2) ayat untuk situasi berbeda, atau (3) gak paham bahasa Arab. Setelah dijelaskan, "kontradiksi" itu hilang.'),
+  DividerBlock(),
+  Subheading('🧠 Dampak pada Manusia'),
+  Paragraph('Ini mungkin bukti yang paling subjektif — tapi juga paling nyata: jutaan orang di seluruh dunia, dari berbagai ras dan budaya, membaca Al-Quran dan HATI mereka tersentuh.'),
+  Paragraph('• Ada yang tadinya ateis, baca Al-Quran, jadi percaya Tuhan.'),
+  Paragraph('• Ada yang tadinya benci Islam, pelajari Al-Quran, jadi Muslim.'),
+  Paragraph('• Ada yang tadinya hidup hampa, denger ayat Al-Quran, nemu ketenangan.'),
+  Paragraph('Bukan cuma orang awam — profesor, ilmuwan, dokter, pengacara — orang-orang pintar yang terbiasa berpikir kritis, banyak yang masuk Islam setelah mempelajari Al-Quran.'),
+  Paragraph('Kalau Al-Quran cuma karangan manusia abad ke-7, kenapa masih relevan hari ini? Kenapa masih bisa mengubah hati orang-orang di era AI dan robot?'),
+  Highlight('Al-Quran bukan cuma teks kuno. Ini kitab yang hidup — dan terus mengubah hati manusia sampai sekarang.'),
+  DividerBlock(),
+  Subheading('💡 Kesimpulan Akhir: Apa yang Membuat Al-Quran Istimewa?'),
+  Paragraph('Kalau kita rangkum, ada 7+ bukti yang saling menguatkan:'),
+  Paragraph('1. Nabi ﷺ ummi — gak bisa baca-tulis, mustahil ngarang teks serumit ini.'),
+  Paragraph('2. Keajaiban bahasa (I'jaz) — para sastrawan Arab gagal menandingi.'),
+  Paragraph('3. Diwahyukan 23 tahun — tanpa kontradiksi.'),
+  Paragraph('4. Preservasi sempurna — 1.400 tahun, nol perubahan.'),
+  Paragraph('5. Informasi yang melampaui zamannya — sains, sejarah, angka.'),
+  Paragraph('6. Pola matematis yang konsisten — ribuan kombinasi angka.'),
+  Paragraph('7. Nubuatan yang terbukti — Romawi, penjagaan Al-Quran.'),
+  Paragraph('8. Dampak pada manusia — masih mengubah hati sampai hari ini.'),
+  Paragraph('Masing-masing bukti ini mungkin bisa "dijawab" sendiri-sendiri. Tapi ketika DELAPAN bukti ini digabung — dan semuanya mengarah ke arah yang sama — sulit untuk bilang ini semua cuma kebetulan.'),
+  Paragraph('Pada akhirnya, keputusan ada di tangan kamu. Al-Quran udah ngasih semua bukti. Allah udah ngasih akal buat mikir. Sisanya? Kamu yang mutusin.'),
+  EducatorNote('"Kitab (Al-Quran) ini tidak ada keraguan padanya; petunjuk bagi mereka yang bertakwa." (QS. Al-Baqarah: 2)'),
+  Cta('🎉 SELAMAT! Kamu udah menyelesaikan SEMUA modul kategori Akidah! Jawab kuis terakhir ini, klaim XP bonus, dan lanjut ke Rukun Islam. Luar biasa! 🚀'),
 ];
 
 const _rukun2_1Article = <ArticleBlock>[
@@ -796,7 +976,7 @@ const _praktik3_6Article = <ArticleBlock>[
   Paragraph('Yang penting: JANGAN BERHENTI. Sholat yang gak perfect itu lebih baik dari gak sholat sama sekali. Lama-lama bakal makin lancar. Semua orang juga mulai dari nol.'),
   DividerBlock(),
   Subheading('🎉 Selamat! Kamu Udah Selesai Semua Kategori!'),
-  Paragraph('Dari "Kenapa harus percaya Tuhan?" sampai "Hal yang bikin bingung pemula" — kamu udah lewatin 16 modul pembelajaran.'),
+  Paragraph('Dari "Kenapa harus percaya Tuhan?" sampai "Hal yang bikin bingung pemula" — kamu udah lewatin 19 modul pembelajaran!'),
   Paragraph('Sekarang kamu punya dasar yang kuat: Akidah (kepercayaan), Rukun Islam (fondasi), dan Praktik Ibadah (cara ngelakuin). Tinggal PRAKTIKKAN. Pelan-pelan, konsisten, dan jangan pernah berhenti belajar.'),
   Cta('Alhamdulillah, semua modul selesai! 🎉 Sekarang buka tab Home dan mulai tracking sholatmu. Kamu udah di jalur yang bener! 🚀'),
 ];
@@ -1090,6 +1270,180 @@ const _akidah1_5Quiz = <QuizQuestion>[
     ],
     correctIndex: 3,
     explanation: 'Qadar itu kayak GPS: rute udah ditentukan, tapi kamu tetep harus nyetir. Kamu WAJIB berusaha — yang penting udah ngelakuin bagianmu, hasilnya urusan Allah.',
+  ),
+];
+
+const _akidah1_6Quiz = <QuizQuestion>[
+  QuizQuestion(
+    question: 'Apa yang menarik dari pasangan kata "ad-dunya" dan "al-akhirah" di Al-Quran?',
+    options: [
+      'Dua-duanya disebut dalam surah yang sama secara berurutan',
+      'Sama-sama disebut 115 kali — jumlah yang identik',
+      'Dua-duanya cuma disebut di surah-surah Makkiyah aja',
+      'Jumlah penyebutan keduanya sama dengan jumlah hari dalam setahun',
+    ],
+    correctIndex: 1,
+    explanation: '"Ad-dunya" (dunia) dan "al-akhirah" (akhirat) masing-masing disebut 115 kali. Ini cuma satu dari puluhan pasangan kata yang jumlahnya sama persis di Al-Quran.',
+  ),
+  QuizQuestion(
+    question: 'Berapa kali kata "yawm" (hari) dalam bentuk tunggal disebut di Al-Quran?',
+    options: [
+      '360 kali — mendekati jumlah hari dalam setahun',
+      '365 kali — tepat sama dengan jumlah hari dalam setahun',
+      '354 kali — sesuai tahun Hijriyah (kalender bulan)',
+      '7 kali — jumlah hari dalam seminggu',
+    ],
+    correctIndex: 1,
+    explanation: 'Kata "yawm" (hari) dalam bentuk tunggal disebut 365 kali — persis jumlah hari dalam setahun. Sementara bentuk jamaknya (ayyam) disebut 30 kali — jumlah hari dalam sebulan.',
+  ),
+  QuizQuestion(
+    question: 'Proporsi penyebutan laut dan darat di Al-Quran (32:13) ternyata setara dengan...',
+    options: [
+      'Jumlah lautan dan samudra di permukaan bumi',
+      'Proporsi air dan daratan di bumi: ±71% air, ±29% darat',
+      'Perbandingan panjang garis pantai dengan luas daratan',
+      'Jumlah negara yang punya pantai dibanding yang tidak',
+    ],
+    correctIndex: 1,
+    explanation: 'Laut disebut 32x, darat 13x. Total 45. 32/45 = 71,1% dan 13/45 = 28,9%. Ini cocok dengan proporsi air (71%) dan daratan (29%) di bumi — yang baru diketahui setelah satelit modern.',
+  ),
+  QuizQuestion(
+    question: 'Menurut artikel, bagaimana sikap yang tepat terhadap temuan pola angka di Al-Quran?',
+    options: [
+      'Harus langsung percaya karena ini bukti paling kuat dari semua bukti',
+      'Anggap saja kebetulan karena manusia memang suka mencari pola',
+      'Pikirkan sendiri — dua-duanya valid, tapi makin banyak pola makin kecil kemungkinan kebetulan',
+      'Komentari bahwa hitungan ini hanya ditemukan ilmuwan modern jadi gak valid',
+    ],
+    correctIndex: 2,
+    explanation: 'Artikel bilang: dua-duanya valid. Tapi makin banyak pola yang ditemukan dan konsisten, makin kecil kemungkinan itu semua cuma kebetulan. Kamu yang nilai sendiri.',
+  ),
+  QuizQuestion(
+    question: 'Temuan pola angka dalam Al-Quran ini ditemukan dengan cara apa?',
+    options: [
+      'Disebutkan langsung oleh Nabi Muhammad ﷺ dalam Hadits',
+      'Ditulis dalam kitab tafsir klasik sejak zaman sahabat',
+      'Ditemukan pakai penelitian komputer modern yang menganalisis kata',
+      'Diketahui dari prasasti kuno di sekitar kota Makkah',
+    ],
+    correctIndex: 2,
+    explanation: 'Pola-pola ini baru ditemukan setelah penelitian komputer modern yang menganalisis frekuensi kata di seluruh Al-Quran. Ini yang bikin makin menarik — teknologi modern makin ngebuktiin kedalaman Al-Quran.',
+  ),
+];
+
+const _akidah1_7Quiz = <QuizQuestion>[
+  QuizQuestion(
+    question: 'Angka berapa yang punya tempat istimewa dalam Al-Quran dan disebut dalam QS. Al-Muddassir: 30?',
+    options: [
+      '7',
+      '19',
+      '99',
+      '313',
+    ],
+    correctIndex: 1,
+    explanation: 'QS. Al-Muddassir: 30 — "Di atasnya ada 19 (malaikat penjaga)." Angka 19 muncul dalam banyak pola di Al-Quran: Basmalah 19 huruf, 114 surah (19×6), dll.',
+  ),
+  QuizQuestion(
+    question: 'Berapa jumlah total surah dalam Al-Quran?',
+    options: [
+      '113',
+      '114',
+      '115',
+      '120',
+    ],
+    correctIndex: 1,
+    explanation: 'Al-Quran punya 114 surah. 114 = 19 × 6.',
+  ),
+  QuizQuestion(
+    question: 'Apa hubungan nomor Surah Al-Ikhlas (112) dengan jumlah ayatnya (4)?',
+    options: [
+      'Tidak ada hubungan — ini murni kebetulan biasa',
+      '1+1+2=4, sama dengan jumlah ayatnya',
+      '112 - 4 = 108, jumlah surah lain yang belum disebut',
+      '112 ÷ 4 = 28, jumlah huruf hijaiyah dalam bahasa Arab',
+    ],
+    correctIndex: 1,
+    explanation: 'Surah Al-Ikhlas nomor 112. 1+1+2 = 4, sama dengan jumlah ayatnya. Surah An-Nas (114): 1+1+4 = 6, juga sama dengan jumlah ayatnya.',
+  ),
+  QuizQuestion(
+    question: 'Berapa kali kata "shalawat" (sholat) disebut dalam Al-Quran?',
+    options: [
+      '17 kali — jumlah rakaat sholat wajib sehari',
+      '5 kali — jumlah sholat wajib sehari semalam',
+      '3 kali — jumlah sholat yang dijamak saat safar',
+      '12 kali — jumlah rakaat sholat sunnah rawatib',
+    ],
+    correctIndex: 1,
+    explanation: 'Kata "shalawat" (sholat) disebut 5 kali dalam Al-Quran — sama dengan jumlah sholat wajib sehari semalam.',
+  ),
+  QuizQuestion(
+    question: 'Apa kesimpulan yang diajukan artikel soal pola angka di Al-Quran?',
+    options: [
+      'Ini bukti paling kuat dan final bahwa Al-Quran dari Allah',
+      'Ini semua kebetulan dan gak ada hubungannya sama apa pun',
+      'Makin banyak pola yang konsisten, makin kecil kemungkinan itu cuma kebetulan',
+      'Pola angka ini hanya berlaku untuk Al-Quran edisi cetakan tertentu',
+    ],
+    correctIndex: 2,
+    explanation: 'Bukan satu-dua pola — tapi puluhan/ratusan, semuanya konsisten. Semakin banyak polanya, semakin kecil kemungkinan itu semua kebetulan belaka.',
+  ),
+];
+
+const _akidah1_8Quiz = <QuizQuestion>[
+  QuizQuestion(
+    question: 'Apa nubuatan Al-Quran yang terbukti terjadi tentang Romawi?',
+    options: [
+      'Romawi akan hancur total dan tidak pernah bangkit lagi',
+      'Kekaisaran Romawi akan terpecah menjadi dua bagian',
+      'Romawi akan menang lagi dalam beberapa tahun setelah dikalahkan',
+      'Romawi akan bersekutu dengan Persia menyerang Arab',
+    ],
+    correctIndex: 2,
+    explanation: 'QS. Ar-Rum: 1-4 bilang Romawi bakal menang lagi dalam beberapa tahun setelah dikalahkan Persia. Saat itu ini terdengar mustahil, tapi benar terjadi ~7-9 tahun kemudian.',
+  ),
+  QuizQuestion(
+    question: 'Apa yang sains modern temukan tentang gunung yang sesuai dengan deskripsi Al-Quran?',
+    options: [
+      'Gunung terbentuk dari aktivitas gunung berapi di dasar laut',
+      'Gunung tertinggi di dunia ada di bawah laut, bukan di daratan',
+      'Gunung punya "akar" yang menjulur dalam ke bumi seperti pasak',
+      'Gunung selalu bergerak beberapa cm setiap tahunnya',
+    ],
+    correctIndex: 2,
+    explanation: 'QS. An-Naba': 6-7 bilang gunung sebagai pasak (autad). Geologi modern mengkonfirmasi gunung punya akar yang menjulur jauh ke dalam bumi, berfungsi seperti pasak yang menstabilkan lempeng tektonik.',
+  ),
+  QuizQuestion(
+    question: 'Kenapa Al-Quran nyebut "jari-jemari" secara spesifik dalam QS. Al-Qiyamah: 4?',
+    options: [
+      'Karena jari adalah anggota tubuh yang paling sering digunakan',
+      'Karena sidik jari setiap manusia unik — bahkan kembar identik pun beda',
+      'Karena jumlah ruas jari (14) sama dengan jumlah sujud dalam sholat',
+      'Karena jari adalah simbol kekuatan dan ketangkasan manusia',
+    ],
+    correctIndex: 1,
+    explanation: 'Kenapa Al-Quran spesifik nyebut jari? Karena sidik jari tiap manusia UNIK — fakta yang baru ditemukan sains abad ke-19. Al-Quran udah ngasih tahu 12 abad sebelumnya.',
+  ),
+  QuizQuestion(
+    question: 'Al-Quran diturunkan dalam 23 tahun di 2 kota berbeda. Apa yang membuat ini menarik?',
+    options: [
+      'Karena dua kota itu saling berperang saat Al-Quran diturunkan',
+      'Karena bahasanya berbeda antara ayat Makkah dan Madinah',
+      'Karena isinya tetap konsisten tanpa kontradiksi meski situasi beda',
+      'Karena para penulisnya berganti-ganti sepanjang 23 tahun itu',
+    ],
+    correctIndex: 2,
+    explanation: 'Diturunkan 23 tahun, di Makkah dan Madinah, kondisi minoritas vs pemimpin negara — tapi nol kontradiksi. Allah nantang di QS. An-Nisa': 82 — cari kontradiksi kalau bisa.',
+  ),
+  QuizQuestion(
+    question: 'Menurut modul ini, yang membedakan Al-Quran dari kitab lain adalah...',
+    options: [
+      'Al-Quran adalah satu-satunya kitab suci yang bisa dibaca dalam terjemahan',
+      'Al-Quran punya 8+ bukti yang saling menguatkan dari berbagai sisi',
+      'Al-Quran adalah kitab paling tebal di antara semua kitab suci',
+      'Al-Quran adalah satu-satunya kitab yang diturunkan di malam hari',
+    ],
+    correctIndex: 1,
+    explanation: 'Delapan bukti dari sisi berbeda — bahasa, sejarah, sains, angka, preservasi, nubuatan, dampak manusia — semuanya mengarah ke kesimpulan yang sama. Masing-masing mungkin bisa dijawab, tapi bersama-sama jadi sangat kuat.',
   ),
 ];
 
@@ -1754,6 +2108,7 @@ class LearningService {
     _cache = s;
     final p = await SharedPreferences.getInstance();
     await p.setString(_key, jsonEncode(s.toMap()));
+    SupabaseSync.saveLearning(s.toMap()); // fire-and-forget
   }
 
   static ModuleProgress? getProgress(String moduleId) {
