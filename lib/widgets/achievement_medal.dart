@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import '../services/achievement_service.dart';
+import '../services/game_service.dart';
 import 'common.dart';
+import 'share_card.dart';
 
 /// Medali achievement ala Mobile Legends — heksagon dengan gradient tier,
 /// glow, dan glyph di tengah (ikon untuk momen pertama, angka hari untuk
@@ -290,10 +292,42 @@ Future<void> showAchievementUnlock(
                             .copyWith(color: c1, fontSize: 10),
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      HeroButton(
-                        label: 'MANTAP!',
-                        trailingIcon: Icons.emoji_events,
-                        onPressed: () => Navigator.of(ctx).pop(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: HeroButton(
+                              label: 'MANTAP!',
+                              trailingIcon: Icons.emoji_events,
+                              onPressed: () => Navigator.of(ctx).pop(),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          OutlinedButton(
+                            onPressed: () => showShareCard(context, def),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: c1,
+                              side: BorderSide(color: c1.withValues(alpha: 0.5)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.xl),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.md,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.share, size: 16, color: c1),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Bagikan',
+                                  style: AppText.bodyLg().copyWith(color: c1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

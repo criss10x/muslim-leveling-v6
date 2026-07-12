@@ -14,6 +14,7 @@ import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
+import '../../widgets/share_card.dart';
 import 'welcome_pejuang.dart';
 
 
@@ -1024,25 +1025,55 @@ class _ProfilTabState extends State<ProfilTab> {
                   unlocked: unlocked,
                   unlockedDate: AchievementService.unlockedDate(d.id),
                 ),
-                child: Column(
+                child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    AchievementMedal(def: d, unlocked: unlocked, size: 60),
-                    const SizedBox(height: 4),
-                    Expanded(
-                      child: Text(
-                        d.title,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.labelCaps().copyWith(
-                          fontSize: 8,
-                          color: unlocked
-                              ? tierColors(d.tier).$1
-                              : AppColors.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
+                    Column(
+                      children: [
+                        AchievementMedal(def: d, unlocked: unlocked, size: 60),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: Text(
+                            d.title,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.labelCaps().copyWith(
+                              fontSize: 8,
+                              color: unlocked
+                                  ? tierColors(d.tier).$1
+                                  : AppColors.onSurfaceVariant
+                                      .withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // ponytail: share icon kecil di pojok kanan atas untuk badge yg udah unlocked
+                    if (unlocked)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: GestureDetector(
+                          onTap: () => showShareCard(context, d),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceContainerHigh,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: tierColors(d.tier).$1.withValues(alpha: 0.5),
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.share,
+                              size: 10,
+                              color: tierColors(d.tier).$1,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               );
