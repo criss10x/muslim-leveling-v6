@@ -33,7 +33,7 @@ class SupabaseSync {
           .select()
           .eq('device_id', _id)
           .maybeSingle();
-      return res as Map<String, dynamic>?;
+      return res;
     } catch (_) {
       return null;
     }
