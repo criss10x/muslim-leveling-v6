@@ -31,28 +31,41 @@ Future<void> main() async {
     SupabaseSync.init(deviceId);
   }
 
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = 'https://8c85da22b45bf35c51d3df07dcca0096@o4511691396677632.ingest.de.sentry.io/4511691401330768';
-      options.environment = const String.fromEnvironment('SENTRY_ENVIRONMENT', defaultValue: 'production');
-      options.release = const String.fromEnvironment('SENTRY_RELEASE', defaultValue: 'muslim-leveling@1.0.0+1');
-      options.tracesSampleRate = 0.1;
-      options.attachScreenshot = true;
-      options.debug = false;
-    },
-    appRunner: () async {
-      await NotificationService.init();
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: AppColors.background,
-          systemNavigationBarIconBrightness: Brightness.light,
-        ),
-      );
-      runApp(const MuslimLevelingApp());
-    },
+  // ponytail: Sentry init kadang gagal di device tertentu — runApp harus
+  // tetap jalan biar gak blank screen.
+  try {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = 'https://8c85da22b45bf35c51d3df07dcca0096@o4511691396677632.ingest.de.sentry.io/4511691401330768';
+        options.environment = const String.fromEnvironment('SENTRY_ENVIRONMENT', defaultValue: 'production');
+        options.release = const String.fromEnvironment('SENTRY_RELEASE', defaultValue: 'muslim-leveling@1.0.0+1');
+        options.tracesSampleRate = 0.1;
+        options.attachScreenshot = true;
+        options.debug = false;
+      },
+      appRunner: () async {
+        await _runApp();
+      },
+    );
+  } catch (_) {
+    debugPrint('[main] SentryFlutter.init gagal — fallback runApp');
+    await _runApp();
+  }
+}
+
+Future<void> _runApp() async {
+  try {
+    await NotificationService.init();
+  } catch (_) {}
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: AppColors.background,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
   );
+  runApp(const MuslimLevelingApp());
 }
 
 // ponytail: base-36 is enough entropy for offline device id
