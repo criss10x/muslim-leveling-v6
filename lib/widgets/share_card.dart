@@ -101,14 +101,14 @@ class _GeoDivider extends StatelessWidget {
 class _ShareCardRender extends StatelessWidget {
   final AchievementDef def;
   final String username;
-  final int heroStreak;
+  final String statLine;
   final int level;
   final String rankTitle;
 
   const _ShareCardRender({
     required this.def,
     required this.username,
-    required this.heroStreak,
+    required this.statLine,
     required this.level,
     required this.rankTitle,
   });
@@ -256,11 +256,12 @@ class _ShareCardRender extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Hero Streak: $heroStreak 🔥',
+                  statLine,
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.onSurfaceVariant,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -312,8 +313,50 @@ Future<void> showShareCard(BuildContext context, AchievementDef def) async {
   final rankTitle = GameService.getRankTitle(state.level);
   final prefs = await SharedPreferences.getInstance();
   final username = prefs.getString('nickname') ?? 'Pejuang';
-  final heroStreak = max(state.heroStreak.current, state.heroStreak.best);
   final level = state.level;
+  final heroStreak = max(state.heroStreak.current, state.heroStreak.best);
+
+  final statLine = switch (def.id) {
+    // Hero Streak medals
+    'double_kill' || 'triple_kill' || 'unstoppable' ||
+    'dominating' || 'maniac' || 'godlike' ||
+    'savage' || 'legendary'
+      => 'Hero Streak: $heroStreak hari 🔥',
+
+    // Per-prayer streaks
+    'subuh_solo_carry'
+      => 'Subuh Streak: ${state.perPrayerStreaks['subuh']?.best ?? 0} hari 🔥',
+    'jungler'
+      => 'Tilawah Streak: ${state.tilawahStreak.best} hari 🔥',
+
+    // Level-based
+    'rank_warrior' || 'rank_elite' || 'rank_master' ||
+    'rank_epic' || 'rank_mythic'
+      => 'Level saat ini: $level — ${GameService.getRankTitle(level)}',
+
+    // Comeback
+    'comeback_real' || 'phoenix'
+      => 'Total comeback: ${state.comebackCount} kali 💪',
+
+    // Precision
+    'critical_hit' => '⚡ Tepat waktu sejak pertama',
+    'first_strike' => '🎯 Subuh sebelum 15 menit',
+    'sharpshooter' => '🎯 10× sholat tepat waktu',
+
+    // Learning
+    'first_clear_module' => '📖 Mulai belajar — teruskan!',
+    'quiz_mvp' => '⭐ Skor sempurna!',
+    'sage' => '📚 Semua 16 modul selesai!',
+
+    // Combo & collection
+    'wombo_combo' => '📿 Target zikir tercapai!',
+    'full_combo' => '🔥 5 wajib + Tilawah + Dhuha',
+    'collector' => '🏛️ Semua 9 sunnah terkumpul',
+    'hall_of_fame' => '👑 Kolektor sejati!',
+
+    // Default: just show description
+    _ => def.desc,
+  };
 
   if (!context.mounted) return;
 
@@ -324,7 +367,7 @@ Future<void> showShareCard(BuildContext context, AchievementDef def) async {
     builder: (ctx) => _SharePreviewDialog(
       def: def,
       username: username,
-      heroStreak: heroStreak,
+      statLine: statLine,
       level: level,
       rankTitle: rankTitle,
     ),
@@ -334,14 +377,14 @@ Future<void> showShareCard(BuildContext context, AchievementDef def) async {
 class _SharePreviewDialog extends StatefulWidget {
   final AchievementDef def;
   final String username;
-  final int heroStreak;
+  final String statLine;
   final int level;
   final String rankTitle;
 
   const _SharePreviewDialog({
     required this.def,
     required this.username,
-    required this.heroStreak,
+    required this.statLine,
     required this.level,
     required this.rankTitle,
   });
@@ -453,7 +496,7 @@ class _SharePreviewDialogState extends State<_SharePreviewDialog>
                       _ShareCardRender(
                         def: widget.def,
                         username: widget.username,
-                        heroStreak: widget.heroStreak,
+                        statLine: widget.statLine,
                         level: widget.level,
                         rankTitle: widget.rankTitle,
                       ),
