@@ -64,19 +64,14 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
         children: [
           // ── Background glow layers ──
           Positioned(
-            top: -100,
-            left: 0,
-            right: 0,
+            top: -60, left: 0, right: 0,
             child: IgnorePointer(
-              child: Container(
-                height: 300,
+              child: Container(height: 260,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    center: Alignment.topCenter,
-                    radius: 1.5,
+                    center: Alignment.topCenter, radius: 1.5,
                     colors: [
-                      (_passed ? AppColors.primary : AppColors.tertiary)
-                          .withValues(alpha: 0.12),
+                      (_passed ? AppColors.primary : AppColors.tertiary).withValues(alpha: 0.25),
                       Colors.transparent,
                     ],
                   ),
@@ -85,18 +80,14 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
             ),
           ),
           Positioned(
-            bottom: -60,
-            left: 0,
-            right: 0,
+            bottom: -40, left: 0, right: 0,
             child: IgnorePointer(
-              child: Container(
-                height: 200,
+              child: Container(height: 160,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    center: Alignment.bottomCenter,
-                    radius: 1.2,
+                    center: Alignment.bottomCenter, radius: 1.2,
                     colors: [
-                      AppColors.secondaryFixed.withValues(alpha: 0.06),
+                      AppColors.secondaryFixed.withValues(alpha: 0.12),
                       Colors.transparent,
                     ],
                   ),
@@ -140,6 +131,8 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
 
   // ── Floating victory badge ──
   Widget _victoryBadge() {
+    final accent = _passed ? AppColors.secondaryFixed : AppColors.tertiary;
+    final iconColor = _passed ? AppColors.onSecondaryFixed : AppColors.onTertiaryContainer;
     return AnimatedBuilder(
       animation: _floatCtrl,
       builder: (_, child) {
@@ -150,68 +143,29 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
         alignment: Alignment.center,
         children: [
           // Pulse glow
-          Container(
-            width: 120,
-            height: 120,
+          Container(width: 130, height: 130,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (_passed
-                      ? AppColors.secondaryFixed
-                      : AppColors.tertiary)
-                  .withValues(alpha: 0.15),
-              boxShadow: [
-                BoxShadow(
-                  color: (_passed
-                          ? AppColors.secondaryFixed
-                          : AppColors.tertiary)
-                      .withValues(alpha: 0.3),
-                  blurRadius: 40,
-                  spreadRadius: 8,
-                ),
-              ],
+              color: accent.withValues(alpha: 0.2),
+              boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 50, spreadRadius: 10)],
             ),
           ),
-          // Rotated diamond
-          Transform.rotate(
-            angle: 0.785, // 45 deg
+          // Diamond — ClipPath avoids Transform.rotate anti-alias blur
+          ClipPath(
+            clipper: const _DiamondClipper(),
             child: Container(
-              width: 96,
-              height: 96,
+              width: 96, height: 96,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
                   colors: _passed
                       ? [AppColors.secondaryFixed, AppColors.onSecondaryFixed]
                       : [AppColors.tertiaryFixed, AppColors.tertiaryContainer],
                 ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: (_passed ? AppColors.secondaryFixed : AppColors.tertiary)
-                      .withValues(alpha: 0.6),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (_passed
-                            ? AppColors.secondaryFixed
-                            : AppColors.tertiary)
-                        .withValues(alpha: 0.4),
-                    blurRadius: 30,
-                    spreadRadius: 4,
-                  ),
-                ],
+                border: Border.all(color: accent.withValues(alpha: 0.7), width: 2),
+                boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.5), blurRadius: 30, spreadRadius: 4)],
               ),
-              child: Transform.rotate(
-                angle: -0.785, // counter-rotate the icon
-                child: Icon(
-                  _passed ? Icons.workspace_premium : Icons.refresh,
-                  size: 52,
-                  color: _passed
-                      ? AppColors.onSecondaryFixed
-                      : AppColors.onTertiaryContainer,
-                ),
-              ),
+              child: Icon(_passed ? Icons.workspace_premium : Icons.refresh, size: 52, color: iconColor),
             ),
           ),
         ],
@@ -470,18 +424,16 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
   Widget _actions(BuildContext context) {
     return Column(
       children: [
-        // Primary — Kembali ke Hub
         SizedBox(
           width: double.infinity,
           child: HeroButton(
             label: 'Kembali ke Hub',
             trailingIcon: Icons.arrow_forward,
-            onPressed: () => Navigator.of(context)
-                .popUntil((route) => route.isFirst),
+            onPressed: () =>
+                Navigator.of(context).popUntil((route) => route.isFirst),
           ),
         ),
         const SizedBox(height: 8),
-        // Ghost — Coba Lagi (only if failed)
         if (!_passed)
           SizedBox(
             width: double.infinity,
@@ -489,8 +441,8 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
               label: 'COBA LAGI',
               icon: Icons.replay,
               onPressed: () {
-                Navigator.of(context).pop(); // pop result
-                Navigator.of(context).pop(); // pop quiz
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
               color: AppColors.tertiary,
             ),
@@ -500,8 +452,8 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
-                Navigator.of(context).pop(); // pop result
-                Navigator.of(context).pop(); // pop quiz
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.onSurfaceVariant,
@@ -517,4 +469,20 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
       ],
     );
   }
+}
+
+/// Clips a diamond shape (45° rotated square) — no anti-alias blur like Transform.rotate.
+class _DiamondClipper extends CustomClipper<Path> {
+  const _DiamondClipper();
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..moveTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height / 2)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(0, size.height / 2)
+      ..close();
+  }
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> old) => false;
 }
