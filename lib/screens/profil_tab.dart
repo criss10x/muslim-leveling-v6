@@ -14,7 +14,7 @@ import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
-import '../../widgets/share_card.dart';
+import 'achievements_screen.dart';
 import 'welcome_pejuang.dart';
 
 
@@ -954,12 +954,20 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
-  /// Grid medali achievement ala Mobile Legends. Tap medali → detail.
-  /// Medali = signature RPG app ini — dibiarkan penuh warna (tanpa kartu
-  /// pembungkus), header pakai HudHeader dengan meta live.
+  /// Ringkasan medali + pintu ke galeri.
+  /// Dulu 43 medali digelar penuh di sini: tab Profil jadi panjang dan
+  /// medalinya mengecil. Sekarang cukup cuplikan + progres; galeri lengkap
+  /// (dikelompokkan per tier) ada di [AchievementsScreen].
   Widget _achievements() {
     final defs = AchievementService.defs;
     final unlockedCount = AchievementService.unlockedCount;
+
+    // Cuplikan: yang sudah terbuka lebih dulu, sisanya ditambal yang terkunci
+    // supaya barisnya tidak pernah kosong di akun baru.
+    final preview = <AchievementDef>[
+      ...defs.where((d) => AchievementService.isUnlocked(d.id)),
+      ...defs.where((d) => !AchievementService.isUnlocked(d.id)),
+    ].take(3).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -967,77 +975,54 @@ class _ProfilTabState extends State<ProfilTab> {
         HudHeader('ACHIEVEMENTS',
             meta: '$unlockedCount/${defs.length}',
             accent: AppColors.secondaryFixed),
-        GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 4,
-            mainAxisSpacing: AppSpacing.md,
-            crossAxisSpacing: AppSpacing.xs,
-            childAspectRatio: 0.72,
-            children: defs.map((d) {
-              final unlocked = AchievementService.isUnlocked(d.id);
-              return PressableScale(
-                onTap: () => showAchievementDetail(
-                  context,
-                  d,
-                  unlocked: unlocked,
-                  unlockedDate: AchievementService.unlockedDate(d.id),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Column(
-                      children: [
-                        AchievementMedal(def: d, unlocked: unlocked, size: 60),
-                        const SizedBox(height: 4),
-                        Expanded(
-                          child: Text(
-                            d.title,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.labelCaps().copyWith(
-                              fontSize: 8,
-                              color: unlocked
-                                  ? tierColors(d.tier).$1
-                                  : AppColors.onSurfaceVariant
-                                      .withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
-                      ],
+        PressableScale(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+            );
+            // Medali bisa terbuka saat di galeri — segarkan hitungannya.
+            if (mounted) setState(() {});
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+              border: Border.all(
+                  color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                for (final d in preview)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: AchievementMedal(
+                      def: d,
+                      unlocked: AchievementService.isUnlocked(d.id),
+                      size: 36,
                     ),
-                    // ponytail: share icon kecil di pojok kanan atas untuk badge yg udah unlocked
-                    if (unlocked)
-                      Positioned(
-                        top: -2,
-                        right: -2,
-                        child: GestureDetector(
-                          onTap: () => showShareCard(context, d),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerHigh,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: tierColors(d.tier).$1.withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.share,
-                              size: 10,
-                              color: tierColors(d.tier).$1,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                  ),
+                // Expanded menyerap sisa ruang: teks rapat ke kanan dan tidak
+                // pernah overflow di layar sempit.
+                Expanded(
+                  child: Text(
+                    'Lihat semua',
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.bodyMd().copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 12),
+                  ),
                 ),
-              );
-            }).toList(),
+                const SizedBox(width: AppSpacing.base),
+                const Icon(Icons.arrow_forward_ios,
+                    size: 14, color: AppColors.secondaryFixed),
+              ],
+            ),
           ),
-        ],
+        ),
+      ],
     );
   }
 
