@@ -14,6 +14,7 @@ import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
+import '../../widgets/share_card.dart';
 import 'welcome_pejuang.dart';
 
 
@@ -826,40 +827,37 @@ class _ProfilTabState extends State<ProfilTab> {
     final sunnahTotal = logs.where((l) => l.type == 'sunnah' || l.prayer.startsWith('rawatib')).length;
     final tilawahTotal = logs.where((l) => l.prayer == 'tilawah').length;
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 1.4,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _statCard('Sholat Selesai', '$wajibTotal', 'total', Icons.mosque, AppColors.primary),
-        _statCard('Tilawah', '$tilawahTotal', 'kali', Icons.menu_book, AppColors.tertiary),
-        _statCard('Sunnah', '$sunnahTotal', 'total', Icons.volunteer_activism, AppColors.secondaryFixed),
-        _statCard('Hero Streak', '${GameService.current.heroStreak.current}', 'hari', Icons.local_fire_department, AppColors.tertiaryContainer),
+        const HudHeader('STATISTIK'),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: AppSpacing.sm,
+          childAspectRatio: 1.5,
+          children: [
+            _statCard('Sholat Selesai', '$wajibTotal', 'total', Icons.mosque, AppColors.primary),
+            _statCard('Tilawah', '$tilawahTotal', 'kali', Icons.menu_book, AppColors.tertiary),
+            _statCard('Sunnah', '$sunnahTotal', 'total', Icons.volunteer_activism, AppColors.secondaryFixed),
+            _statCard('Hero Streak', '${GameService.current.heroStreak.current}', 'hari', Icons.local_fire_department, AppColors.secondaryFixed),
+          ],
+        ),
       ],
     );
   }
 
   Widget _statCard(String title, String value, String sub, IconData icon, Color color) {
-    return GlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      borderColor: color.withValues(alpha: 0.25),
+    return FlatCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
+              Icon(icon, color: color, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -877,7 +875,7 @@ class _ProfilTabState extends State<ProfilTab> {
           const SizedBox(height: AppSpacing.sm),
           Text(
             value,
-            style: AppText.titleLg().copyWith(color: color, fontSize: 24),
+            style: AppText.displayHero(28).copyWith(color: color, height: 1.1),
           ),
           Text(
             sub,
@@ -901,114 +899,75 @@ class _ProfilTabState extends State<ProfilTab> {
     ];
     final streaks = GameService.current.perPrayerStreaks;
 
-    return GlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      borderColor: AppColors.primary.withValues(alpha: 0.2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Streak per Sholat',
-            style: AppText.titleLg().copyWith(color: AppColors.onSurface),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: prayers.asMap().entries.map((entry) {
-                final label = entry.value.$1;
-                final key = entry.value.$2;
-                final count = streaks[key]?.current ?? 0;
-                final active = count > 0;
-                return Container(
-                  margin: EdgeInsets.only(right: entry.key == prayers.length - 1 ? 0 : AppSpacing.xs),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? AppColors.primary.withValues(alpha: 0.15)
-                        : AppColors.surfaceContainerLow.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const HudHeader('STREAK PER SHOLAT'),
+        FlatCard(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: prayers.map((entry) {
+              final label = entry.$1;
+              final count = streaks[entry.$2]?.current ?? 0;
+              final active = count > 0;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: AppText.labelCaps().copyWith(
                       color: active
-                          ? AppColors.primary.withValues(alpha: 0.4)
-                          : AppColors.outlineVariant.withValues(alpha: 0.4),
+                          ? AppColors.onSurface
+                          : AppColors.onSurfaceVariant,
+                      fontSize: 10,
                     ),
                   ),
-                  child: Column(
+                  const SizedBox(height: 6),
+                  Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        label,
-                        style: AppText.bodyMd().copyWith(
-                          color: active
-                              ? AppColors.primaryFixed
-                              : AppColors.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
+                      Icon(
+                        Icons.local_fire_department,
+                        size: 13,
+                        color: active
+                            ? AppColors.secondaryFixed
+                            : AppColors.outlineVariant,
                       ),
-                      const SizedBox(height: 2),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.local_fire_department,
-                            size: 12,
-                            color: active ? AppColors.secondaryFixed : AppColors.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '$count',
-                            style: AppText.bodyMd().copyWith(
-                              color: active ? AppColors.onSurface : AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 2),
+                      Text(
+                        '$count',
+                        style: AppText.titleLg().copyWith(
+                          fontSize: 15,
+                          color: active
+                              ? AppColors.secondaryFixed
+                              : AppColors.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
-                );
-              }).toList(),
-            ),
+                ],
+              );
+            }).toList(),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   /// Grid medali achievement ala Mobile Legends. Tap medali → detail.
+  /// Medali = signature RPG app ini — dibiarkan penuh warna (tanpa kartu
+  /// pembungkus), header pakai HudHeader dengan meta live.
   Widget _achievements() {
     final defs = AchievementService.defs;
     final unlockedCount = AchievementService.unlockedCount;
 
-    return GlassPanel(
-      borderColor: AppColors.secondaryFixed.withValues(alpha: 0.2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.emoji_events,
-                  color: AppColors.secondaryFixed, size: 16),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                'ACHIEVEMENTS',
-                style: AppText.labelCaps()
-                    .copyWith(color: AppColors.secondaryFixed),
-              ),
-              const Spacer(),
-              Text(
-                '$unlockedCount/${defs.length}',
-                style: AppText.labelCaps().copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          GridView.count(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HudHeader('ACHIEVEMENTS',
+            meta: '$unlockedCount/${defs.length}',
+            accent: AppColors.secondaryFixed),
+        GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 4,
@@ -1024,32 +983,61 @@ class _ProfilTabState extends State<ProfilTab> {
                   unlocked: unlocked,
                   unlockedDate: AchievementService.unlockedDate(d.id),
                 ),
-                child: Column(
+                child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    AchievementMedal(def: d, unlocked: unlocked, size: 60),
-                    const SizedBox(height: 4),
-                    Expanded(
-                      child: Text(
-                        d.title,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.labelCaps().copyWith(
-                          fontSize: 8,
-                          color: unlocked
-                              ? tierColors(d.tier).$1
-                              : AppColors.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
+                    Column(
+                      children: [
+                        AchievementMedal(def: d, unlocked: unlocked, size: 60),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: Text(
+                            d.title,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.labelCaps().copyWith(
+                              fontSize: 8,
+                              color: unlocked
+                                  ? tierColors(d.tier).$1
+                                  : AppColors.onSurfaceVariant
+                                      .withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // ponytail: share icon kecil di pojok kanan atas untuk badge yg udah unlocked
+                    if (unlocked)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: GestureDetector(
+                          onTap: () => showShareCard(context, d),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceContainerHigh,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: tierColors(d.tier).$1.withValues(alpha: 0.5),
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.share,
+                              size: 10,
+                              color: tierColors(d.tier).$1,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               );
             }).toList(),
           ),
         ],
-      ),
     );
   }
 
@@ -1062,68 +1050,62 @@ class _ProfilTabState extends State<ProfilTab> {
       _SettingRow('Tentang Aplikasi', Icons.info_outline, onTap: _showAboutDialog),
       _SettingRow('Keluar', Icons.logout, color: AppColors.error, onTap: _confirmLogout),
     ];
-    return GlassPanel(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: rows.asMap().entries.map((entry) {
-          final i = entry.key;
-          final r = entry.value;
-          final isLast = i == rows.length - 1;
-          return Column(
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: r.onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: (r.color ?? AppColors.onSurface).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          child: Icon(
-                            r.icon,
-                            color: r.color ?? AppColors.onSurface,
-                            size: 20,
-                          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const HudHeader('PENGATURAN'),
+        FlatCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: rows.asMap().entries.map((entry) {
+              final i = entry.key;
+              final r = entry.value;
+              final isLast = i == rows.length - 1;
+              final color = r.color ?? AppColors.onSurface;
+              return Column(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: r.onTap,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm + 2,
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            r.title,
-                            style: AppText.bodyLg().copyWith(
-                              color: r.color ?? AppColors.onSurface,
+                        child: Row(
+                          children: [
+                            Icon(r.icon, color: color, size: 20),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Text(
+                                r.title,
+                                style: AppText.bodyLg().copyWith(color: color),
+                              ),
                             ),
-                          ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.onSurfaceVariant,
+                              size: 20,
+                            ),
+                          ],
                         ),
-                        const Icon(
-                          Icons.chevron_right,
-                          color: AppColors.onSurfaceVariant,
-                          size: 20,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-              if (!isLast)
-                const Divider(
-                  color: AppColors.outlineVariant,
-                  height: 1,
-                  indent: AppSpacing.md,
-                  endIndent: AppSpacing.md,
-                ),
-            ],
-          );
-        }).toList(),
-      ),
+                  if (!isLast)
+                    Divider(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                      height: 1,
+                      indent: AppSpacing.md,
+                      endIndent: AppSpacing.md,
+                    ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }

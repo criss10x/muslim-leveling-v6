@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
@@ -62,27 +63,50 @@ class _BelajarTabState extends State<BelajarTab> {
     );
   }
 
+  /// Hero tab Belajar — satu-satunya kartu ber-aksen (glow tenang),
+  /// konsisten dengan hero Status Window (Home) & kartu masjid (Jadwal).
   Widget _progressCard(int completed, int total) {
     final progress = total > 0 ? completed / total : 0.0;
-    return GlassPanel(
+    return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      borderColor: AppColors.primary.withValues(alpha: 0.2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.12),
+            AppColors.surfaceContainer.withValues(alpha: 0.7),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Santri Digital', style: AppText.titleLg()),
-                  Text('$completed/$total modul selesai',
+                  Text('SANTRI DIGITAL',
                       style: AppText.labelCaps().copyWith(color: AppColors.primary)),
+                  const SizedBox(height: 2),
+                  Text('$completed/$total modul selesai',
+                      style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
                 ],
               ),
               Text('${(progress * 100).round()}%',
-                  style: AppText.headlineMd().copyWith(color: AppColors.primary)),
+                  style: AppText.displayHero(32).copyWith(color: AppColors.primary)),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -109,11 +133,8 @@ class _BelajarTabState extends State<BelajarTab> {
               decoration: BoxDecoration(
                 color: selected
                     ? AppColors.primary.withValues(alpha: 0.15)
-                    : AppColors.surfaceContainer.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                border: selected
-                    ? Border.all(color: AppColors.primary.withValues(alpha: 0.6))
-                    : Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
+                    : AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Row(
                 children: [
@@ -134,60 +155,63 @@ class _BelajarTabState extends State<BelajarTab> {
 
   Widget _moduleList(BuildContext context) {
     final cat = LearningContent.categories[_selectedCat];
+    final catDone =
+        cat.modules.where((m) => LearningService.isCompleted(m.id)).length;
+    // "Frontier" = modul pertama yang kebuka tapi belum selesai — inilah
+    // yang dapat hairline cyan (analog "berikutnya" di tab lain).
+    final frontierId = cat.modules
+        .firstWhereOrNull((m) =>
+            LearningService.isUnlocked(m.id) && !LearningService.isCompleted(m.id))
+        ?.id;
     return Column(
-      children: cat.modules.map((mod) {
-        final unlocked = LearningService.isUnlocked(mod.id);
-        final completed = LearningService.isCompleted(mod.id);
-        final xpClaimed = LearningService.isXpClaimed(mod.id);
-        final progress = LearningService.getProgress(mod.id);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: _moduleCard(context, mod, unlocked, completed, xpClaimed, progress?.quizScore ?? 0),
-        );
-      }).toList(),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HudHeader(cat.label.toUpperCase(), meta: '$catDone/${cat.modules.length}'),
+        ...cat.modules.map((mod) {
+          final unlocked = LearningService.isUnlocked(mod.id);
+          final completed = LearningService.isCompleted(mod.id);
+          final xpClaimed = LearningService.isXpClaimed(mod.id);
+          final progress = LearningService.getProgress(mod.id);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _moduleCard(context, mod, unlocked, completed, xpClaimed,
+                progress?.quizScore ?? 0, mod.id == frontierId),
+          );
+        }),
+      ],
     );
   }
 
   Widget _moduleCard(BuildContext context, LearningModule mod, bool unlocked,
-      bool completed, bool xpClaimed, int quizScore) {
+      bool completed, bool xpClaimed, int quizScore, bool isFrontier) {
     return Opacity(
       opacity: unlocked ? 1.0 : 0.4,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: completed
-              ? AppColors.primary.withValues(alpha: 0.08)
-              : AppColors.surfaceContainer.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(
-            color: completed
-                ? AppColors.primary.withValues(alpha: 0.4)
-                : AppColors.outlineVariant.withValues(alpha: 0.2),
+      child: PressableScale(
+        onTap: unlocked
+            ? () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => BelajarArticleScreen(moduleId: mod.id),
+                )).then((_) => _load()); // refresh on return
+              }
+            : null,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: isFrontier
+                ? AppColors.tertiary.withValues(alpha: 0.06)
+                : AppColors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
+            border: isFrontier
+                ? Border.all(color: AppColors.tertiary.withValues(alpha: 0.5))
+                : null,
           ),
-        ),
-        child: InkWell(
-          onTap: unlocked
-              ? () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => BelajarArticleScreen(moduleId: mod.id),
-                  )).then((_) => _load()); // refresh on return
-                }
-              : null,
           child: Row(
             children: [
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(
-                    color: completed ? AppColors.primary : AppColors.outlineVariant,
-                    width: completed ? 2 : 1,
-                  ),
-                ),
+              SizedBox(
+                width: 40,
                 child: Center(
                   child: unlocked
-                      ? Text(mod.icon, style: const TextStyle(fontSize: 24))
+                      ? Text(mod.icon, style: const TextStyle(fontSize: 26))
                       : const Icon(Icons.lock, color: AppColors.onSurfaceVariant, size: 20),
                 ),
               ),
@@ -198,7 +222,9 @@ class _BelajarTabState extends State<BelajarTab> {
                   children: [
                     Text(mod.title,
                         style: AppText.bodyLg().copyWith(
-                            color: unlocked ? AppColors.onBackground : AppColors.onSurfaceVariant)),
+                            color: completed
+                                ? AppColors.onSurfaceVariant
+                                : AppColors.onBackground)),
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -233,8 +259,10 @@ class _BelajarTabState extends State<BelajarTab> {
                     : (unlocked ? Icons.arrow_forward_ios : Icons.lock_clock),
                 color: completed
                     ? AppColors.primary
-                    : (unlocked ? AppColors.onSurfaceVariant : AppColors.outline),
-                size: 20,
+                    : (isFrontier
+                        ? AppColors.tertiary
+                        : (unlocked ? AppColors.onSurfaceVariant : AppColors.outline)),
+                size: 18,
               ),
             ],
           ),
