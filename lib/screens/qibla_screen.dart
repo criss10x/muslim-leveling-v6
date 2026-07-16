@@ -386,8 +386,10 @@ class _QiblaScreenState extends State<QiblaScreen>
   }
 
   Widget _compass(bool aligned) {
-    final compassColor = aligned ? AppColors.primary : AppColors.secondaryFixed;
-    final arrowColor = aligned ? AppColors.primary : AppColors.tertiary;
+    // Dial selalu mint (identitas app + logo). Jarum cyan saat mencari,
+    // mengunci ke mint saat sejajar — pasangan mint/cyan = gradient logo.
+    const compassColor = AppColors.primary;
+    final arrowColor = aligned ? AppColors.primaryFixed : AppColors.tertiary;
 
     return AnimatedBuilder(
       animation: _pulse,
@@ -471,7 +473,7 @@ class _QiblaScreenState extends State<QiblaScreen>
                   Text(
                     '${_qiblaBearing.toInt()}° dari Utara',
                     style: AppText.displayHero(36).copyWith(
-                      color: AppColors.secondaryFixed,
+                      color: AppColors.tertiary,
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -503,7 +505,7 @@ class _QiblaScreenState extends State<QiblaScreen>
           colors: aligned
               ? [
                   AppColors.primary.withValues(alpha: 0.2),
-                  AppColors.secondaryFixed.withValues(alpha: 0.15)
+                  AppColors.tertiary.withValues(alpha: 0.15)
                 ]
               : [
                   AppColors.surfaceContainer,
@@ -586,7 +588,7 @@ class _QiblaScreenState extends State<QiblaScreen>
 
     return Row(
       children: [
-        chip('ARAH KIBLAT', '${_qiblaBearing.toInt()}°', AppColors.secondaryFixed),
+        chip('ARAH KIBLAT', '${_qiblaBearing.toInt()}°', AppColors.tertiary),
         const SizedBox(width: AppSpacing.sm),
         chip('JARAK KA\'BAH', '${_distance.toStringAsFixed(0)} km', AppColors.primary),
       ],
@@ -617,7 +619,10 @@ class _CompassPainter extends CustomPainter {
     final centerX = size.width / 2;
     final centerY = size.height / 2;
     final center = Offset(centerX, centerY);
-    final radius = math.min(centerX, centerY) - 20;
+    // Dial sengaja disusutkan: badge Ka'bah menempel di bezel, jadi cincin
+    // luar butuh ruang bernapas yang sebelumnya tidak ada.
+    final radius = math.min(centerX, centerY) - 30;
+    final bezel = radius + 14;
 
     // ─── Background dial ───
     final bgPaint = Paint()
@@ -626,22 +631,22 @@ class _CompassPainter extends CustomPainter {
           AppColors.surfaceContainerHigh,
           AppColors.background,
         ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius + 20));
-    canvas.drawCircle(center, radius + 18, bgPaint);
+      ).createShader(Rect.fromCircle(center: center, radius: bezel));
+    canvas.drawCircle(center, bezel, bgPaint);
 
     // ─── Neon ring + glow (menguat saat sejajar) ───
     final glowPaint = Paint()
-      ..color = compassColor.withValues(alpha: 0.25 + 0.45 * glow)
+      ..color = compassColor.withValues(alpha: 0.20 + 0.5 * glow)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4 + 4 * glow
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
-    canvas.drawCircle(center, radius + 18, glowPaint);
+    canvas.drawCircle(center, bezel, glowPaint);
 
     final borderPaint = Paint()
-      ..color = compassColor.withValues(alpha: 0.55)
+      ..color = compassColor.withValues(alpha: isAligned ? 0.85 : 0.45)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-    canvas.drawCircle(center, radius + 18, borderPaint);
+    canvas.drawCircle(center, bezel, borderPaint);
 
     // ─── Dial berputar: ticks + huruf mata angin ───
     canvas.save();
@@ -677,8 +682,8 @@ class _CompassPainter extends CustomPainter {
 
     for (final (label, angle, color, emphasize) in cardinals) {
       final radAngle = (angle - 90) * math.pi / 180;
-      final textX = math.cos(radAngle) * (radius - 34);
-      final textY = math.sin(radAngle) * (radius - 34);
+      final textX = math.cos(radAngle) * (radius - 30);
+      final textY = math.sin(radAngle) * (radius - 30);
 
       final tp = TextPainter(
         text: TextSpan(
@@ -704,46 +709,51 @@ class _CompassPainter extends CustomPainter {
       ..color = AppColors.outlineVariant.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    canvas.drawCircle(center, radius - 48, innerPaint);
+    canvas.drawCircle(center, radius - 46, innerPaint);
 
-    // ─── Jarum kiblat (gradient + glow) ───
+    // ─── Jarum kiblat ───
+    // Ujung berhenti sebelum cincin huruf mata angin; kepala dan batang
+    // dijahit di satu titik (headBase) supaya tidak ada celah/tumpukan.
     final relativeAngle = qiblaBearing - azimuth;
     canvas.save();
     canvas.translate(centerX, centerY);
     canvas.rotate(relativeAngle * math.pi / 180);
 
-    final arrowLength = radius - 55;
+    final tipY = -(radius - 52);
+    const headLen = 22.0;
+    final headBase = tipY + headLen;
 
     // Glow di belakang jarum
     final needleGlow = Paint()
-      ..color = arrowColor.withValues(alpha: 0.4 + 0.3 * glow)
+      ..color = arrowColor.withValues(alpha: 0.35 + 0.35 * glow)
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawLine(const Offset(0, 14), Offset(0, -arrowLength), needleGlow);
+    canvas.drawLine(const Offset(0, 16), Offset(0, tipY + 8), needleGlow);
 
-    // Badan jarum: gradient dari ekor transparan ke ujung solid
+    // Batang: gradient dari ekor transparan ke pangkal kepala
     final needlePaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
-        colors: [arrowColor.withValues(alpha: 0.25), arrowColor],
-      ).createShader(Rect.fromLTRB(-3, -arrowLength, 3, 14))
+        colors: [arrowColor.withValues(alpha: 0.22), arrowColor],
+      ).createShader(Rect.fromLTRB(-3, tipY, 3, 16))
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(const Offset(0, 14), Offset(0, -arrowLength), needlePaint);
+    // Berhenti 4px DI DALAM kepala (−y = atas) supaya sambungannya tak berjahit.
+    canvas.drawLine(Offset(0, 16), Offset(0, headBase - 4), needlePaint);
 
-    // Kepala panah
+    // Kepala panah — duduk tepat di ujung batang
     final headPath = Path()
-      ..moveTo(0, -arrowLength - 6)
-      ..lineTo(-11, -arrowLength + 16)
-      ..lineTo(11, -arrowLength + 16)
+      ..moveTo(0, tipY)
+      ..lineTo(-10, headBase)
+      ..lineTo(10, headBase)
       ..close();
     canvas.drawPath(headPath, Paint()..color = arrowColor);
 
     // Ekor kecil
     canvas.drawCircle(
-        const Offset(0, 14), 5, Paint()..color = arrowColor.withValues(alpha: 0.5));
+        const Offset(0, 16), 5, Paint()..color = arrowColor.withValues(alpha: 0.5));
     canvas.restore();
 
     // ─── Pusat: dot glassy ───
@@ -759,32 +769,47 @@ class _CompassPainter extends CustomPainter {
     );
     canvas.drawCircle(center, 4, Paint()..color = compassColor);
 
-    // ─── Ka'bah di ujung jarum ───
-    final tipRadAngle = (relativeAngle - 90) * math.pi / 180;
-    final tipX = centerX + math.cos(tipRadAngle) * (radius - 80);
-    final tipY = centerY + math.sin(tipRadAngle) * (radius - 80);
+    // ─── Badge Ka'bah di bezel ───
+    // Ka'bah adalah arah geografis tetap, jadi tempatnya sebagai penanda
+    // target di cincin luar — bukan menempel di batang jarum (dulu ia
+    // digambar di radius-80, persis menimpa kepala panah).
+    final markRad = (relativeAngle - 90) * math.pi / 180;
+    final mx = centerX + math.cos(markRad) * bezel;
+    final my = centerY + math.sin(markRad) * bezel;
+    final mark = Offset(mx, my);
 
-    // Halo lembut di belakang emoji biar kebaca di atas dial gelap.
     canvas.drawCircle(
-      Offset(tipX, tipY),
-      20,
+      mark,
+      18,
       Paint()
-        ..color = arrowColor.withValues(alpha: 0.15 + 0.2 * glow)
+        ..color = arrowColor.withValues(alpha: 0.18 + 0.3 * glow)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    canvas.drawCircle(
+        mark, 13, Paint()..color = AppColors.surfaceContainerHigh);
+    canvas.drawCircle(
+      mark,
+      13,
+      Paint()
+        ..color = arrowColor.withValues(alpha: isAligned ? 0.95 : 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
     );
 
     final kaabaTp = TextPainter(
-      text: const TextSpan(text: '🕋', style: TextStyle(fontSize: 28)),
+      text: const TextSpan(text: '🕋', style: TextStyle(fontSize: 15)),
       textDirection: TextDirection.ltr,
     )..layout();
     kaabaTp.paint(
-        canvas, Offset(tipX - kaabaTp.width / 2, tipY - kaabaTp.height / 2));
+        canvas, Offset(mx - kaabaTp.width / 2, my - kaabaTp.height / 2));
   }
 
   @override
   bool shouldRepaint(covariant _CompassPainter oldDelegate) {
     return oldDelegate.azimuth != azimuth ||
         oldDelegate.isAligned != isAligned ||
-        oldDelegate.glow != glow;
+        oldDelegate.glow != glow ||
+        oldDelegate.arrowColor != arrowColor ||
+        oldDelegate.compassColor != compassColor;
   }
 }
