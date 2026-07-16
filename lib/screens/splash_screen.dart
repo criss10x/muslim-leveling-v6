@@ -103,10 +103,10 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        size: 64,
-                        color: AppColors.primary,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 64,
+                        height: 64,
                       ),
                     );
                   },

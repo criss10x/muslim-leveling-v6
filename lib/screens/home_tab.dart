@@ -254,7 +254,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget _appBar(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.shield, size: 20, color: AppColors.primary),
+        Image.asset('assets/images/logo.png', width: 22, height: 22),
         const SizedBox(width: AppSpacing.xs),
         Text(
           'MUSLIM LEVELING',
