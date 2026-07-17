@@ -2099,7 +2099,13 @@ class LearningService {
     if (raw != null) {
       try {
         _cache = LearningState.fromMap(jsonDecode(raw) as Map<String, dynamic>);
+        return _cache;
       } catch (_) {}
+    }
+    final remote = await SupabaseSync.loadLearning();
+    if (remote != null) {
+      _cache = LearningState.fromMap(remote);
+      await p.setString(_key, jsonEncode(remote));
     }
     return _cache;
   }

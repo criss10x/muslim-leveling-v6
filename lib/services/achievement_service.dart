@@ -377,6 +377,13 @@ class AchievementService {
       } catch (_) {
         _unlocked = {};
       }
+      _loaded = true;
+      return;
+    }
+    final remote = await SupabaseSync.loadAchievements();
+    if (remote != null && remote['unlocked'] is Map) {
+      _unlocked = Map<String, String>.from(remote['unlocked'] as Map);
+      await prefs.setString(_prefKey, jsonEncode(_unlocked));
     }
     _loaded = true;
   }

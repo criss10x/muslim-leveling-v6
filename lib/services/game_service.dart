@@ -228,6 +228,13 @@ class GameService {
     final raw = p.getString(_key);
     if (raw != null) {
       try { _cache = GameState.fromMap(jsonDecode(raw) as Map<String, dynamic>); } catch (_) {}
+      return _cache;
+    }
+    // Fresh install — try Supabase
+    final remote = await SupabaseSync.loadGame();
+    if (remote != null) {
+      _cache = GameState.fromMap(remote);
+      await p.setString(_key, jsonEncode(remote));
     }
     return _cache;
   }
