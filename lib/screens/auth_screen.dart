@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../services/auth_service.dart';
 import 'welcome_pejuang.dart';
+import 'dashboard_shell.dart';
 
-/// Simple email/password sign-in gate. Skip = local-only.
-/// Renders only after Supabase is initialized (called from splash).
+/// Email/password sign-in gate. Skip = local-only.
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -28,6 +28,14 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  void _go() => Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => const DashboardShell(),
+      ));
+
+  void _goWelcome() => Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => const WelcomePejuangScreen(),
+      ));
+
   Future<void> _submit() async {
     setState(() { _loading = true; _error = null; });
     final err = _signUp
@@ -37,17 +45,20 @@ class _AuthScreenState extends State<AuthScreen> {
     if (err != null) {
       setState(() { _loading = false; _error = err; });
     } else {
-      // Signed in — session is disk-backed, next app start auto-restores.
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (_) => const WelcomePejuangScreen(),
-      ));
+      // logged-in user may already have profile
+      final prefs = await SharedPreferences.getInstance();
+      final hasProfile = prefs.getBool('onboarding_done') == true &&
+          (prefs.getString('nickname')?.isNotEmpty == true);
+      if (hasProfile) { _go(); } else { _goWelcome(); }
     }
   }
 
-  void _skip() {
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (_) => const WelcomePejuangScreen(),
-    ));
+  Future<void> _skip() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auth_skipped', true);
+    if (!mounted) return;
+    // fresh user goes to onboarding
+    _goWelcome();
   }
 
   @override
@@ -92,7 +103,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  Text(_error!, style: AppText.bodySm().copyWith(color: AppColors.error)),
+                  Text(_error!, style: AppText.bodyMd().copyWith(color: AppColors.error)),
                 ],
                 const SizedBox(height: AppSpacing.lg),
                 SizedBox(
@@ -114,7 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 TextButton(
                   onPressed: _skip,
                   child: Text('Lewati — pakai lokal saja',
-                      style: AppText.bodySm().copyWith(color: AppColors.onSurfaceVariant)),
+                      style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
                 ),
               ],
             ),
