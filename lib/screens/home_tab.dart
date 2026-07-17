@@ -804,12 +804,42 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _sideQuest(BuildContext context) {
-    final done = GameService.tilawahDoneToday;
+    final sedekahDone = GameService.isPrayerCheckedToday('sedekah');
+    final tilawahDone = GameService.tilawahDoneToday;
     const xp = 15;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HudHeader('SIDE QUEST'),
+        PressableScale(
+          onTap: () => _togglePrayer('sedekah', 'sedekah'),
+          child: FlatCard(
+            child: Row(
+              children: [
+                const Icon(Icons.favorite, color: AppColors.error, size: 26),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sedekah',
+                          style: AppText.titleLg().copyWith(
+                            fontSize: 16,
+                            color: sedekahDone
+                                ? AppColors.onSurfaceVariant
+                                : AppColors.onSurface,
+                          )),
+                      Text(sedekahDone ? 'Selesai hari ini ✓' : 'Bersedekah hari ini',
+                          style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                _xpPill(xp, AppColors.error, AppColors.onError, done: sedekahDone),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         PressableScale(
           onTap: () => _togglePrayer('tilawah', 'tilawah'),
           child: FlatCard(
@@ -824,16 +854,16 @@ class _HomeTabState extends State<HomeTab> {
                       Text('Tilawah & Dzikir',
                           style: AppText.titleLg().copyWith(
                             fontSize: 16,
-                            color: done
+                            color: tilawahDone
                                 ? AppColors.onSurfaceVariant
                                 : AppColors.onSurface,
                           )),
-                      Text(done ? 'Selesai hari ini ✓' : 'Baca Al-Qur\'an / Dzikir',
+                      Text(tilawahDone ? 'Selesai hari ini ✓' : 'Baca Al-Qur\'an / Dzikir',
                           style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12)),
                     ],
                   ),
                 ),
-                _xpPill(xp, AppColors.tertiary, AppColors.onTertiary, done: done),
+                _xpPill(xp, AppColors.tertiary, AppColors.onTertiary, done: tilawahDone),
               ],
             ),
           ),
