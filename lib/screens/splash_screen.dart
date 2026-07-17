@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
+import '../../services/auth_service.dart';
+import '../../services/supabase_sync.dart';
+import 'auth_screen.dart';
 import 'welcome_pejuang.dart';
 import 'dashboard_shell.dart';
 
@@ -43,13 +46,20 @@ class _SplashScreenState extends State<SplashScreen>
         final done = prefs.getBool('onboarding_done') ?? false;
         final nickname = prefs.getString('nickname');
         final hasProfile = done && nickname != null && nickname.isNotEmpty;
+        final isAuth = AuthService.signedIn;
         _fadeCtl.forward().then((_) {
           if (mounted) {
+            Widget dest;
+            if (!isAuth) {
+              dest = const AuthScreen();
+            } else if (hasProfile) {
+              dest = const DashboardShell();
+            } else {
+              dest = const WelcomePejuangScreen();
+            }
             Navigator.of(context).pushReplacement(
               PageRouteBuilder(
-                pageBuilder: (_, __, ___) => hasProfile
-                    ? const DashboardShell()
-                    : const WelcomePejuangScreen(),
+                pageBuilder: (_, __, ___) => dest,
                 transitionsBuilder: (_, anim, __, child) =>
                     FadeTransition(opacity: anim, child: child),
                 transitionDuration: const Duration(milliseconds: 400),
