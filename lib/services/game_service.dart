@@ -120,6 +120,7 @@ class GameState {
   final ZikirCounter zikirCounter; // daily zikir counter
   final List<String> rewards;          // collected cosmetic reward names
   final String dailyChestOpenedDate;   // YYYY-MM-DD last chest open ("" = never)
+  final bool haidMode;                 // menstruation mode: streaks frozen
 
   GameState({
     this.xp = 0, this.level = 1,
@@ -131,6 +132,7 @@ class GameState {
     ZikirCounter? zikirCounter,
     this.rewards = const [],
     this.dailyChestOpenedDate = '',
+    this.haidMode = false,
   })  : timings = timings ?? Timings(),
         prayerLog = prayerLog ?? [],
         heroStreak = heroStreak ?? StreakState(),
@@ -147,6 +149,7 @@ class GameState {
     ZikirCounter? zikirCounter,
     List<String>? rewards,
     String? dailyChestOpenedDate,
+    bool? haidMode,
   }) => GameState(
       xp: xp ?? this.xp, level: level ?? this.level,
       timings: timings ?? this.timings, prayerLog: prayerLog ?? this.prayerLog,
@@ -159,7 +162,8 @@ class GameState {
       badges: badges ?? this.badges,
       zikirCounter: zikirCounter ?? this.zikirCounter,
       rewards: rewards ?? this.rewards,
-      dailyChestOpenedDate: dailyChestOpenedDate ?? this.dailyChestOpenedDate);
+      dailyChestOpenedDate: dailyChestOpenedDate ?? this.dailyChestOpenedDate,
+      haidMode: haidMode ?? this.haidMode);
 
   factory GameState.fromMap(Map<String, dynamic> m) {
     final logList = (m['prayerLog'] as List?)?.map((e) => PrayerLog.fromMap(e as Map<String, dynamic>)).toList() ?? [];
@@ -186,6 +190,7 @@ class GameState {
       zikirCounter: zikir,
       rewards: rewardList,
       dailyChestOpenedDate: m['dailyChestOpenedDate'] ?? '',
+      haidMode: m['haidMode'] ?? false,
     );
   }
   Map<String, dynamic> toMap() => {
@@ -202,6 +207,7 @@ class GameState {
     'zikirCounter': zikirCounter.toMap(),
     'rewards': rewards,
     'dailyChestOpenedDate': dailyChestOpenedDate,
+    'haidMode': haidMode,
   };
 }
 
@@ -235,6 +241,9 @@ class GameService {
   }
 
   static Future<void> setTimings(Timings t) => _save(_cache.copyWith(timings: t));
+
+  static Future<void> setHaidMode(bool v) => _save(_cache.copyWith(haidMode: v));
+  static bool get haidMode => _cache.haidMode;
 
   // ─── XP / Level ───
   static int xpNeededForLevel(int level) => (40 + 8 * level + 0.5 * level * level).round();
@@ -879,13 +888,15 @@ class GameService {
   // Evaluasi hari² yang terlewat antara lastCheckedDate → today.
   // Untuk setiap hari yang missed: pakai freeze jika ada, atau recovery (×0.75) + comebackCount++.
   // Setiap awal minggu (ISO week berbeda), reset freezeAvailable = true untuk semua streak.
+  //
+  // Mode Haid: skip seluruh evaluasi missed-day — streak tetap sebagaimana adanya,
+  // comeback tidak bertambah. Hanya update lastCheckedDate ke hari ini.
   static Future<GameState> runDailyCheck() async {
     final state = _cache;
     final today = todayStr();
 
     // Already checked today → skip
     if (state.lastCheckedDate == today) {
-      // Make sure quests are generated for today
       if (state.questDate != today) {
         return ensureDailyQuests();
       }
@@ -897,6 +908,14 @@ class GameService {
       final init = state.copyWith(lastCheckedDate: today, questDate: today);
       await _save(init);
       return ensureDailyQuests();
+    }
+
+    // ponytail: haid mode — no penalties, just advance the date
+    if (state.haidMode) {
+      final s = state.copyWith(lastCheckedDate: today);
+      await _save(s);
+      if (s.questDate != today) return ensureDailyQuests();
+      return current;
     }
 
     final lastChecked = DateTime.parse(state.lastCheckedDate);

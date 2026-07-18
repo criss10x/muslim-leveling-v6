@@ -34,6 +34,7 @@ class _ProfilTabState extends State<ProfilTab> {
   String _cityId = '';
   String? _avatarPath;
   int _level = 1;
+  bool _haidMode = false;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _ProfilTabState extends State<ProfilTab> {
       _nickname = p.getString('nickname') ?? 'Pejuang';
       _avatarPath = p.getString('avatar_path');
       _level = levelInfo.level;
+      _haidMode = state.haidMode;
       if (loc != null) {
         _cityId = loc.id;
         _cityName = loc.name;
@@ -555,6 +557,8 @@ class _ProfilTabState extends State<ProfilTab> {
               const SizedBox(height: AppSpacing.md),
               _achievements(),
               const SizedBox(height: AppSpacing.lg),
+              _haidModeToggle(),
+              const SizedBox(height: AppSpacing.md),
               _settings(),
             ],
           ),
@@ -1023,6 +1027,46 @@ class _ProfilTabState extends State<ProfilTab> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _haidModeToggle() {
+    return GlassPanel(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: const Icon(Icons.bloodtype_outlined, color: AppColors.error, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Mode Haid', style: AppText.bodyLg()),
+                Text(
+                  _haidMode ? 'Streak dijaga — tidak ada penalti' : 'Nonaktif',
+                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _haidMode,
+            onChanged: (v) async {
+              await GameService.setHaidMode(v);
+              setState(() => _haidMode = v);
+            },
+            activeTrackColor: AppColors.error.withValues(alpha: 0.5),
+            activeThumbColor: AppColors.error,
+          ),
+        ],
+      ),
     );
   }
 
