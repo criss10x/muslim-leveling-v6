@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
-import '../../services/auth_service.dart';
-import 'auth_screen.dart';
 import 'welcome_pejuang.dart';
 import 'dashboard_shell.dart';
 
@@ -45,29 +43,13 @@ class _SplashScreenState extends State<SplashScreen>
         final done = prefs.getBool('onboarding_done') ?? false;
         final nickname = prefs.getString('nickname');
         final hasProfile = done && nickname != null && nickname.isNotEmpty;
-        final skipped = prefs.getBool('auth_skipped') ?? false;
-        Widget dest;
-        try {
-          // guard: signedIn may throw if supabase.init failed
-          dest = AuthService.signedIn
-              ? (hasProfile
-                  ? const DashboardShell()
-                  : const WelcomePejuangScreen())
-              : (skipped
-                  ? (hasProfile
-                      ? const DashboardShell()
-                      : const WelcomePejuangScreen())
-                  : const AuthScreen());
-        } catch (_) {
-          dest = hasProfile
-              ? const DashboardShell()
-              : const WelcomePejuangScreen();
-        }
         _fadeCtl.forward().then((_) {
           if (mounted) {
             Navigator.of(context).pushReplacement(
               PageRouteBuilder(
-                pageBuilder: (_, __, ___) => dest,
+                pageBuilder: (_, __, ___) => hasProfile
+                    ? const DashboardShell()
+                    : const WelcomePejuangScreen(),
                 transitionsBuilder: (_, anim, __, child) =>
                     FadeTransition(opacity: anim, child: child),
                 transitionDuration: const Duration(milliseconds: 400),

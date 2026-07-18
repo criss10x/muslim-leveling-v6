@@ -1,11 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'auth_service.dart';
 
-/// Sync 3 JSON blobs to Supabase. One table, one row per user.
-/// Silent on network errors — local is the fallback truth.
+/// Sync 3 JSON blobs to Supabase. One table, one row per device.
+/// Silent on network errors — local persistence always works.
 class SupabaseSync {
-  static String? get _id => AuthService.userId;
+  static String? _deviceId;
 
+  static String get _id => _deviceId ?? 'noop';
+  static void init(String id) => _deviceId = id;
+
+  // ponytail: lazy — Supabase.initialize() bisa gagal di offline-first launch
   static SupabaseClient? get _client {
     try {
       return Supabase.instance.client;
@@ -14,7 +17,6 @@ class SupabaseSync {
     }
   }
 
-  // ── Saves ──
   static Future<void> saveGame(Map<String, dynamic> data) =>
       _upsert({'game': data});
   static Future<void> saveLearning(Map<String, dynamic> data) =>
@@ -22,58 +24,40 @@ class SupabaseSync {
   static Future<void> saveAchievements(Map<String, dynamic> data) =>
       _upsert({'achievements': data});
 
-  // ── Loads ──
-  static Future<Map<String, dynamic>?> loadGame() async {
-    final row = await _fetch();
-    if (row == null) return null;
-    return row['game'] as Map<String, dynamic>?;
-  }
-
-  static Future<Map<String, dynamic>?> loadLearning() async {
-    final row = await _fetch();
-    if (row == null) return null;
-    return row['learning'] as Map<String, dynamic>?;
-  }
-
-  static Future<Map<String, dynamic>?> loadAchievements() async {
-    final row = await _fetch();
-    if (row == null) return null;
-    return row['achievements'] as Map<String, dynamic>?;
-  }
-
-  static Future<Map<String, dynamic>?> _fetch() async {
-    final id = _id;
+  static Future<Map<String, dynamic>?> load() async {
     final c = _client;
-    if (id == null || c == null) return null;
+    if (c == null) return null;
     try {
-      return await c
+      final res = await c
           .from('user_data')
           .select()
-          .eq('user_id', id)
+          .eq('device_id', _id)
           .maybeSingle();
+      return res;
     } catch (_) {
       return null;
     }
   }
 
+  static Future<Map<String, dynamic>?> loadGame() async {
+    final row = await load();
+    return row?['game'] as Map<String, dynamic>?;
+  }
+  static Future<Map<String, dynamic>?> loadLearning() async {
+    final row = await load();
+    return row?['learning'] as Map<String, dynamic>?;
+  }
+  static Future<Map<String, dynamic>?> loadAchievements() async {
+    final row = await load();
+    return row?['achievements'] as Map<String, dynamic>?;
+  }
+
   static Future<void> _upsert(Map<String, dynamic> extra) async {
-    final id = _id;
     final c = _client;
-    if (id == null || c == null) return;
+    if (c == null) return;
     try {
-      // Fetch existing to avoid nulling sibling columns on partial update
-      Map<String, dynamic> row = {};
-      try {
-        final existing = await c
-            .from('user_data')
-            .select()
-            .eq('user_id', id)
-            .maybeSingle();
-        if (existing != null) row = Map<String, dynamic>.from(existing);
-      } catch (_) {}
       await c.from('user_data').upsert({
-        'user_id': id,
-        ...row,
+        'device_id': _id,
         ...extra,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
