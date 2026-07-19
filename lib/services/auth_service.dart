@@ -12,15 +12,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// supaya app tetap jalan offline-first.
 class AuthService {
   static const _prefGoogleUser = 'google_user_email';
-  static const _webClientId = String.fromEnvironment(
-    'GOOGLE_WEB_CLIENT_ID',
-    defaultValue: '',
-  );
 
+  /// Pakai Android client_id (bukan Web) ⸺ yg ini di-approve oleh Google Sign In SDK
+  /// untuk OAuth dari perangkat Android.
   static final _google = GoogleSignIn(
-    // Diisi lewat --dart-define=GOOGLE_WEB_CLIENT_ID=xxx.apps.googleusercontent.com
-    // Kalau kosong, GoogleSignIn pakai OAuth client dari google-services.json (release).
-    clientId: _webClientId.isEmpty ? null : _webClientId,
+    clientId: '691907686915-hhb5r3vhirhtcp4a6ihev4vt83ctgkko.apps.googleusercontent.com',
     scopes: ['email'],
   );
 
