@@ -244,7 +244,13 @@ class GameService {
     stateVersion.value++; // broadcast to passive listeners (Jadwal tab)
     final p = await SharedPreferences.getInstance();
     await p.setString(_key, jsonEncode(s.toMap()));
-    SupabaseSync.saveGame(s.toMap()); // fire-and-forget
+    // fire-and-forget tapi beri feedback ringan (sukses/gagal)
+    final ok = await SupabaseSync.saveGame(s.toMap());
+    if (ok) {
+      debugPrint('[GameService] backup Supabase OK');
+    } else {
+      debugPrint('[GameService] backup Supabase gagal (offline?)');
+    }
   }
 
   static Future<void> setTimings(Timings t) => _save(_cache.copyWith(timings: t));

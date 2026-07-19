@@ -12,6 +12,8 @@ import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
+import '../../services/learning_content.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
 import 'achievements_screen.dart';
@@ -559,6 +561,8 @@ class _ProfilTabState extends State<ProfilTab> {
               const SizedBox(height: AppSpacing.lg),
               _haidModeToggle(),
               const SizedBox(height: AppSpacing.md),
+              _accountBackup(),
+              const SizedBox(height: AppSpacing.md),
               _settings(),
             ],
           ),
@@ -1067,6 +1071,110 @@ class _ProfilTabState extends State<ProfilTab> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Backup & Account ──
+  Future<void> _handleGoogleLogin() async {
+    final uid = await AuthService.signInWithGoogle();
+    if (uid == null) {
+      _showSettingSnackbar('Login Google dibatalkan atau gagal. Progress tetap tersimpan di perangkat.');
+      return;
+    }
+    SupabaseSync.initWithUser(uid);
+    // Pull remote progress (kalau ada) ke lokal
+    await GameService.load();
+    await LearningService.load();
+    await AchievementService.load();
+    if (!mounted) return;
+    setState(() {});
+    _showSettingSnackbar('☁️ Login berhasil! Progress tersinkron lintas device.');
+  }
+
+  Future<void> _handleLogout() async {
+    await AuthService.signOut();
+    // Kembali ke device_id lokal (progress tetap utuh di SharedPreferences)
+    final p = await SharedPreferences.getInstance();
+    final deviceId = p.getString('device_id');
+    if (deviceId != null) SupabaseSync.init(deviceId);
+    if (!mounted) return;
+    setState(() {});
+    _showSettingSnackbar('Logout berhasil. Progress tersimpan di perangkat ini.');
+  }
+
+  Widget _accountBackup() {
+    final signedIn = AuthService.isSignedIn;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const HudHeader('BACKUP & AKUN'),
+        FlatCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    signedIn ? Icons.cloud_done : Icons.cloud_off,
+                    color: signedIn ? AppColors.primary : AppColors.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      signedIn
+                          ? 'Progress tersinkron ke akun Google'
+                          : 'Belum login — progress hanya di perangkat ini',
+                      style: AppText.bodyMd().copyWith(
+                        color: signedIn ? AppColors.primary : AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (signedIn)
+                OutlinedButton.icon(
+                  onPressed: _handleLogout,
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Keluar dari Akun'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: _handleGoogleLogin,
+                  icon: const Icon(Icons.g_mobiledata, size: 22),
+                  label: const Text('Lanjut dengan Google'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                signedIn
+                    ? 'Ganti HP? Login pakai akun sama untuk restore otomatis.'
+                    : 'Login agar progress aman saat ganti HP atau instal ulang.',
+                style: AppText.bodyMd().copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 11,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
