@@ -56,10 +56,10 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
+            // ponytail: disable R8/minify — package_info_plus duplicate-class
+            // conflict di R8 task. App kecil, obfuscation gak kritis.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

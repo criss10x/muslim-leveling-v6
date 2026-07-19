@@ -13,6 +13,7 @@ import '../../services/game_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
 import '../../services/learning_content.dart';
+import '../../services/supabase_sync.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
