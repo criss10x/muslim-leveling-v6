@@ -61,16 +61,16 @@ class AppColorsDark {
   static const onErrorContainer = Color(0xFFFFDAD6);
 }
 
-/// ── Light theme colors (new — warm clean base, keeps emerald/gold/cyan identity) ──
+/// ── Light theme colors (warm clean base, emerald/gold/cyan identity) ──
 class AppColorsLight {
-  static const background = Color(0xFFF8FBF9);
-  static const surfaceDim = Color(0xFFD7DBD8);
-  static const surface = Color(0xFFF8FBF9);
-  static const surfaceBright = Color(0xFFF8FBF9);
-  static const surfaceContainerLowest = Color(0xFFEFF3F0);
-  static const surfaceContainerLow = Color(0xFFF2F6F3);
-  static const surfaceContainer = Color(0xFFECF0ED);
-  static const surfaceContainerHigh = Color(0xFFE5EAE7);
+  static const background = Color(0xFFF7FAF8);
+  static const surfaceDim = Color(0xFFD5DAD7);
+  static const surface = Color(0xFFF7FAF8);
+  static const surfaceBright = Color(0xFFF7FAF8);
+  static const surfaceContainerLowest = Color(0xFFECF0ED);
+  static const surfaceContainerLow = Color(0xFFF1F5F2);
+  static const surfaceContainer = Color(0xFFEBEFEC);
+  static const surfaceContainerHigh = Color(0xFFE5E9E6);
   static const surfaceContainerHighest = Color(0xFFDDE1DE);
   static const surfaceVariant = Color(0xFFDDE1DE);
 
@@ -80,7 +80,7 @@ class AppColorsLight {
   static const outline = Color(0xFF717974);
   static const outlineVariant = Color(0xFFC1C8C2);
 
-  // Primary — same emerald, works on light bg
+  // Primary — emerald, dark enough for light bg, vibrant
   static const primary = Color(0xFF006C50);
   static const primaryFixed = Color(0xFF4FE7B3);
   static const primaryFixedDim = Color(0xFF32CB9E);
@@ -92,8 +92,8 @@ class AppColorsLight {
   static const surfaceTint = Color(0xFF006C50);
   static const inversePrimary = Color(0xFF42E5B1);
 
-  // Secondary — gold, slightly deeper for light bg contrast
-  static const secondary = Color(0xFF6B5900);
+  // Secondary — warm gold, not olive/brown
+  static const secondary = Color(0xFF7C6600);
   static const secondaryContainer = Color(0xFFFFDE59);
   static const secondaryFixed = Color(0xFFFFE16D);
   static const secondaryFixedDim = Color(0xFFE9C400);
@@ -102,8 +102,8 @@ class AppColorsLight {
   static const onSecondaryFixed = Color(0xFF221B00);
   static const onSecondaryFixedVariant = Color(0xFF544600);
 
-  // Tertiary — cyan, slightly deeper
-  static const tertiary = Color(0xFF006872);
+  // Tertiary — vibrant cyan, not dark teal
+  static const tertiary = Color(0xFF008394);
   static const tertiaryContainer = Color(0xFF4EF0FF);
   static const tertiaryFixed = Color(0xFF9FF5FF);
   static const tertiaryFixedDim = Color(0xFF5DECFA);
