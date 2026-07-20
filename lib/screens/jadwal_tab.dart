@@ -200,7 +200,7 @@ class _JadwalTabState extends State<JadwalTab> {
           Row(
             children: [
               Text(_todayLabel(), style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6),
                 child: Text('•', style: TextStyle(color: AppColors.outlineVariant)),
               ),
@@ -293,7 +293,7 @@ class _JadwalTabState extends State<JadwalTab> {
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: _loading
-                    ? const Center(
+                    ? Center(
                         child: Padding(
                           padding: EdgeInsets.all(24),
                           child: CircularProgressIndicator(color: AppColors.primary),
@@ -356,7 +356,7 @@ class _JadwalTabState extends State<JadwalTab> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   ShaderMask(
-                                    shaderCallback: (rect) => const LinearGradient(
+                                    shaderCallback: (rect) => LinearGradient(
                                       colors: [AppColors.primary, AppColors.primaryFixed],
                                     ).createShader(rect),
                                     child: Text(

@@ -751,8 +751,8 @@ class NeonProgressBar extends StatelessWidget {
   NeonProgressBar({
     super.key,
     required this.progress,
-    this.fromColor = AppColors.primaryContainer,
-    this.toColor = AppColors.primary,
+    this.fromColor = const Color(0xFF00C897),
+    this.toColor = const Color(0xFF42E5B1),
     this.height = 16,
     this.segmented = false,
     this.segments = 5,

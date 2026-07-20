@@ -356,7 +356,7 @@ class _QiblaScreenState extends State<QiblaScreen>
                 border: Border.all(
                     color: AppColors.outlineVariant.withValues(alpha: 0.3)),
               ),
-              child: const Icon(Icons.arrow_back,
+              child: Icon(Icons.arrow_back,
                   color: AppColors.onSurface, size: 20),
             ),
           ),

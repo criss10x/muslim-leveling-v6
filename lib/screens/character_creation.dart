@@ -61,7 +61,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                       child: TextField(
                         controller: _nickname,
                         style: AppText.bodyLg(),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Masukkan Nickname',
                           hintStyle: TextStyle(color: AppColors.onSurfaceVariant),
                           border: InputBorder.none,
@@ -151,7 +151,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
     return Column(
       children: [
         ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
+          shaderCallback: (rect) => LinearGradient(
             colors: [AppColors.primary, AppColors.tertiary],
           ).createShader(rect),
           child: Text(

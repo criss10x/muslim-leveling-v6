@@ -101,7 +101,7 @@ class WelcomePejuangScreen extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
+          shaderCallback: (rect) => LinearGradient(
             colors: [AppColors.onSurface, AppColors.onSurfaceVariant],
           ).createShader(rect),
           child: Text(
@@ -113,7 +113,7 @@ class WelcomePejuangScreen extends StatelessWidget {
           ),
         ),
         ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
+          shaderCallback: (rect) => LinearGradient(
             colors: [AppColors.primary, AppColors.tertiary],
           ).createShader(rect),
           child: Text(

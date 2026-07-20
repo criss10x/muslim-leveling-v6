@@ -116,7 +116,7 @@ class DapetExpScreen extends StatelessWidget {
         height: 140,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const RadialGradient(
+          gradient: RadialGradient(
             colors: [AppColors.tertiaryFixed, AppColors.tertiaryContainer],
           ),
           boxShadow: [
@@ -127,7 +127,7 @@ class DapetExpScreen extends StatelessWidget {
             ),
           ],
         ),
-        child: const Icon(
+        child: Icon(
           Icons.auto_stories,
           color: AppColors.background,
           size: 72,

@@ -82,7 +82,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         color:
                             AppColors.outlineVariant.withValues(alpha: 0.3)),
                   ),
-                  child: const Icon(Icons.arrow_back,
+                  child: Icon(Icons.arrow_back,
                       color: AppColors.onSurface, size: 20),
                 ),
               ),

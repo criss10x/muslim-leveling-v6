@@ -138,7 +138,7 @@ class _NaikLevelScreenState extends State<NaikLevelScreen> {
         height: 140,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const RadialGradient(
+          gradient: RadialGradient(
             colors: [AppColors.secondaryFixed, AppColors.secondaryContainer],
           ),
           boxShadow: [
@@ -149,7 +149,7 @@ class _NaikLevelScreenState extends State<NaikLevelScreen> {
             ),
           ],
         ),
-        child: const Icon(
+        child: Icon(
           Icons.workspace_premium,
           color: AppColors.onSecondaryContainer,
           size: 80,
