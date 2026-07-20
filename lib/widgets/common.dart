@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/theme_service.dart';
 
 /// Glass panel — translucent dark surface with subtle border and inner glow.
 /// Mirrors the `glass-panel` Tailwind utility used throughout the designs.
@@ -570,13 +571,17 @@ class _AmbientBackgroundState extends State<AmbientBackground>
       vsync: this,
       duration: const Duration(seconds: 12),
     )..repeat();
+    themeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
     _fireflyController.dispose();
     super.dispose();
   }
+
+  void _onThemeChange() => setState(() {});
 
   @override
   Widget build(BuildContext context) {

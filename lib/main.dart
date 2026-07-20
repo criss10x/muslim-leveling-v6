@@ -5,6 +5,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
+import 'services/theme_service.dart';
 import 'screens/splash_screen.dart';
 import 'services/notification_service.dart';
 import 'services/supabase_sync.dart';
@@ -21,7 +22,6 @@ Future<void> _initAsync() async {
   try {
     await Supabase.initialize(
       url: 'https://hiywlsqaurqvbwwuutbo.supabase.co',
-      // ignore: deprecated_member_use
       anonKey: 'eyJhbG...EfTw',
     );
   } catch (_) {}
@@ -38,7 +38,6 @@ Future<void> _initAsync() async {
     }
   } catch (_) {}
 
-  // Restore Google session (kalau pernah login) → bind device_id ke auth.uid
   try {
     final authed = await AuthService.init();
     if (authed) {
@@ -62,10 +61,9 @@ Future<void> _initAsync() async {
     );
   } catch (_) {}
 
-  // ponytail: fire-and-forget — sentry kadang hang
   SentryFlutter.init(
     (options) {
-      options.dsn = 'https://8c85da22b45bf35c51d3df07dcca0096@o4511691396677632.ingest.de.sentry.io/4511691401330768';
+      options.dsn = 'https://8c85da...0096@o4511691396677632.ingest.de.sentry.io/4511691401330768';
       options.environment = const String.fromEnvironment('SENTRY_ENVIRONMENT', defaultValue: 'production');
       options.release = const String.fromEnvironment('SENTRY_RELEASE', defaultValue: 'muslim-leveling@1.0.0+1');
       options.tracesSampleRate = 0.1;
@@ -76,18 +74,38 @@ Future<void> _initAsync() async {
   );
 }
 
-// ponytail: base-36 is enough entropy for offline device id
 String _rand36() => BigInt.from(Random().nextInt(1 << 48)).toRadixString(36).padLeft(8, '0');
 
-class MuslimLevelingApp extends StatelessWidget {
+class MuslimLevelingApp extends StatefulWidget {
   const MuslimLevelingApp({super.key});
+  @override
+  State<MuslimLevelingApp> createState() => MuslimLevelingAppState();
+}
+
+class MuslimLevelingAppState extends State<MuslimLevelingApp> {
+  @override
+  void initState() {
+    super.initState();
+    themeNotifier.addListener(_onThemeChange);
+    themeNotifier.load();
+  }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Muslim Leveling',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeNotifier.mode,
       home: const SplashScreen(),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../services/theme_service.dart';
 import '../../widgets/common.dart';
 import 'home_tab.dart';
 import 'jadwal_tab.dart';
@@ -24,7 +25,16 @@ class _DashboardShellState extends State<DashboardShell> {
   void initState() {
     super.initState();
     _tab = widget.initialTab;
+    themeNotifier.addListener(_onThemeChange);
   }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() => setState(() {});
 
   static const _items = [
     (Icons.home_outlined, Icons.home, 'HOME'),

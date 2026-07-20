@@ -15,6 +15,7 @@ import '../../services/achievement_service.dart';
 import '../../services/learning_content.dart';
 import '../../services/supabase_sync.dart';
 import '../../services/auth_service.dart';
+import '../../services/theme_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
 import 'achievements_screen.dart';
@@ -42,8 +43,17 @@ class _ProfilTabState extends State<ProfilTab> {
   @override
   void initState() {
     super.initState();
+    themeNotifier.addListener(_onThemeChange);
     _loadProfile();
   }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() => setState(() {});
 
   Future<void> _loadProfile() async {
     await GameService.load();
@@ -1183,7 +1193,7 @@ class _ProfilTabState extends State<ProfilTab> {
     final rows = <_SettingRow>[
       _SettingRow('Pengaturan Akun', Icons.person_outline, onTap: _editNickname),
       _SettingRow('Notifikasi', Icons.notifications_outlined, onTap: _showNotifDialog),
-      _SettingRow('Tema & Tampilan', Icons.palette_outlined, onTap: () => _showSettingSnackbar('Saat ini hanya tema gelap yang tersedia')),
+      _SettingRow('Tema Terang', Icons.light_mode_outlined, trailing: _ThemeToggle()),
       _SettingRow('Privasi & Data', Icons.lock_outline, onTap: _showPrivacyDialog),
       _SettingRow('Tentang Aplikasi', Icons.info_outline, onTap: _showAboutDialog),
       _SettingRow('Keluar', Icons.logout, color: AppColors.error, onTap: _confirmLogout),
@@ -1221,11 +1231,12 @@ class _ProfilTabState extends State<ProfilTab> {
                                 style: AppText.bodyLg().copyWith(color: color),
                               ),
                             ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.onSurfaceVariant,
-                              size: 20,
-                            ),
+                            r.trailing ??
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: AppColors.onSurfaceVariant,
+                                  size: 20,
+                                ),
                           ],
                         ),
                       ),
@@ -1253,5 +1264,36 @@ class _SettingRow {
   final IconData icon;
   final Color? color;
   final VoidCallback? onTap;
-  _SettingRow(this.title, this.icon, {this.color, this.onTap});
+  final Widget? trailing;
+  _SettingRow(this.title, this.icon, {this.color, this.onTap, this.trailing});
+}
+
+class _ThemeToggle extends StatefulWidget {
+  @override
+  State<_ThemeToggle> createState() => _ThemeToggleState();
+}
+
+class _ThemeToggleState extends State<_ThemeToggle> {
+  @override
+  void initState() {
+    super.initState();
+    themeNotifier.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    return Switch.adaptive(
+      value: themeNotifier.isLight,
+      onChanged: (_) => themeNotifier.toggle(),
+      activeColor: AppColors.primary,
+    );
+  }
 }
