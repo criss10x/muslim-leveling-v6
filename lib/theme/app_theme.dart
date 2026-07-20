@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Global light/dark toggle — read by AppColors getters.
+/// MUTATION: hanya lewat ThemeNotifier (theme_service.dart), jangan set langsung.
 bool _isLight = false;
 bool get isLightTheme => _isLight;
 set isLightTheme(bool v) => _isLight = v;
