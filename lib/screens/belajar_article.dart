@@ -39,7 +39,7 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
               value: _scrollProgress,
               minHeight: 2,
               backgroundColor: AppColors.surfaceContainer,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
             Expanded(
               child: NotificationListener<ScrollNotification>(
@@ -71,7 +71,7 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+            icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(
@@ -140,7 +140,7 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.school, color: AppColors.tertiary, size: 20),
+            Icon(Icons.school, color: AppColors.tertiary, size: 20),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(block.text,
@@ -173,12 +173,12 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
           children: [
-            const Expanded(child: Divider(color: AppColors.outlineVariant)),
+            Expanded(child: Divider(color: AppColors.outlineVariant)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: Text('✦', style: AppText.labelCaps().copyWith(color: AppColors.outlineVariant)),
             ),
-            const Expanded(child: Divider(color: AppColors.outlineVariant)),
+            Expanded(child: Divider(color: AppColors.outlineVariant)),
           ],
         ),
       );

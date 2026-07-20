@@ -108,7 +108,7 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
+            icon: Icon(Icons.close, color: AppColors.onSurfaceVariant),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(

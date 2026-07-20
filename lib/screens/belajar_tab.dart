@@ -212,7 +212,7 @@ class _BelajarTabState extends State<BelajarTab> {
                 child: Center(
                   child: unlocked
                       ? Text(mod.icon, style: const TextStyle(fontSize: 26))
-                      : const Icon(Icons.lock, color: AppColors.onSurfaceVariant, size: 20),
+                      : Icon(Icons.lock, color: AppColors.onSurfaceVariant, size: 20),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),

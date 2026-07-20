@@ -122,7 +122,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               minHeight: 6,
               backgroundColor: AppColors.surfaceContainerHigh,
               valueColor:
-                  const AlwaysStoppedAnimation(AppColors.secondaryFixed),
+                  AlwaysStoppedAnimation<Color>(AppColors.secondaryFixed),
             ),
           ),
         ],

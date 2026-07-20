@@ -90,7 +90,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                                   ),
                                 ),
                               ),
-                              const Icon(Icons.search, color: AppColors.primary, size: 20),
+                              Icon(Icons.search, color: AppColors.primary, size: 20),
                             ],
                           ),
                         ),

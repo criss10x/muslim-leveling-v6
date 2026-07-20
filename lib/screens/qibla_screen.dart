@@ -388,7 +388,7 @@ class _QiblaScreenState extends State<QiblaScreen>
   Widget _compass(bool aligned) {
     // Dial selalu mint (identitas app + logo). Jarum cyan saat mencari,
     // mengunci ke mint saat sejajar — pasangan mint/cyan = gradient logo.
-    const compassColor = AppColors.primary;
+    final compassColor = AppColors.primary;
     final arrowColor = aligned ? AppColors.primaryFixed : AppColors.tertiary;
 
     return AnimatedBuilder(

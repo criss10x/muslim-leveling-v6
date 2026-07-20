@@ -377,7 +377,7 @@ class _ConfettiPainter extends CustomPainter {
   final int count;
   _ConfettiPainter(this.t, this.count);
 
-  static const _palette = [
+  static final _palette = [
     AppColors.primary,
     AppColors.secondaryFixed,
     AppColors.tertiary,
@@ -452,7 +452,7 @@ class HeroButton extends StatelessWidget {
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               colors: [AppColors.primary, AppColors.primaryFixed],
             ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -748,7 +748,7 @@ class NeonProgressBar extends StatelessWidget {
   final int segments;
   final bool leadingGlow; // glow di ujung leading bar (hero rank card)
 
-  const NeonProgressBar({
+  NeonProgressBar({
     super.key,
     required this.progress,
     this.fromColor = AppColors.primaryContainer,

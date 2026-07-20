@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 ShaderMask(
-                  shaderCallback: (rect) => const LinearGradient(
+                  shaderCallback: (rect) => LinearGradient(
                     colors: [AppColors.primary, AppColors.tertiary],
                   ).createShader(rect),
                   child: Text(
@@ -152,7 +152,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Container(
                             height: 4,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 colors: [AppColors.primary, AppColors.tertiary],
                               ),
                               borderRadius: BorderRadius.circular(2),

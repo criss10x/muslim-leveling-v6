@@ -204,7 +204,7 @@ class _JadwalTabState extends State<JadwalTab> {
                 padding: EdgeInsets.symmetric(horizontal: 6),
                 child: Text('•', style: TextStyle(color: AppColors.outlineVariant)),
               ),
-              const Icon(Icons.location_on, size: 14, color: AppColors.onSurfaceVariant),
+              Icon(Icons.location_on, size: 14, color: AppColors.onSurfaceVariant),
               const SizedBox(width: 4),
               Expanded(
                 child: InkWell(
@@ -219,7 +219,7 @@ class _JadwalTabState extends State<JadwalTab> {
               ),
               InkWell(
                 onTap: _changeLocation,
-                child: const Icon(Icons.edit, size: 14, color: AppColors.primary),
+                child: Icon(Icons.edit, size: 14, color: AppColors.primary),
               ),
             ],
           ),
@@ -248,13 +248,13 @@ class _JadwalTabState extends State<JadwalTab> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.explore, size: 22, color: AppColors.secondaryFixed),
+            Icon(Icons.explore, size: 22, color: AppColors.secondaryFixed),
             const SizedBox(width: AppSpacing.sm),
             Text('Kompas Kiblat',
                 style: AppText.titleLg()
                     .copyWith(fontSize: 15, color: AppColors.onSurface)),
             const Spacer(),
-            const Icon(Icons.arrow_forward_ios,
+            Icon(Icons.arrow_forward_ios,
                 size: 14, color: AppColors.secondaryFixed),
           ],
         ),
@@ -305,7 +305,7 @@ class _JadwalTabState extends State<JadwalTab> {
                               padding: const EdgeInsets.all(16),
                               child: Column(
                                 children: [
-                                  const Icon(Icons.cloud_off, color: AppColors.error, size: 32),
+                                  Icon(Icons.cloud_off, color: AppColors.error, size: 32),
                                   const SizedBox(height: 8),
                                   Text(
                                     _error!,
@@ -343,7 +343,7 @@ class _JadwalTabState extends State<JadwalTab> {
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.timer, size: 14, color: AppColors.secondaryFixed),
+                                        Icon(Icons.timer, size: 14, color: AppColors.secondaryFixed),
                                         const SizedBox(width: 4),
                                         Text(next.countdown, style: AppText.labelCaps().copyWith(color: AppColors.secondaryFixed)),
                                       ],
@@ -372,7 +372,7 @@ class _JadwalTabState extends State<JadwalTab> {
                                       shape: BoxShape.circle,
                                       border: Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.5)),
                                     ),
-                                    child: const Icon(Icons.notifications_active, color: AppColors.primary, size: 20),
+                                    child: Icon(Icons.notifications_active, color: AppColors.primary, size: 20),
                                   ),
                                 ],
                               ),
