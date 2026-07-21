@@ -86,27 +86,23 @@ class MuslimLevelingAppState extends State<MuslimLevelingApp> {
   @override
   void initState() {
     super.initState();
-    themeNotifier.addListener(_onThemeChange);
     themeNotifier.load();
   }
 
   @override
-  void dispose() {
-    themeNotifier.removeListener(_onThemeChange);
-    super.dispose();
-  }
-
-  void _onThemeChange() => setState(() {});
-
-  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Muslim Leveling',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: themeNotifier.mode,
-      home: const SplashScreen(),
+    return ListenableBuilder(
+      listenable: themeNotifier,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Muslim Leveling',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: themeNotifier.mode,
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }

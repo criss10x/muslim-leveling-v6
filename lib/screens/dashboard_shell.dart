@@ -8,7 +8,6 @@ import 'jadwal_tab.dart';
 import 'belajar_tab.dart';
 import 'profil_tab.dart';
 
-
 /// Main shell — bottom nav with 4 tabs and the persistent top app bar.
 class DashboardShell extends StatefulWidget {
   final int initialTab;
@@ -25,16 +24,7 @@ class _DashboardShellState extends State<DashboardShell> {
   void initState() {
     super.initState();
     _tab = widget.initialTab;
-    themeNotifier.addListener(_onThemeChange);
   }
-
-  @override
-  void dispose() {
-    themeNotifier.removeListener(_onThemeChange);
-    super.dispose();
-  }
-
-  void _onThemeChange() => setState(() {});
 
   static const _items = [
     (Icons.home_outlined, Icons.home, 'HOME'),
@@ -45,44 +35,55 @@ class _DashboardShellState extends State<DashboardShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBody: true,
-      body: AmbientBackground(
-        child: IndexedStack(
-          index: _tab,
-          children: [
-            HomeTab(onSettingsPressed: () => setState(() => _tab = 3)),
-            const JadwalTab(),
-            const BelajarTab(),
-            const ProfilTab(),
-          ],
-        ),
-      ),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.background.withValues(alpha: 0.75),
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                ),
-              ),
+    // ListenableBuilder: theme toggle rebuilds shell + non-const tabs.
+    // JANGAN pakai const pada tab children — Flutter skip updateChild
+    // kalau widget instance identical, jadi AppColors getter gak ke-baca ulang.
+    return ListenableBuilder(
+      listenable: themeNotifier,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: true,
+          body: AmbientBackground(
+            child: IndexedStack(
+              index: _tab,
+              children: [
+                HomeTab(onSettingsPressed: () => setState(() => _tab = 3)),
+                JadwalTab(),
+                BelajarTab(),
+                ProfilTab(),
+              ],
             ),
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                height: 64,
-                child: Row(
-                  children: List.generate(_items.length, (i) => Expanded(child: _navItem(i))),
+          ),
+          bottomNavigationBar: ClipRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.background.withValues(alpha: 0.75),
+                  border: Border(
+                    top: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                    ),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: SizedBox(
+                    height: 64,
+                    child: Row(
+                      children: List.generate(
+                        _items.length,
+                        (i) => Expanded(child: _navItem(i)),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

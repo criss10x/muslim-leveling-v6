@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/learning_content.dart';
+import '../../services/theme_service.dart';
 import 'belajar_article.dart';
 
 /// Belajar / Learning Hub — modules list with category tabs and progress.
@@ -20,6 +21,17 @@ class _BelajarTabState extends State<BelajarTab> {
   void initState() {
     super.initState();
     _load();
+    themeNotifier.addListener(_onThemeChange);
+  }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {

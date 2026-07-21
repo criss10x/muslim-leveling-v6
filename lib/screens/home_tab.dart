@@ -9,6 +9,7 @@ import '../../services/game_service.dart';
 import '../../services/prayer_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
+import '../../services/theme_service.dart';
 import '../../widgets/achievement_medal.dart';
 import 'naik_level_screen.dart';
 
@@ -42,13 +43,19 @@ class _HomeTabState extends State<HomeTab> {
     // Kota diganti dari tab jadwal/profil → refetch timing kota baru
     // (sekalian reschedule notif adzan di _fetchTimingsSilently).
     PrayerService.locationVersion.addListener(_onLocationChanged);
+    themeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
     _tick?.cancel();
     PrayerService.locationVersion.removeListener(_onLocationChanged);
+    themeNotifier.removeListener(_onThemeChange);
     super.dispose();
+  }
+
+  void _onThemeChange() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _onLocationChanged() async {
