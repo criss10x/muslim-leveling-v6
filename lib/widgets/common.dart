@@ -586,6 +586,17 @@ class _AmbientBackgroundState extends State<AmbientBackground>
 
   @override
   Widget build(BuildContext context) {
+    // Light mode: calm, clean canvas. The firefly + glow-blob motif is a
+    // dark-only night-sky effect; on a light surface it reads as smudges.
+    // Depth now comes from elevated cards, so the background stays quiet.
+    if (isLightTheme) {
+      return Stack(
+        children: [
+          Positioned.fill(child: ColoredBox(color: AppColors.background)),
+          widget.child,
+        ],
+      );
+    }
     return Stack(
       children: [
         Positioned.fill(
