@@ -355,15 +355,23 @@ class _JadwalTabState extends State<JadwalTab> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  ShaderMask(
-                                    shaderCallback: (rect) => LinearGradient(
-                                      colors: [AppColors.primary, AppColors.primaryFixed],
-                                    ).createShader(rect),
-                                    child: Text(
-                                      next.time,
-                                      style: AppText.displayHero(40).copyWith(color: Colors.white),
-                                    ),
-                                  ),
+                                  // Light: primaryFixed (bright mint) end fades
+                                  // on the light card — solid emerald instead.
+                                  isLightTheme
+                                      ? Text(
+                                          next.time,
+                                          style: AppText.displayHero(40)
+                                              .copyWith(color: AppColors.primary),
+                                        )
+                                      : ShaderMask(
+                                          shaderCallback: (rect) => LinearGradient(
+                                            colors: [AppColors.primary, AppColors.primaryFixed],
+                                          ).createShader(rect),
+                                          child: Text(
+                                            next.time,
+                                            style: AppText.displayHero(40).copyWith(color: Colors.white),
+                                          ),
+                                        ),
                                   Container(
                                     width: 40,
                                     height: 40,

@@ -331,20 +331,31 @@ class _HomeTabState extends State<HomeTab> {
                           children: [
                             Text('CURRENT RANK', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
                             const SizedBox(height: 4),
-                            ShaderMask(
-                              shaderCallback: (rect) => LinearGradient(
-                                colors: [tier.primaryColor, tier.secondaryColor],
-                              ).createShader(rect),
-                              child: Text(
-                                GameService.getRankTitle(info.level),
-                                style: AppText.headlineMd().copyWith(
-                                  color: Colors.white,
-                                  shadows: [Shadow(color: tier.primaryColor.withValues(alpha: 0.5), blurRadius: 12)],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
+                            // Light: bright tier colors (some are white/gold)
+                            // vanish on the near-white card — use solid ink.
+                            // Dark: keep the tier gradient (gaming identity).
+                            isLightTheme
+                                ? Text(
+                                    GameService.getRankTitle(info.level),
+                                    style: AppText.headlineMd()
+                                        .copyWith(color: AppColors.onSurface),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : ShaderMask(
+                                    shaderCallback: (rect) => LinearGradient(
+                                      colors: [tier.primaryColor, tier.secondaryColor],
+                                    ).createShader(rect),
+                                    child: Text(
+                                      GameService.getRankTitle(info.level),
+                                      style: AppText.headlineMd().copyWith(
+                                        color: Colors.white,
+                                        shadows: [Shadow(color: tier.primaryColor.withValues(alpha: 0.5), blurRadius: 12)],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                             Text(
                               '$_nickname • Lv ${info.level}',
                               style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),

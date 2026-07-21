@@ -100,7 +100,9 @@ class AppColorsLight {
   // Secondary — warm gold accent
   static const secondary = Color(0xFF7C6600);
   static const secondaryContainer = Color(0xFFFFDE59);
-  static const secondaryFixed = Color(0xFFFFE16D);
+  // Darkened for light: bright gold is used as icon/label text in ~22 places
+  // and vanished on light surfaces. #7E5E00 clears AA on canvas AND cards.
+  static const secondaryFixed = Color(0xFF7E5E00);
   static const secondaryFixedDim = Color(0xFFE9C400);
   static const onSecondary = Color(0xFFFFFFFF);
   static const onSecondaryContainer = Color(0xFF211B00);
