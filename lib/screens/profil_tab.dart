@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -1089,11 +1090,29 @@ class _ProfilTabState extends State<ProfilTab> {
   Future<void> _handleGoogleLogin() async {
     final uid = await AuthService.signInWithGoogle();
     if (uid == null) {
-      _showSettingSnackbar('Login Google dibatalkan atau gagal. Progress tetap tersimpan di perangkat.');
+      final err = AuthService.lastError ?? 'Login Google dibatalkan atau gagal.';
+      _showSettingSnackbar('❌ $err');
       return;
     }
     SupabaseSync.initWithUser(uid);
-    // Pull remote progress (kalau ada) ke lokal
+    // Pull remote progress dari Supabase ke lokal (kalau ada)
+    final remote = await SupabaseSync.load();
+    if (remote != null) {
+      // Override local dengan data dari cloud
+      if (remote['game'] != null) {
+        final p = await SharedPreferences.getInstance();
+        await p.setString('game_state_v1', jsonEncode(remote['game']));
+      }
+      if (remote['learning'] != null) {
+        final p = await SharedPreferences.getInstance();
+        await p.setString('learning_state_v1', jsonEncode(remote['learning']));
+      }
+      if (remote['achievements'] != null) {
+        final p = await SharedPreferences.getInstance();
+        await p.setString('achievements_v2', jsonEncode(remote['achievements']));
+      }
+    }
+    // Reload semuanya dari lokal (yang udah di-override kalau ada remote)
     await GameService.load();
     await LearningService.load();
     await AchievementService.load();

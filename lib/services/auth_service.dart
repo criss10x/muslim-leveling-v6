@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,15 +9,31 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// tapi setelah login, SupabaseSync pakai auth.uid() sebagai device_id agar
 /// progress bisa di-restore lintas device / lintas install.
 ///
+/// ⚠️ PRASYARAT:
+/// 1. SHA-1 fingerprint debug & release keystore harus terdaftar di Firebase Console.
+///    - Debug default: `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`
+///    - Release: punyamu sendiri
+/// 2. google-services.json harus punya Web OAuth client (client_type: 3) biar idToken
+///    bisa di-generate. Cek: cat android/app/google-services.json | grep client_type
+///    Kalau cuma type 1 (Android), idToken bakal null.
+///
 /// Fallback: kalau login gagal / user logout, pakai device_id lokal (random)
 /// supaya app tetap jalan offline-first.
 class AuthService {
   static const _prefGoogleUser = 'google_user_email';
+  static String? _lastError;
 
-  /// Pakai Android client_id (bukan Web) ⸺ yg ini di-approve oleh Google Sign In SDK
-  /// untuk OAuth dari perangkat Android.
+  /// Getter biar UI bisa tampilkan error terakhir.
+  static String? get lastError => _lastError;
+
+  /// Web client ID dari Firebase Console — WAJIB untuk idToken.
+  /// Ini client_id dari Web OAuth (client_type: 3) di google-services.json.
+  /// Kalau belum ada, login Google bakal gagal.
+  static const _webClientId = '691907686915-hhb5r3vhirhtcp4a6ihev4vt83ctgkko.apps.googleusercontent.com';
+
+  /// Android client ID — dipakai google_sign_in buat native auth.
   static final _google = GoogleSignIn(
-    clientId: '691907686915-hhb5r3vhirhtcp4a6ihev4vt83ctgkko.apps.googleusercontent.com',
+    clientId: _webClientId,
     scopes: ['email'],
   );
 
@@ -43,11 +60,20 @@ class AuthService {
   static Future<String?> signInWithGoogle() async {
     try {
       final googleUser = await _google.signIn();
-      if (googleUser == null) return null; // user batal
+      if (googleUser == null) {
+        _lastError = 'Pengguna membatalkan login.';
+        return null;
+      }
 
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
-      if (idToken == null) return null;
+      if (idToken == null) {
+        _lastError = 'Google tidak mengembalikan idToken. '
+            'Penyebab: (1) Web OAuth client (client_type: 3) belum ditambahkan di '
+            'Firebase Console, atau (2) SHA-1 fingerprint belum terdaftar. '
+            'Cek Firebase Console → Project Settings → General → Your apps → Android.';
+        return null;
+      }
 
       // Supabase akan create user otomatis kalau belum ada.
       final res = await Supabase.instance.client.auth.signInWithIdToken(
@@ -56,14 +82,23 @@ class AuthService {
         accessToken: googleAuth.accessToken,
       );
 
-      final uid = res.user?.id;
-      if (uid == null) return null;
+      final uid = res.session?.user.id;
+      if (uid == null) {
+        _lastError = 'Supabase Auth gagal — session kosong.';
+        return null;
+      }
 
       _userId = uid;
+      _lastError = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefGoogleUser, googleUser.email);
       return uid;
     } catch (e) {
+      if (e is Exception) {
+        _lastError = 'Error: $e';
+      } else {
+        _lastError = 'Error non-Exception: $e';
+      }
       debugPrint('[AuthService] Google sign-in gagal: $e');
       return null;
     }
