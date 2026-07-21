@@ -77,3 +77,24 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// package_info_plus (transitive via sentry_flutter) unused. Under AGP>=9 its KGP
+// is skipped and PackageInfoPlugin.kt is not compiled, but GeneratedPluginRegistrant
+// still references it → cannot find symbol. Strip dead registration before javac.
+// ponytail: remove when package_info_plus fully on Flutter built-in Kotlin registry.
+afterEvaluate {
+    tasks.matching {
+        it.name.startsWith("compile") && it.name.endsWith("JavaWithJavac")
+    }.configureEach {
+        doFirst {
+            val regFile = file("src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java")
+            if (regFile.exists()) {
+                val cleaned = regFile.readText().replace(
+                    Regex("""\s*try\s*\{[^}]*PackageInfoPlugin[^}]*\}\s*catch[^}]*\}\s*"""),
+                    "",
+                )
+                regFile.writeText(cleaned)
+            }
+        }
+    }
+}

@@ -1095,30 +1095,69 @@ class _ProfilTabState extends State<ProfilTab> {
       return;
     }
     SupabaseSync.initWithUser(uid);
-    // Pull remote progress dari Supabase ke lokal (kalau ada)
-    final remote = await SupabaseSync.load();
-    if (remote != null) {
-      // Override local dengan data dari cloud
-      if (remote['game'] != null) {
-        final p = await SharedPreferences.getInstance();
-        await p.setString('game_state_v1', jsonEncode(remote['game']));
-      }
-      if (remote['learning'] != null) {
-        final p = await SharedPreferences.getInstance();
-        await p.setString('learning_state_v1', jsonEncode(remote['learning']));
-      }
-      if (remote['achievements'] != null) {
-        final p = await SharedPreferences.getInstance();
-        await p.setString('achievements_v2', jsonEncode(remote['achievements']));
-      }
-    }
-    // Reload semuanya dari lokal (yang udah di-override kalau ada remote)
+
+    // Pastikan cache lokal terisi dulu (source of truth di device)
     await GameService.load();
     await LearningService.load();
-    await AchievementService.load();
+    await AchievementService.load(force: true);
+
+    final remote = await SupabaseSync.load();
+    final hasRemoteGame = remote != null && remote['game'] is Map;
+    final hasRemoteLearning = remote != null && remote['learning'] is Map;
+    final hasRemoteAchievements = remote != null && remote['achievements'] is Map;
+
+    final p = await SharedPreferences.getInstance();
+    if (hasRemoteGame) {
+      await p.setString('game_state_v1', jsonEncode(remote!['game']));
+    }
+    if (hasRemoteLearning) {
+      await p.setString('learning_state_v1', jsonEncode(remote!['learning']));
+    }
+    if (hasRemoteAchievements) {
+      // AchievementService key = achievements_unlocked, value = {id: yyyy-MM-dd}
+      final ach = remote!['achievements'];
+      final unlocked = (ach is Map && ach['unlocked'] is Map)
+          ? ach['unlocked']
+          : ach;
+      if (unlocked is Map) {
+        await p.setString('achievements_unlocked', jsonEncode(unlocked));
+      }
+    }
+
+    // Reload setelah write remote → local
+    await GameService.load();
+    await LearningService.load();
+    await AchievementService.load(force: true);
+
+    // Kalau cloud kosong: push progress lokal biar backup mulai jalan
+    if (!hasRemoteGame) {
+      await SupabaseSync.saveGame(GameService.current.toMap());
+    }
+    if (!hasRemoteLearning) {
+      await SupabaseSync.saveLearning(LearningService.current.toMap());
+    }
+    if (!hasRemoteAchievements) {
+      final raw = p.getString('achievements_unlocked');
+      Map<String, dynamic> unlockedMap = {};
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          unlockedMap = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+        } catch (_) {}
+      }
+      await SupabaseSync.saveAchievements({
+        'unlocked': unlockedMap,
+        'ts': DateTime.now().toUtc().toIso8601String(),
+      });
+    }
+
     if (!mounted) return;
     setState(() {});
-    _showSettingSnackbar('☁️ Login berhasil! Progress tersinkron lintas device.');
+    await _loadProfile();
+    _showSettingSnackbar(
+      hasRemoteGame || hasRemoteLearning || hasRemoteAchievements
+          ? '☁️ Login berhasil! Progress cloud dipulihkan.'
+          : '☁️ Login berhasil! Progress perangkat di-backup ke cloud.',
+    );
   }
 
   Future<void> _handleLogout() async {

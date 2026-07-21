@@ -367,8 +367,12 @@ class AchievementService {
   static Map<String, String> _unlocked = {};
   static bool _loaded = false;
 
-  static Future<void> load() async {
-    if (_loaded) return;
+  static Future<void> load({bool force = false}) async {
+    if (_loaded && !force) return;
+    if (force) {
+      _loaded = false;
+      _unlocked = {};
+    }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_prefKey);
     if (raw != null && raw.isNotEmpty) {
