@@ -29,7 +29,7 @@ class AuthService {
   /// Web client ID dari Firebase Console — WAJIB untuk idToken.
   /// Ini client_id dari Web OAuth (client_type: 3) di google-services.json.
   /// Kalau belum ada, login Google bakal gagal.
-  static const _webClientId = '691907686915-hhb5r3vhirhtcp4a6ihev4vt83ctgkko.apps.googleusercontent.com';
+  static const _webClientId = '691907686915-2kkvt45674moh5b79uu9udj3s4k6to0s.apps.googleusercontent.com';
 
   /// Android client ID — dipakai google_sign_in buat native auth.
   static final _google = GoogleSignIn(
