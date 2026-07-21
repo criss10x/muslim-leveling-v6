@@ -63,24 +63,27 @@ class AppColorsDark {
 
 /// ── Light theme — solid background, all text black ──
 class AppColorsLight {
-  // Solid background, slightly darker than original
-  static const background = Color(0xFFE0E5E2);
-  static const surfaceDim = Color(0xFFE0E5E2);
-  static const surface = Color(0xFFE0E5E2);
-  static const surfaceBright = Color(0xFFE0E5E2);
-  static const surfaceContainerLowest = Color(0xFFE0E5E2);
-  static const surfaceContainerLow = Color(0xFFE0E5E2);
-  static const surfaceContainer = Color(0xFFE0E5E2);
-  static const surfaceContainerHigh = Color(0xFFE0E5E2);
-  static const surfaceContainerHighest = Color(0xFFE0E5E2);
-  static const surfaceVariant = Color(0xFFE0E5E2);
+  // Elevation ramp (redesign light-theme-v2): depth via surface-lightness,
+  // tinted toward the emerald brand hue (OKLCH H≈165). Recessed grey canvas,
+  // cards climb toward white, chips/tracks sit BELOW cards as insets.
+  // Values generated in OKLCH; all text/depth pairs verified WCAG AA.
+  static const background = Color(0xFFDDE4E0);              // recessed canvas
+  static const surfaceDim = Color(0xFFDDE4E0);
+  static const surface = Color(0xFFDDE4E0);
+  static const surfaceBright = Color(0xFFDDE4E0);
+  static const surfaceContainerLowest = Color(0xFFFBFEFD); // top elevated
+  static const surfaceContainerLow = Color(0xFFF5FAF7);    // cards (FlatCard)
+  static const surfaceContainer = Color(0xFFF8FCFA);       // panels / glass / hero
+  static const surfaceContainerHigh = Color(0xFFD3DBD7);   // chips / tiles / segmented track (inset)
+  static const surfaceContainerHighest = Color(0xFFCAD4CF);// progress track (inset)
+  static const surfaceVariant = Color(0xFFD3DBD7);
 
-  // All text → pure black
-  static const onSurface = Color(0xFF000000);
-  static const onSurfaceVariant = Color(0xFF000000);
-  static const onBackground = Color(0xFF000000);
-  static const outline = Color(0xFF717974);
-  static const outlineVariant = Color(0xFFC1C8C2);
+  // Two text tiers (restored): near-black primary + mid-grey secondary.
+  static const onSurface = Color(0xFF0E1A15);       // primary text (16.9:1 on card)
+  static const onSurfaceVariant = Color(0xFF515F58);// secondary/label text (6.4:1 on card)
+  static const onBackground = Color(0xFF0E1A15);
+  static const outline = Color(0xFF6D7772);
+  static const outlineVariant = Color(0xFFB9C0BC);  // hairline borders/dividers
 
   // Primary — emerald, for all clickable buttons & highlights
   static const primary = Color(0xFF006C50);
@@ -104,8 +107,8 @@ class AppColorsLight {
   static const onSecondaryFixed = Color(0xFF221B00);
   static const onSecondaryFixedVariant = Color(0xFF544600);
 
-  // Tertiary — vibrant cyan accent
-  static const tertiary = Color(0xFF008394);
+  // Tertiary — cyan accent, darkened so label/border text clears WCAG AA (4.9:1)
+  static const tertiary = Color(0xFF11697A);
   static const tertiaryContainer = Color(0xFF4EF0FF);
   static const tertiaryFixed = Color(0xFF9FF5FF);
   static const tertiaryFixedDim = Color(0xFF5DECFA);
@@ -180,6 +183,21 @@ class AppSpacing {
   static const base = 4.0; static const xs = 8.0; static const sm = 12.0;
   static const md = 16.0; static const lg = 24.0; static const xl = 32.0;
   static const xxl = 40.0;
+}
+
+/// Soft card elevation — LIGHT MODE ONLY. Dark theme gets depth from surface
+/// lightness (lighter = raised), so it returns an empty list and stays flat.
+class AppShadow {
+  static List<BoxShadow> card({double y = 2, double blur = 10, double opacity = 0.07}) {
+    if (!isLightTheme) return const [];
+    return [
+      BoxShadow(
+        color: const Color(0xFF0E1A15).withValues(alpha: opacity),
+        blurRadius: blur,
+        offset: Offset(0, y),
+      ),
+    ];
+  }
 }
 
 class AppText {

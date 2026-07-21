@@ -39,7 +39,7 @@ class GlassPanel extends StatelessWidget {
           color: borderColor ?? AppColors.outlineVariant.withValues(alpha: 0.4),
           width: borderWidth,
         ),
-        boxShadow: shadow,
+        boxShadow: shadow ?? AppShadow.card(),
       ),
       child: child,
     );
@@ -110,6 +110,7 @@ class FlatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
+        boxShadow: AppShadow.card(),
       ),
       child: child,
     );
