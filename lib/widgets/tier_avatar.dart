@@ -558,12 +558,15 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
             color: isLightTheme ? AppColors.surfaceContainerLow : const Color(0xFF0E1512),
             width: 2,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 6,
-            ),
-          ],
+          // Soft drop on dark only — light uses solid border for depth.
+          boxShadow: isLightTheme
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                  ),
+                ],
         ),
         alignment: Alignment.center,
         child: const Text('📷', style: TextStyle(fontSize: 14)),
@@ -611,13 +614,17 @@ class SmallTierAvatar extends StatelessWidget {
         padding: EdgeInsets.all(effectiveBorderWidth),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(cornerRadius),
-          boxShadow: [
-            BoxShadow(
-              color: config.primaryColor.withValues(alpha: 0.3),
-              blurRadius: 4,
-            ),
-          ],
-          color: const Color(0xFF0E1512),
+          boxShadow: isLightTheme
+              ? null
+              : [
+                  BoxShadow(
+                    color: config.primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                  ),
+                ],
+          color: isLightTheme
+              ? AppColors.surfaceContainerHigh
+              : const Color(0xFF0E1512),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(cornerRadius - effectiveBorderWidth),

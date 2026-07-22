@@ -607,13 +607,15 @@ class _ProfilTabState extends State<ProfilTab> {
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.35),
-                            blurRadius: 24,
-                            spreadRadius: 4,
-                          ),
-                        ],
+                        boxShadow: isLightTheme
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.35),
+                                  blurRadius: 24,
+                                  spreadRadius: 4,
+                                ),
+                              ],
                       ),
                       child: TierProfileAvatar(
                         profileImagePath: _avatarPath,
@@ -630,18 +632,19 @@ class _ProfilTabState extends State<ProfilTab> {
                         color: AppColors.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(100),
                         border: Border.all(color: AppColors.primary, width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 6,
-                          ),
-                        ],
+                        boxShadow: isLightTheme
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                ),
+                              ],
                       ),
                       child: Text(
                         'LVL $_level',
-                        style: AppText.labelCaps().copyWith(
+                        style: AppText.labelCapsSm().copyWith(
                           color: AppColors.primary,
-                          fontSize: 9,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                         ),
@@ -743,13 +746,15 @@ class _ProfilTabState extends State<ProfilTab> {
                           colors: [AppColors.primary, AppColors.primaryFixed],
                         ),
                         borderRadius: BorderRadius.circular(AppRadius.pill),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
+                        boxShadow: isLightTheme
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.5),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ],
                       ),
                     ),
                   ),

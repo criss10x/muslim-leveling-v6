@@ -21,6 +21,7 @@ class ThemeNotifier extends ChangeNotifier {
       _mode = ThemeMode.dark;
       isLightTheme = false;
     }
+    _updateSystemUi();
     notifyListeners();
   }
 

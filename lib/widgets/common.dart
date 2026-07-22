@@ -75,8 +75,7 @@ class HudHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Text(label,
-              style: AppText.labelCaps().copyWith(color: color, fontSize: 11)),
+          Text(label, style: AppText.labelCapsSm().copyWith(color: color)),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Container(
@@ -86,9 +85,7 @@ class HudHeader extends StatelessWidget {
           ),
           if (meta != null) ...[
             const SizedBox(width: AppSpacing.sm),
-            Text(meta!,
-                style:
-                    AppText.labelCaps().copyWith(color: color, fontSize: 11)),
+            Text(meta!, style: AppText.labelCapsSm().copyWith(color: color)),
           ],
         ],
       ),
@@ -449,6 +446,7 @@ class HeroButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final light = isLightTheme;
     final btn = Material(
       color: Colors.transparent,
       child: InkWell(
@@ -461,17 +459,23 @@ class HeroButton extends StatelessWidget {
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryFixed],
-            ),
+            // Light: solid deep primary (AA). Dark: neon gradient + glow.
+            color: light ? AppColors.primary : null,
+            gradient: light
+                ? null
+                : LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryFixed],
+                  ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 30,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: light
+                ? null
+                : [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
           ),
           child: FittedBox(
             fit: BoxFit.scaleDown,

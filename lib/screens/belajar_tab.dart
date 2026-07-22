@@ -75,30 +75,38 @@ class _BelajarTabState extends State<BelajarTab> {
     );
   }
 
-  /// Hero tab Belajar — satu-satunya kartu ber-aksen (glow tenang),
-  /// konsisten dengan hero Status Window (Home) & kartu masjid (Jadwal).
+  /// Hero tab Belajar — aksen primary. Light: solid white card (no glow).
+  /// Dark: soft gradient + glow, selaras hero Home/Jadwal.
   Widget _progressCard(int completed, int total) {
     final progress = total > 0 ? completed / total : 0.0;
+    final light = isLightTheme;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary.withValues(alpha: 0.12),
-            AppColors.surfaceContainer.withValues(alpha: 0.7),
-          ],
-        ),
+        color: light ? AppColors.surfaceContainerLow : null,
+        gradient: light
+            ? null
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.12),
+                  AppColors.surfaceContainer.withValues(alpha: 0.7),
+                ],
+              ),
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: light ? 0.35 : 0.4),
+        ),
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

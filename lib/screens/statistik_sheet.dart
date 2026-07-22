@@ -149,12 +149,15 @@ class _StatistikContent extends StatelessWidget {
                               ],
                             ),
                             borderRadius: BorderRadius.circular(4),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.4),
-                                blurRadius: 8,
-                              ),
-                            ],
+                            boxShadow: isLightTheme
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.4),
+                                      blurRadius: 8,
+                                    ),
+                                  ],
                           ),
                         ),
                         const SizedBox(height: 4),

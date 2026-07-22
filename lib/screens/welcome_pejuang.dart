@@ -74,6 +74,7 @@ class WelcomePejuangScreen extends StatelessWidget {
   }
 
   Widget _header() {
+    final light = isLightTheme;
     return Column(
       children: [
         Container(
@@ -86,12 +87,14 @@ class WelcomePejuangScreen extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.3),
               width: 2,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.15),
-                blurRadius: 30,
-              ),
-            ],
+            boxShadow: light
+                ? null
+                : [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      blurRadius: 30,
+                    ),
+                  ],
           ),
           child: Image.asset(
             'assets/images/logo.png',
@@ -100,30 +103,48 @@ class WelcomePejuangScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        ShaderMask(
-          shaderCallback: (rect) => LinearGradient(
-            colors: [AppColors.onSurface, AppColors.onSurfaceVariant],
-          ).createShader(rect),
-          child: Text(
+        // Light: solid ink. Dark: gradient mask (neon chrome).
+        if (light) ...[
+          Text(
             'MUSLIM',
             style: AppText.displayHero(32).copyWith(
-              color: Colors.white,
+              color: AppColors.onSurface,
               height: 38 / 32,
             ),
           ),
-        ),
-        ShaderMask(
-          shaderCallback: (rect) => LinearGradient(
-            colors: [AppColors.primary, AppColors.tertiary],
-          ).createShader(rect),
-          child: Text(
+          Text(
             'LEVELING',
             style: AppText.displayHero(32).copyWith(
-              color: Colors.white,
+              color: AppColors.primary,
               height: 38 / 32,
             ),
           ),
-        ),
+        ] else ...[
+          ShaderMask(
+            shaderCallback: (rect) => LinearGradient(
+              colors: [AppColors.onSurface, AppColors.onSurfaceVariant],
+            ).createShader(rect),
+            child: Text(
+              'MUSLIM',
+              style: AppText.displayHero(32).copyWith(
+                color: Colors.white,
+                height: 38 / 32,
+              ),
+            ),
+          ),
+          ShaderMask(
+            shaderCallback: (rect) => LinearGradient(
+              colors: [AppColors.primary, AppColors.tertiary],
+            ).createShader(rect),
+            child: Text(
+              'LEVELING',
+              style: AppText.displayHero(32).copyWith(
+                color: Colors.white,
+                height: 38 / 32,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

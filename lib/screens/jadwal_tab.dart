@@ -272,18 +272,20 @@ class _JadwalTabState extends State<JadwalTab> {
   Widget _nextPrayerCard() {
     final next = _nextPrayer();
 
-    // Hero tab ini — satu-satunya elemen dengan foto + glow (statis,
-    // konsisten dengan hero Status Window di Home).
+    // Hero tab ini — foto + scrim. Outer glow dark-only (light = flat).
+    final light = isLightTheme;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.xxl),

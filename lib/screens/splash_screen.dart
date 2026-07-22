@@ -85,6 +85,7 @@ class _SplashScreenState extends State<SplashScreen>
                   animation: _pulseCtl,
                   builder: (_, __) {
                     final t = _pulseCtl.value;
+                    final light = isLightTheme;
                     return Container(
                       width: 120,
                       height: 120,
@@ -95,13 +96,17 @@ class _SplashScreenState extends State<SplashScreen>
                           color: AppColors.primary.withValues(alpha: 0.3 + 0.4 * t),
                           width: 2,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.15 + 0.4 * t),
-                            blurRadius: 30,
-                            spreadRadius: 4,
-                          ),
-                        ],
+                        // Glow pulse: dark-only. Light = border alpha only.
+                        boxShadow: light
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: AppColors.primary
+                                      .withValues(alpha: 0.15 + 0.4 * t),
+                                  blurRadius: 30,
+                                  spreadRadius: 4,
+                                ),
+                              ],
                       ),
                       child: Image.asset(
                         'assets/images/logo.png',
@@ -112,19 +117,29 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                ShaderMask(
-                  shaderCallback: (rect) => LinearGradient(
-                    colors: [AppColors.primary, AppColors.tertiary],
-                  ).createShader(rect),
-                  child: Text(
-                    'MUSLIM LEVELING',
-                    textAlign: TextAlign.center,
-                    style: AppText.displayHero(40).copyWith(
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
+                // Light: solid primary title. Dark: neon gradient mask.
+                isLightTheme
+                    ? Text(
+                        'MUSLIM LEVELING',
+                        textAlign: TextAlign.center,
+                        style: AppText.displayHero(40).copyWith(
+                          color: AppColors.primary,
+                          letterSpacing: -0.5,
+                        ),
+                      )
+                    : ShaderMask(
+                        shaderCallback: (rect) => LinearGradient(
+                          colors: [AppColors.primary, AppColors.tertiary],
+                        ).createShader(rect),
+                        child: Text(
+                          'MUSLIM LEVELING',
+                          textAlign: TextAlign.center,
+                          style: AppText.displayHero(40).copyWith(
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Level Up iman, Level Up Kehidupanmu',
@@ -156,12 +171,15 @@ class _SplashScreenState extends State<SplashScreen>
                                 colors: [AppColors.primary, AppColors.tertiary],
                               ),
                               borderRadius: BorderRadius.circular(2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.6),
-                                  blurRadius: 8,
-                                ),
-                              ],
+                              boxShadow: isLightTheme
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.6),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
                             ),
                           ),
                         ),

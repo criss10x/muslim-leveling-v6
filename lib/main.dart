@@ -55,11 +55,12 @@ Future<void> _initAsync() async {
   } catch (_) {}
 
   try {
+    // Default dark until ThemeNotifier.load(); toggle rebinds via theme_service.
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: AppColors.background,
+        systemNavigationBarColor: AppColorsDark.background,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );

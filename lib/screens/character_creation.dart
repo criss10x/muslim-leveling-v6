@@ -150,16 +150,22 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   Widget _header() {
     return Column(
       children: [
-        ShaderMask(
-          shaderCallback: (rect) => LinearGradient(
-            colors: [AppColors.primary, AppColors.tertiary],
-          ).createShader(rect),
-          child: Text(
-            'BUAT KARAKTERMU',
-            textAlign: TextAlign.center,
-            style: AppText.displayHero(32).copyWith(color: Colors.white),
-          ),
-        ),
+        isLightTheme
+            ? Text(
+                'BUAT KARAKTERMU',
+                textAlign: TextAlign.center,
+                style: AppText.displayHero(32).copyWith(color: AppColors.primary),
+              )
+            : ShaderMask(
+                shaderCallback: (rect) => LinearGradient(
+                  colors: [AppColors.primary, AppColors.tertiary],
+                ).createShader(rect),
+                child: Text(
+                  'BUAT KARAKTERMU',
+                  textAlign: TextAlign.center,
+                  style: AppText.displayHero(32).copyWith(color: Colors.white),
+                ),
+              ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'Tentukan identitas perjalanan spiritualmu di alam Ascension.',
