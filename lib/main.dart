@@ -23,6 +23,10 @@ Future<void> _initAsync() async {
     await Supabase.initialize(
       url: 'https://hiywlsqaurqvbwwuutbo.supabase.co',
       anonKey: 'eyJhbG...EfTw',
+      // Deep link for browser OAuth fallback (see AuthService.redirectUrl).
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
     );
   } catch (_) {}
 
