@@ -13,7 +13,7 @@ class BelajarQuizScreen extends StatefulWidget {
 }
 
 class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
-  late final LearningModule _module;
+  LearningModule? _module;
   late final List<QuizQuestion> _questions;
   int _current = 0;
   int? _selected;
@@ -23,14 +23,12 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
   @override
   void initState() {
     super.initState();
-    _module = LearningContent.getAllModulesOrdered()
-        .where((m) => m.id == widget.moduleId)
-        .first;
+    _module = LearningContent.getModule(widget.moduleId);
     _questions = LearningContent.getQuiz(widget.moduleId);
   }
 
   void _answer(int idx) {
-    if (_answered) return;
+    if (_answered || _questions.isEmpty) return;
     setState(() {
       _selected = idx;
       _answered = true;
@@ -39,6 +37,7 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
   }
 
   void _next() {
+    if (_questions.isEmpty) return;
     if (_current < _questions.length - 1) {
       setState(() {
         _current++;
@@ -51,7 +50,10 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
   }
 
   Future<void> _finish() async {
-    final score = (_correct.where((c) => c).length / _questions.length * 100).round();
+    // ponytail: empty quiz → 0% (not NaN/Infinity)
+    final score = _questions.isEmpty
+        ? 0
+        : (_correct.where((c) => c).length / _questions.length * 100).round();
     await LearningService.completeModule(widget.moduleId, score);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(MaterialPageRoute(
@@ -66,13 +68,54 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final module = _module;
+    if (module == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Modul tidak ditemukan', style: AppText.titleLg()),
+                const SizedBox(height: AppSpacing.md),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Kembali'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    if (_questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Quiz belum tersedia', style: AppText.titleLg()),
+                const SizedBox(height: AppSpacing.md),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Kembali'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     final q = _questions[_current];
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            _header(),
+            _header(module),
             _progress(),
             Expanded(
               child: SingleChildScrollView(
@@ -102,18 +145,18 @@ class _BelajarQuizScreenState extends State<BelajarQuizScreen> {
     );
   }
 
-  Widget _header() {
+  Widget _header(LearningModule module) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.close, color: AppColors.onSurfaceVariant),
+            icon: Icon(Icons.close, color: AppColors.onBackground),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(
-            child: Text('${_module.icon} ${_module.title}',
-                style: AppText.titleLg().copyWith(fontSize: 14),
+            child: Text(module.title,
+                style: AppText.titleLg().copyWith(fontSize: 15),
                 maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ],

@@ -13,27 +13,46 @@ class BelajarArticleScreen extends StatefulWidget {
 }
 
 class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
-  late final LearningModule _module;
+  LearningModule? _module;
   late final List<ArticleBlock> _blocks;
   double _scrollProgress = 0;
 
   @override
   void initState() {
     super.initState();
-    _module = LearningContent.getAllModulesOrdered()
-        .where((m) => m.id == widget.moduleId)
-        .first;
+    _module = LearningContent.getModule(widget.moduleId);
     _blocks = LearningContent.getArticle(widget.moduleId);
   }
 
   @override
   Widget build(BuildContext context) {
+    final module = _module;
+    if (module == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Modul tidak ditemukan', style: AppText.titleLg()),
+                const SizedBox(height: AppSpacing.md),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Kembali'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            _appBar(context),
+            _appBar(context, module),
             // Reading progress bar
             LinearProgressIndicator(
               value: _scrollProgress,
@@ -65,7 +84,7 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
     );
   }
 
-  Widget _appBar(BuildContext context) {
+  Widget _appBar(BuildContext context, LearningModule module) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
       child: Row(
@@ -78,10 +97,10 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${_module.icon}  ${_module.title}',
+                Text('${module.icon}  ${module.title}',
                     style: AppText.titleLg().copyWith(fontSize: 16),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text('${_module.estimatedMinutes} min baca • +${_module.xpReward} XP',
+                Text('${module.estimatedMinutes} min baca • +${module.xpReward} XP',
                     style: AppText.labelCaps().copyWith(
                         color: AppColors.onSurfaceVariant, fontSize: 10)),
               ],

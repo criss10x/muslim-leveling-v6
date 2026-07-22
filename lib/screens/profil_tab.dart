@@ -1112,14 +1112,14 @@ class _ProfilTabState extends State<ProfilTab> {
 
     final p = await SharedPreferences.getInstance();
     if (hasRemoteGame) {
-      await p.setString('game_state_v1', jsonEncode(remote!['game']));
+      await p.setString('game_state_v1', jsonEncode(remote['game']));
     }
     if (hasRemoteLearning) {
-      await p.setString('learning_state_v1', jsonEncode(remote!['learning']));
+      await p.setString('learning_state_v1', jsonEncode(remote['learning']));
     }
     if (hasRemoteAchievements) {
       // AchievementService key = achievements_unlocked, value = {id: yyyy-MM-dd}
-      final ach = remote!['achievements'];
+      final ach = remote['achievements'];
       final unlocked = (ach is Map && ach['unlocked'] is Map)
           ? ach['unlocked']
           : ach;
@@ -1355,7 +1355,7 @@ class _ThemeToggleState extends State<_ThemeToggle> {
     return Switch.adaptive(
       value: themeNotifier.isLight,
       onChanged: (_) => themeNotifier.toggle(),
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
     );
   }
 }
