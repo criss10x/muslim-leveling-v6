@@ -189,8 +189,8 @@ class _HomeTabState extends State<HomeTab> {
   void _toast(String msg, {bool top = false}) {
     final screenHeight = MediaQuery.of(context).size.height;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: AppText.bodyMd().copyWith(color: Colors.white)),
-      backgroundColor: AppColors.surfaceContainerHigh,
+      content: Text(msg, style: AppText.bodyMd().copyWith(color: AppColors.onSurface)),
+      backgroundColor: AppColors.surfaceContainerLowest,
       behavior: SnackBarBehavior.floating,
       duration: const Duration(seconds: 3),
       margin: top ? EdgeInsets.only(bottom: screenHeight - 80) : null,
@@ -280,29 +280,44 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _heroRank(LevelInfo info) {
     final tier = getTierVisualConfig(getTierName(info.level));
+    final light = isLightTheme;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(color: tier.primaryColor.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(0, 10)),
-        ],
+        // Outer glow: dark only — light uses solid surface + border.
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: tier.primaryColor.withValues(alpha: 0.18),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                tier.primaryColor.withValues(alpha: 0.14),
-                AppColors.surfaceContainer.withValues(alpha: 0.75),
-                tier.secondaryColor.withValues(alpha: 0.08),
-              ],
-            ),
+            // Light: solid raised surface. Dark: translucent tier gradient.
+            color: light ? AppColors.surfaceContainerLow : null,
+            gradient: light
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      tier.primaryColor.withValues(alpha: 0.14),
+                      AppColors.surfaceContainer.withValues(alpha: 0.75),
+                      tier.secondaryColor.withValues(alpha: 0.08),
+                    ],
+                  ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: tier.primaryColor.withValues(alpha: 0.45), width: 1.5),
+            border: Border.all(
+              color: tier.primaryColor.withValues(alpha: light ? 0.55 : 0.45),
+              width: light ? 1.0 : 1.5,
+            ),
           ),
           child: Stack(
             children: [
@@ -312,19 +327,25 @@ class _HomeTabState extends State<HomeTab> {
                   child: CustomPaint(painter: _GeoPatternPainter(tier.primaryColor)),
                 ),
               ),
-              Positioned(
-                top: -40,
-                right: -40,
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: tier.primaryColor.withValues(alpha: 0.10),
-                    boxShadow: [BoxShadow(color: tier.secondaryColor.withValues(alpha: 0.12), blurRadius: 60)],
+              if (!light)
+                Positioned(
+                  top: -40,
+                  right: -40,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: tier.primaryColor.withValues(alpha: 0.10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: tier.secondaryColor.withValues(alpha: 0.12),
+                          blurRadius: 60,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -427,8 +448,8 @@ class _HomeTabState extends State<HomeTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: AppText.labelCaps()
-                    .copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
+                style: AppText.labelCapsSm()
+                    .copyWith(color: AppColors.onSurfaceVariant)),
             const SizedBox(height: 4),
             Text(value,
                 maxLines: 1,
@@ -465,17 +486,17 @@ class _HomeTabState extends State<HomeTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('STREAK',
-                  style: AppText.labelCaps().copyWith(
-                      color: AppColors.onSurfaceVariant, fontSize: 9)),
+                  style: AppText.labelCapsSm().copyWith(
+                      color: AppColors.onSurfaceVariant)),
               const SizedBox(height: 4),
               Row(
                 children: [
                   Icon(Icons.local_fire_department,
-                      color: AppColors.secondaryFixed, size: 16),
+                      color: AppColors.goldInk, size: 16),
                   const SizedBox(width: 2),
                   Text('${_state.heroStreak.current}',
                       style: AppText.titleLg().copyWith(
-                          color: AppColors.secondaryFixed,
+                          color: AppColors.goldInk,
                           fontSize: 16,
                           height: 1.1)),
                 ],
@@ -807,7 +828,7 @@ class _HomeTabState extends State<HomeTab> {
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
                   child: Text('CLAIM', style: AppText.labelCaps().copyWith(color: AppColors.onPrimary, fontSize: 10)),
                 )
@@ -988,7 +1009,7 @@ class _HomeTabState extends State<HomeTab> {
                           style: AppText.displayHero(28).copyWith(color: AppColors.primary)),
                       const SizedBox(height: 6),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 4,
@@ -1297,7 +1318,7 @@ class _HomeTabState extends State<HomeTab> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: AppColors.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                 ),
               ),

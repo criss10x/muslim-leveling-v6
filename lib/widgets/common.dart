@@ -4,10 +4,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/theme_service.dart';
 
-/// Glass panel — translucent dark surface with subtle border and inner glow.
-/// Mirrors the `glass-panel` Tailwind utility used throughout the designs.
-/// Set [blurSigma] > 0 for a real frosted-glass backdrop blur (use sparingly —
-/// BackdropFilter is expensive, so reserve it for hero surfaces and the nav bar).
+/// Glass panel — translucent surface with subtle border.
+/// Light: solid FlatCard-equivalent (no frosted alpha, no blur).
+/// Dark: translucent glass; set [blurSigma] > 0 sparingly (BackdropFilter cost).
 class GlassPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -30,20 +29,26 @@ class GlassPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final light = isLightTheme;
     final panel = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withValues(alpha: 0.6),
+        // Light: solid raised surface (alpha 0.6 on near-white = muddy grey).
+        // Dark: translucent glass over ambient bg.
+        color: light
+            ? AppColors.surfaceContainerLow
+            : AppColors.surfaceContainer.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: borderColor ?? AppColors.outlineVariant.withValues(alpha: 0.4),
+          color: borderColor ?? AppColors.outlineVariant.withValues(alpha: light ? 0.6 : 0.4),
           width: borderWidth,
         ),
         boxShadow: shadow ?? AppShadow.card(),
       ),
       child: child,
     );
-    if (blurSigma <= 0) return panel;
+    // Never blur in light — frosted glass on solid canvas is smudge + cost.
+    if (blurSigma <= 0 || light) return panel;
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
@@ -91,8 +96,8 @@ class HudHeader extends StatelessWidget {
   }
 }
 
-/// FlatCard — kartu datar standar redesign: surfaceContainerLow, radius 16,
-/// tanpa border/shadow. Sorotan (hairline/tint) hanya untuk state bermakna.
+/// FlatCard — kartu datar standar: surfaceContainerLow, radius 16,
+/// tanpa border/shadow. Depth dari surface ramp, bukan BoxShadow.
 class FlatCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -110,7 +115,6 @@ class FlatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        boxShadow: AppShadow.card(),
       ),
       child: child,
     );
@@ -197,20 +201,24 @@ class _PressableScaleState extends State<PressableScale> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onTap != null;
-    return GestureDetector(
-      onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
-      onTapUp: enabled
-          ? (_) {
-              setState(() => _pressed = false);
-              widget.onTap?.call();
-            }
-          : null,
-      onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
-      child: AnimatedScale(
-        scale: _pressed ? widget.pressedScale : 1.0,
-        duration: const Duration(milliseconds: 110),
-        curve: Curves.easeOut,
-        child: widget.child,
+    return Semantics(
+      button: enabled,
+      enabled: enabled,
+      child: GestureDetector(
+        onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: enabled
+            ? (_) {
+                setState(() => _pressed = false);
+                widget.onTap?.call();
+              }
+            : null,
+        onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
+        child: AnimatedScale(
+          scale: _pressed ? widget.pressedScale : 1.0,
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: widget.child,
+        ),
       ),
     );
   }
@@ -726,6 +734,8 @@ class _NeonPulseState extends State<NeonPulse>
 
   @override
   Widget build(BuildContext context) {
+    // Light: border-only pulse, no glow (neon = dark language).
+    final light = isLightTheme;
     return AnimatedBuilder(
       animation: _ctl,
       builder: (_, __) {
@@ -736,12 +746,14 @@ class _NeonPulseState extends State<NeonPulse>
               color: widget.color.withValues(alpha: 0.3 + 0.2 * t),
             ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.1 + 0.25 * t),
-                blurRadius: 5 + 12 * t,
-              ),
-            ],
+            boxShadow: light
+                ? null
+                : [
+                    BoxShadow(
+                      color: widget.color.withValues(alpha: 0.1 + 0.25 * t),
+                      blurRadius: 5 + 12 * t,
+                    ),
+                  ],
           ),
           child: widget.child,
         );
@@ -785,7 +797,8 @@ class NeonProgressBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: filled ? toColor : AppColors.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(1),
-                boxShadow: filled
+                // Segment glow: dark only.
+                boxShadow: filled && !isLightTheme
                     ? [
                         BoxShadow(
                           color: toColor.withValues(alpha: 0.6),
@@ -847,8 +860,8 @@ class NeonProgressBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // leading-edge glow: bright white spot + halo OUTSIDE clip
-              if (leadingGlow && p > 0.0 && p < 1.0)
+              // leading-edge glow: dark only (white halo vanishes / looks dirty on light).
+              if (leadingGlow && !isLightTheme && p > 0.0 && p < 1.0)
                 Positioned(
                   left: (fillWidth - glowSize / 2).clamp(0.0, barWidth - glowSize),
                   top: -(glowSize - height) / 2,

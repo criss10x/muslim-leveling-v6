@@ -190,7 +190,7 @@ class _ProfilTabState extends State<ProfilTab> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text, style: AppText.bodyMd().copyWith(color: AppColors.onSurface)),
-        backgroundColor: AppColors.surfaceContainerHigh,
+        backgroundColor: AppColors.surfaceContainerLowest,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),

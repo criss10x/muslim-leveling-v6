@@ -67,6 +67,11 @@ class AppColorsLight {
   // tinted toward the emerald brand hue (OKLCH H≈165). Recessed grey canvas,
   // cards climb toward white, chips/tracks sit BELOW cards as insets.
   // Values generated in OKLCH; all text/depth pairs verified WCAG AA.
+  //
+  // NOTE — M3 name inversion (intentional):
+  // In M3, *Highest is "most elevated". Here light mode uses lightness for
+  // depth, so High/Highest are darker INSETS (tracks/chips) and Low/Lowest
+  // are brighter RAISED cards. Read usages with that contract, not stock M3.
   static const background = Color(0xFFDDE4E0);              // recessed canvas
   static const surfaceDim = Color(0xFFDDE4E0);
   static const surface = Color(0xFFDDE4E0);
@@ -100,8 +105,10 @@ class AppColorsLight {
   // Secondary — warm gold accent
   static const secondary = Color(0xFF7C6600);
   static const secondaryContainer = Color(0xFFFFDE59);
-  // Darkened for light: bright gold is used as icon/label text in ~22 places
-  // and vanished on light surfaces. #7E5E00 clears AA on canvas AND cards.
+  // ROLE NOTE (app-local, not stock M3):
+  // secondaryFixed = gold INK (icon/label) — AA on canvas+card. Not a bright fill.
+  // secondaryFixedDim = bright gold FILL/chrome only (chips, bars). Never body text.
+  // Prefer AppColors.goldInk / goldFill aliases for new code.
   static const secondaryFixed = Color(0xFF7E5E00);
   static const secondaryFixedDim = Color(0xFFE9C400);
   static const onSecondary = Color(0xFFFFFFFF);
@@ -173,6 +180,13 @@ class AppColors {
   static Color get onError => _isLight ? AppColorsLight.onError : AppColorsDark.onError;
   static Color get errorContainer => _isLight ? AppColorsLight.errorContainer : AppColorsDark.errorContainer;
   static Color get onErrorContainer => _isLight ? AppColorsLight.onErrorContainer : AppColorsDark.onErrorContainer;
+
+  /// Gold as icon/label ink (AA). Alias of [secondaryFixed] — honest role name.
+  static Color get goldInk => secondaryFixed;
+  /// Bright gold fill/chrome only. Alias of [secondaryFixedDim].
+  static Color get goldFill => secondaryFixedDim;
+  /// Cyan as icon/label ink (AA). Alias of [tertiary].
+  static Color get cyanInk => tertiary;
 }
 
 // radius, spacing, text — unchanged
@@ -187,18 +201,13 @@ class AppSpacing {
   static const xxl = 40.0;
 }
 
-/// Soft card elevation — LIGHT MODE ONLY. Dark theme gets depth from surface
-/// lightness (lighter = raised), so it returns an empty list and stays flat.
+/// Card elevation shadows — always empty.
+/// Depth comes from the surface lightness ramp (canvas recessed → card raised).
+/// Shadow double-counts elevation and violates FlatCard's no-shadow contract.
+/// Keep the API so call sites compile; do not reintroduce soft shadows here.
 class AppShadow {
   static List<BoxShadow> card({double y = 2, double blur = 10, double opacity = 0.07}) {
-    if (!isLightTheme) return const [];
-    return [
-      BoxShadow(
-        color: const Color(0xFF0E1A15).withValues(alpha: opacity),
-        blurRadius: blur,
-        offset: Offset(0, y),
-      ),
-    ];
+    return const [];
   }
 }
 
@@ -225,6 +234,10 @@ class AppText {
       );
   static TextStyle labelCaps() => GoogleFonts.jetBrainsMono(
         fontSize: 12, fontWeight: FontWeight.w700, height: 16 / 12, letterSpacing: 1.2,
+      );
+  /// Small caps label (nav, HUD cells). Prefer this over magic fontSize: 9/11.
+  static TextStyle labelCapsSm() => GoogleFonts.jetBrainsMono(
+        fontSize: 10, fontWeight: FontWeight.w700, height: 14 / 10, letterSpacing: 1.0,
       );
 }
 
