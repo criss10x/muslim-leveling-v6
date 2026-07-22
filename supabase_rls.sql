@@ -8,10 +8,8 @@
 ALTER TABLE user_data ENABLE ROW LEVEL SECURITY;
 
 -- 2. User cuma bisa baca/bikin/edit baris miliknya sendiri.
---    device_id diisi dengan auth.uid() setelah login Google.
---    Kalau belum login (device_id random), baris tetap tidak bisa
---    diakses user lain — tapi JUGA tidak bisa diakses pemiliknya
---    lewat auth, makanya fallback ini only-best-effort.
+--    device_id = auth.uid() setelah login Google (app never writes as guest).
+--    Guest random device_id cannot satisfy RLS — app gates sync on canSync.
 
 DROP POLICY IF EXISTS "own row read"   ON user_data;
 DROP POLICY IF EXISTS "own row insert" ON user_data;

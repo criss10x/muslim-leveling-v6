@@ -1,21 +1,35 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Sync 3 JSON blobs to Supabase. One table, one row per user (auth.uid)
-/// atau per device (fallback random id kalau belum login).
-/// Silent on network errors — local persistence always works.
+/// Sync 3 JSON blobs to Supabase. One table, one row per **signed-in** user.
+///
+/// RLS: `auth.uid()::text = device_id` — guest random ids can never pass, so
+/// we simply refuse to hit the network until [initWithUser] after Google login.
+/// Local SharedPreferences remains source of truth offline.
 class SupabaseSync {
-  static String? _deviceId;
+  static String? _userId;
 
-  static String get _id => _deviceId ?? 'noop';
+  /// True only after Google → Supabase Auth succeeds.
+  static bool get canSync => _userId != null && _userId!.isNotEmpty;
 
-  /// Init dengan device_id lokal (fallback). Kalau sudah login, AuthService
-  /// akan override via [initWithUser].
-  static void init(String id) => _deviceId = id;
+  static String get _id {
+    final id = _userId;
+    if (id == null || id.isEmpty) {
+      throw StateError('SupabaseSync used while signed out');
+    }
+    return id;
+  }
 
-  /// Override device_id dengan Supabase auth.uid() setelah login berhasil.
-  static void initWithUser(String userId) => _deviceId = userId;
+  /// Kept for call-site compatibility (main still creates a local device_id).
+  /// Guest ids must NOT drive cloud rows — RLS would reject them anyway.
+  // ponytail: no-op; cloud only after initWithUser
+  static void init(String id) {}
 
-  // ponytail: lazy — Supabase.initialize() bisa gagal di offline-first launch
+  /// Set row key = auth.uid() after login.
+  static void initWithUser(String userId) => _userId = userId;
+
+  /// Drop cloud identity on logout (local prefs stay).
+  static void clearUser() => _userId = null;
+
   static SupabaseClient? get _client {
     try {
       return Supabase.instance.client;
@@ -24,7 +38,6 @@ class SupabaseSync {
     }
   }
 
-  /// True kalau baris berhasil di-upsert (buat feedback UI).
   static Future<bool> saveGame(Map<String, dynamic> data) =>
       _upsert({'game': data});
 
@@ -35,6 +48,7 @@ class SupabaseSync {
       _upsert({'achievements': data});
 
   static Future<Map<String, dynamic>?> load() async {
+    if (!canSync) return null;
     final c = _client;
     if (c == null) return null;
     try {
@@ -64,16 +78,19 @@ class SupabaseSync {
     return row?['achievements'] as Map<String, dynamic>?;
   }
 
-  /// Return true kalau upsert sukses, false kalau gagal (network/offline).
   static Future<bool> _upsert(Map<String, dynamic> extra) async {
+    if (!canSync) return false;
     final c = _client;
     if (c == null) return false;
     try {
-      await c.from('user_data').upsert({
-        'device_id': _id,
-        ...extra,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      });
+      await c.from('user_data').upsert(
+        {
+          'device_id': _id,
+          ...extra,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        onConflict: 'device_id',
+      );
       return true;
     } catch (_) {
       // silent: local is source of truth

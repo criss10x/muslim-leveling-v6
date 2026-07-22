@@ -15,6 +15,7 @@ import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
 import '../../services/learning_content.dart';
 import '../../services/supabase_sync.dart';
+import '../../services/backup_merge.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/achievement_medal.dart';
@@ -1127,79 +1128,84 @@ class _ProfilTabState extends State<ProfilTab> {
     }
     SupabaseSync.initWithUser(uid);
 
-    // Pastikan cache lokal terisi dulu (source of truth di device)
+    // Local first — never blind-overwrite with cloud (Critical #1).
     await GameService.load();
     await LearningService.load();
     await AchievementService.load(force: true);
+
+    final localGame = GameService.current.toMap();
+    final localLearning = LearningService.current.toMap();
+    final p = await SharedPreferences.getInstance();
+    Map<String, dynamic> localAch = {};
+    final achRaw = p.getString('achievements_unlocked');
+    if (achRaw != null && achRaw.isNotEmpty) {
+      try {
+        localAch = Map<String, dynamic>.from(jsonDecode(achRaw) as Map);
+      } catch (_) {}
+    }
 
     final remote = await SupabaseSync.load();
-    final hasRemoteGame = remote != null && remote['game'] is Map;
-    final hasRemoteLearning = remote != null && remote['learning'] is Map;
-    final hasRemoteAchievements = remote != null && remote['achievements'] is Map;
-
-    final p = await SharedPreferences.getInstance();
-    if (hasRemoteGame) {
-      await p.setString('game_state_v1', jsonEncode(remote['game']));
-    }
-    if (hasRemoteLearning) {
-      await p.setString('learning_state_v1', jsonEncode(remote['learning']));
-    }
-    if (hasRemoteAchievements) {
-      // AchievementService key = achievements_unlocked, value = {id: yyyy-MM-dd}
-      final ach = remote['achievements'];
-      final unlocked = (ach is Map && ach['unlocked'] is Map)
-          ? ach['unlocked']
-          : ach;
+    final hasRemote = remote != null;
+    final remoteGame =
+        remote != null && remote['game'] is Map
+            ? Map<String, dynamic>.from(remote['game'] as Map)
+            : null;
+    final remoteLearning =
+        remote != null && remote['learning'] is Map
+            ? Map<String, dynamic>.from(remote['learning'] as Map)
+            : null;
+    Map<String, dynamic> remoteAch = {};
+    if (remote != null && remote['achievements'] is Map) {
+      final ach = remote['achievements'] as Map;
+      final unlocked = ach['unlocked'] is Map ? ach['unlocked'] : ach;
       if (unlocked is Map) {
-        await p.setString('achievements_unlocked', jsonEncode(unlocked));
+        remoteAch = Map<String, dynamic>.from(unlocked);
       }
     }
 
-    // Reload setelah write remote → local
+    // ponytail: max-XP / union merge. Dialog Cloud|Device when users need control.
+    final mergedGame =
+        remoteGame == null ? localGame : pickRicherGame(localGame, remoteGame);
+    final mergedLearning = remoteLearning == null
+        ? localLearning
+        : mergeLearning(localLearning, remoteLearning);
+    final mergedAch = mergeAchievements(localAch, remoteAch);
+
+    await p.setString('game_state_v1', jsonEncode(mergedGame));
+    await p.setString('learning_state_v1', jsonEncode(mergedLearning));
+    await p.setString('achievements_unlocked', jsonEncode(mergedAch));
+
     await GameService.load();
     await LearningService.load();
     await AchievementService.load(force: true);
 
-    // Kalau cloud kosong: push progress lokal biar backup mulai jalan
-    if (!hasRemoteGame) {
-      await SupabaseSync.saveGame(GameService.current.toMap());
-    }
-    if (!hasRemoteLearning) {
-      await SupabaseSync.saveLearning(LearningService.current.toMap());
-    }
-    if (!hasRemoteAchievements) {
-      final raw = p.getString('achievements_unlocked');
-      Map<String, dynamic> unlockedMap = {};
-      if (raw != null && raw.isNotEmpty) {
-        try {
-          unlockedMap = Map<String, dynamic>.from(jsonDecode(raw) as Map);
-        } catch (_) {}
-      }
-      await SupabaseSync.saveAchievements({
-        'unlocked': unlockedMap,
-        'ts': DateTime.now().toUtc().toIso8601String(),
-      });
-    }
+    // Always push merged result so cloud catches up (signed-in only).
+    await SupabaseSync.saveGame(GameService.current.toMap());
+    await SupabaseSync.saveLearning(LearningService.current.toMap());
+    await SupabaseSync.saveAchievements({
+      'unlocked': mergedAch,
+      'ts': DateTime.now().toUtc().toIso8601String(),
+    });
 
     if (!mounted) return;
     setState(() {});
     await _loadProfile();
     _showSettingSnackbar(
-      hasRemoteGame || hasRemoteLearning || hasRemoteAchievements
-          ? '☁️ Login berhasil! Progress cloud dipulihkan.'
-          : '☁️ Login berhasil! Progress perangkat di-backup ke cloud.',
+      hasRemote
+          ? '☁️ Login OK — progress digabung (XP tertinggi + achievement digabung).'
+          : '☁️ Login OK — progress perangkat di-backup ke cloud.',
     );
   }
 
   Future<void> _handleLogout() async {
     await AuthService.signOut();
-    // Kembali ke device_id lokal (progress tetap utuh di SharedPreferences)
-    final p = await SharedPreferences.getInstance();
-    final deviceId = p.getString('device_id');
-    if (deviceId != null) SupabaseSync.init(deviceId);
+    // Stop cloud writes; local SharedPreferences stays intact.
+    SupabaseSync.clearUser();
     if (!mounted) return;
     setState(() {});
-    _showSettingSnackbar('Logout berhasil. Progress tersimpan di perangkat ini.');
+    _showSettingSnackbar(
+      'Logout berhasil. Progress tetap di perangkat; backup cloud berhenti.',
+    );
   }
 
   Widget _accountBackup() {
@@ -1224,8 +1230,8 @@ class _ProfilTabState extends State<ProfilTab> {
                   Expanded(
                     child: Text(
                       signedIn
-                          ? 'Progress tersinkron ke akun Google'
-                          : 'Belum login — progress hanya di perangkat ini',
+                          ? 'Backup cloud aktif (akun Google)'
+                          : 'Belum login — backup cloud mati (hanya di HP ini)',
                       style: AppText.bodyMd().copyWith(
                         color: signedIn ? AppColors.primary : AppColors.onSurfaceVariant,
                       ),
@@ -1263,8 +1269,8 @@ class _ProfilTabState extends State<ProfilTab> {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 signedIn
-                    ? 'Ganti HP? Login pakai akun sama untuk restore otomatis.'
-                    : 'Login agar progress aman saat ganti HP atau instal ulang.',
+                    ? 'Ganti HP? Login akun sama → merge XP tertinggi + achievement.'
+                    : 'Login Google wajib untuk backup cloud. Tanpa login, progress cuma di HP.',
                 style: AppText.bodyMd().copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontSize: 11,
