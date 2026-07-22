@@ -775,13 +775,14 @@ class NeonProgressBar extends StatelessWidget {
   NeonProgressBar({
     super.key,
     required this.progress,
-    this.fromColor = const Color(0xFF00C897),
-    this.toColor = const Color(0xFF42E5B1),
+    Color? fromColor,
+    Color? toColor,
     this.height = 16,
     this.segmented = false,
     this.segments = 5,
     this.leadingGlow = false,
-  });
+  })  : fromColor = fromColor ?? AppColors.primary,
+        toColor = toColor ?? AppColors.primaryFixed;
 
   @override
   Widget build(BuildContext context) {

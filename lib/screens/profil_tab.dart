@@ -440,7 +440,11 @@ class _ProfilTabState extends State<ProfilTab> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryContainer.withValues(alpha: 0.15) : Colors.transparent,
+          color: selected
+              ? (isLightTheme
+                  ? AppColors.primaryContainer
+                  : AppColors.primaryContainer.withValues(alpha: 0.15))
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: selected ? AppColors.primary.withValues(alpha: 0.5) : AppColors.outlineVariant.withValues(alpha: 0.3),

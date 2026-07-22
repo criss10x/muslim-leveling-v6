@@ -281,6 +281,9 @@ class _HomeTabState extends State<HomeTab> {
   Widget _heroRank(LevelInfo info) {
     final tier = getTierVisualConfig(getTierName(info.level));
     final light = isLightTheme;
+    // Light: AA ink for border/pattern. Dark: neon brand.
+    final tierP = tier.inkPrimary;
+    final tierS = tier.inkSecondary;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -315,7 +318,7 @@ class _HomeTabState extends State<HomeTab> {
                   ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: tier.primaryColor.withValues(alpha: light ? 0.55 : 0.45),
+              color: tierP.withValues(alpha: light ? 0.55 : 0.45),
               width: light ? 1.0 : 1.5,
             ),
           ),
@@ -324,7 +327,7 @@ class _HomeTabState extends State<HomeTab> {
               // subtle Islamic geometric lattice, tinted by tier
               Positioned.fill(
                 child: IgnorePointer(
-                  child: CustomPaint(painter: _GeoPatternPainter(tier.primaryColor)),
+                  child: CustomPaint(painter: _GeoPatternPainter(tierP)),
                 ),
               ),
               if (!light)
@@ -372,13 +375,13 @@ class _HomeTabState extends State<HomeTab> {
                                   )
                                 : ShaderMask(
                                     shaderCallback: (rect) => LinearGradient(
-                                      colors: [tier.primaryColor, tier.secondaryColor],
+                                      colors: [tierP, tierS],
                                     ).createShader(rect),
                                     child: Text(
                                       GameService.getRankTitle(info.level),
                                       style: AppText.headlineMd().copyWith(
                                         color: Colors.white,
-                                        shadows: [Shadow(color: tier.primaryColor.withValues(alpha: 0.5), blurRadius: 12)],
+                                        shadows: [Shadow(color: tierP.withValues(alpha: 0.5), blurRadius: 12)],
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,

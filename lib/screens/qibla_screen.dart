@@ -389,7 +389,10 @@ class _QiblaScreenState extends State<QiblaScreen>
     // Dial selalu mint (identitas app + logo). Jarum cyan saat mencari,
     // mengunci ke mint saat sejajar — pasangan mint/cyan = gradient logo.
     final compassColor = AppColors.primary;
-    final arrowColor = aligned ? AppColors.primaryFixed : AppColors.tertiary;
+    // Light: primaryFixed is bright fill-only (fails as ink). Use deep primary.
+    final arrowColor = aligned
+        ? (isLightTheme ? AppColors.primary : AppColors.primaryFixed)
+        : AppColors.tertiary;
 
     return AnimatedBuilder(
       animation: _pulse,

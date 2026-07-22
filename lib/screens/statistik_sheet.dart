@@ -26,9 +26,9 @@ class _StatistikContent extends StatelessWidget {
       expand: false,
       builder: (_, scroll) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             border: Border(
               top: BorderSide(color: AppColors.outlineVariant, width: 1),
             ),
@@ -141,7 +141,10 @@ class _StatistikContent extends StatelessWidget {
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
                               colors: [
-                                AppColors.primaryContainer,
+                                // Light: bright fill → deep action. Dark: deep container → bright primary.
+                                isLightTheme
+                                    ? AppColors.primaryFixed
+                                    : AppColors.primaryContainer,
                                 AppColors.primary,
                               ],
                             ),
