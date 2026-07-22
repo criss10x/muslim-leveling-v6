@@ -22,7 +22,7 @@ Future<void> _initAsync() async {
   try {
     await Supabase.initialize(
       url: 'https://hiywlsqaurqvbwwuutbo.supabase.co',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpeXdsc3FhdXJxdmJ3d3V1dGJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTI3ODUsImV4cCI6MjA5OTIyODc4NX0.LDwpQooQKG5ehIENQ7qXPp1XJIkOq3BLXIUL2lOEfTw',
+      publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpeXdsc3FhdXJxdmJ3d3V1dGJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTI3ODUsImV4cCI6MjA5OTIyODc4NX0.LDwpQooQKG5ehIENQ7qXPp1XJIkOq3BLXIUL2lOEfTw',
       // Deep link for browser OAuth fallback (see AuthService.redirectUrl).
       authOptions: const FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
