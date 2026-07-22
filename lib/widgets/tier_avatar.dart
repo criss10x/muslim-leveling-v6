@@ -470,7 +470,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
           end: Alignment.bottomRight,
           colors: [
             p.withValues(alpha: 0.2),
-            light ? AppColors.surfaceContainerLow : const Color(0xFF0E1512),
+            light ? AppColors.surfaceContainerLow : AppColors.background,
           ],
         ),
       ),
@@ -484,7 +484,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
                 height: size,
               )
             : Container(
-                color: light ? AppColors.surfaceContainerHigh : const Color(0xFF0E1512),
+                color: light ? AppColors.surfaceContainerHigh : AppColors.background,
                 alignment: Alignment.center,
                 child: Text(
                   _defaultEmoji(widget.tierName, config),
@@ -555,7 +555,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
             colors: [AppColors.primary, AppColors.goldFill],
           ),
           border: Border.all(
-            color: isLightTheme ? AppColors.surfaceContainerLow : const Color(0xFF0E1512),
+            color: isLightTheme ? AppColors.surfaceContainerLow : AppColors.background,
             width: 2,
           ),
           // Soft drop on dark only — light uses solid border for depth.
@@ -624,7 +624,7 @@ class SmallTierAvatar extends StatelessWidget {
                 ],
           color: isLightTheme
               ? AppColors.surfaceContainerHigh
-              : const Color(0xFF0E1512),
+              : AppColors.background,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(cornerRadius - effectiveBorderWidth),

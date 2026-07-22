@@ -7,18 +7,20 @@ bool _isLight = false;
 bool get isLightTheme => _isLight;
 set isLightTheme(bool v) => _isLight = v;
 
-/// ── Dark theme — Electric Jade pair (bright #34D399 + deep #047857) ──
+/// ── Dark theme — pure black canvas + Electric Jade pair ──
+/// Canvas = #000000 (true black). Cards keep slight green undertone so
+/// elevated surfaces still separate without shadow.
 class AppColorsDark {
-  static const background = Color(0xFF0E1512);
-  static const surfaceDim = Color(0xFF0E1512);
-  static const surface = Color(0xFF0E1512);
-  static const surfaceBright = Color(0xFF333B37);
-  static const surfaceContainerLowest = Color(0xFF08100C);
-  static const surfaceContainerLow = Color(0xFF161D1A);
-  static const surfaceContainer = Color(0xFF1A211E);
-  static const surfaceContainerHigh = Color(0xFF242C28);
-  static const surfaceContainerHighest = Color(0xFF2F3632);
-  static const surfaceVariant = Color(0xFF2F3632);
+  static const background = Color(0xFF000000);
+  static const surfaceDim = Color(0xFF000000);
+  static const surface = Color(0xFF000000);
+  static const surfaceBright = Color(0xFF2A2F2C);
+  static const surfaceContainerLowest = Color(0xFF000000);
+  static const surfaceContainerLow = Color(0xFF121816);
+  static const surfaceContainer = Color(0xFF161C19);
+  static const surfaceContainerHigh = Color(0xFF1E2522);
+  static const surfaceContainerHighest = Color(0xFF2A312E);
+  static const surfaceVariant = Color(0xFF2A312E);
 
   static const onSurface = Color(0xFFDCE4DE);
   static const onSurfaceVariant = Color(0xFFBACAC1);

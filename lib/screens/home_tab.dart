@@ -292,7 +292,8 @@ class _HomeTabState extends State<HomeTab> {
             ? null
             : [
                 BoxShadow(
-                  color: tier.primaryColor.withValues(alpha: 0.18),
+                  // pure black canvas: slightly stronger tier glow
+                  color: tier.primaryColor.withValues(alpha: 0.25),
                   blurRadius: 28,
                   offset: const Offset(0, 10),
                 ),
@@ -303,17 +304,17 @@ class _HomeTabState extends State<HomeTab> {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            // Light: solid raised surface. Dark: translucent tier gradient.
-            color: light ? AppColors.surfaceContainerLow : null,
+            // Light: solid raised. Dark: solid raised + tier tint (no alpha mud).
+            color: light ? AppColors.surfaceContainerLow : AppColors.surfaceContainer,
             gradient: light
                 ? null
                 : LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      tier.primaryColor.withValues(alpha: 0.14),
-                      AppColors.surfaceContainer.withValues(alpha: 0.75),
-                      tier.secondaryColor.withValues(alpha: 0.08),
+                      tier.primaryColor.withValues(alpha: 0.16),
+                      AppColors.surfaceContainer,
+                      tier.secondaryColor.withValues(alpha: 0.10),
                     ],
                   ),
             borderRadius: BorderRadius.circular(AppRadius.xl),

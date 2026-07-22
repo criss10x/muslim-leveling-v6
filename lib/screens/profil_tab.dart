@@ -592,225 +592,247 @@ class _ProfilTabState extends State<ProfilTab> {
     final levelInfo = GameService.getLevelInfo(state.xp);
     final rankTitle = GameService.getRankTitle(state.level);
 
-    return GlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      borderColor: AppColors.primary.withValues(alpha: 0.25),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _showAvatarOptions,
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: isLightTheme
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.35),
-                                  blurRadius: 24,
-                                  spreadRadius: 4,
-                                ),
-                              ],
-                      ),
-                      child: TierProfileAvatar(
-                        profileImagePath: _avatarPath,
-                        tierName: getTierName(_level),
-                        sizeDp: 72,
-                        showEditBadge: true,
-                        onTap: _showAvatarOptions,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.all(2),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: AppColors.primary, width: 1),
-                        boxShadow: isLightTheme
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.3),
-                                  blurRadius: 6,
-                                ),
-                              ],
-                      ),
-                      child: Text(
-                        'LVL $_level',
-                        style: AppText.labelCapsSm().copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+    // Solid raised hero (same language as Home) — GlassPanel alpha muddies on pure black.
+    final light = isLightTheme;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.22),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: light ? 0.35 : 0.45),
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: _showAvatarOptions,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: light
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.35),
+                                    blurRadius: 24,
+                                    spreadRadius: 4,
+                                  ),
+                                ],
+                        ),
+                        child: TierProfileAvatar(
+                          profileImagePath: _avatarPath,
+                          tierName: getTierName(_level),
+                          sizeDp: 72,
+                          showEditBadge: true,
+                          onTap: _showAvatarOptions,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                        Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _nickname,
-                            style: AppText.headlineMd().copyWith(fontSize: 22),
-                            overflow: TextOverflow.ellipsis,
+                      Container(
+                        margin: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(color: AppColors.primary, width: 1),
+                          boxShadow: light
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                        ),
+                        child: Text(
+                          'LVL $_level',
+                          style: AppText.labelCapsSm().copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: GestureDetector(
-                            onTap: _editNickname,
-                            child: Icon(
-                              Icons.edit,
-                              color: AppColors.primary,
-                              size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _nickname,
+                              style: AppText.headlineMd().copyWith(fontSize: 22),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondaryFixed.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.35)),
+                          const SizedBox(width: AppSpacing.xs),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: GestureDetector(
+                              onTap: _editNickname,
+                              child: Icon(
+                                Icons.edit,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        rankTitle,
-                        style: AppText.labelCaps().copyWith(
-                          color: AppColors.secondaryFixed,
-                          fontSize: 10,
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryFixed.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.35)),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // XP Progress bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'XP Progress',
-                    style: AppText.labelCaps().copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 10,
-                    ),
-                  ),
-                  Text(
-                    '${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel} XP',
-                    style: AppText.bodyMd().copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: Container(
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: levelInfo.progress.clamp(0.0, 1.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryFixed],
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        boxShadow: isLightTheme
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.5),
-                                  blurRadius: 8,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Divider(color: AppColors.outlineVariant),
-          const SizedBox(height: AppSpacing.md),
-          // Location row — editable
-          InkWell(
-            onTap: _editLocation,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.sm),
-              child: Row(
-                children: [
-                  Icon(Icons.location_on, color: AppColors.primary, size: 18),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'LOKASI',
+                        child: Text(
+                          rankTitle,
                           style: AppText.labelCaps().copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color: AppColors.secondaryFixed,
                             fontSize: 10,
                           ),
                         ),
-                        Text(
-                          _cityName,
-                          style: AppText.bodyLg().copyWith(color: AppColors.onSurface),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // XP Progress bar
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'XP Progress',
+                      style: AppText.labelCaps().copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      '${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel} XP',
+                      style: AppText.bodyMd().copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: Container(
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: levelInfo.progress.clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.primary, AppColors.primaryFixed],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          boxShadow: light
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.5),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant, size: 20),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Divider(color: AppColors.outlineVariant),
+            const SizedBox(height: AppSpacing.md),
+            // Location row — editable
+            InkWell(
+              onTap: _editLocation,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on, color: AppColors.primary, size: 18),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LOKASI',
+                            style: AppText.labelCaps().copyWith(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 10,
+                            ),
+                          ),
+                          Text(
+                            _cityName,
+                            style: AppText.bodyLg().copyWith(color: AppColors.onSurface),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant, size: 20),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(child: _miniStat('Level', '${GameService.current.level}')),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _miniStat('XP', '${GameService.current.xp}')),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _miniStat('Streak', '${GameService.current.heroStreak.current}🔥')),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _miniStat('Rank', GameService.getRankTitle(GameService.current.level))),
-            ],
-          ),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(child: _miniStat('Level', '${GameService.current.level}')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _miniStat('XP', '${GameService.current.xp}')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _miniStat('Streak', '${GameService.current.heroStreak.current}🔥')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _miniStat('Rank', GameService.getRankTitle(GameService.current.level))),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -820,7 +842,7 @@ class _ProfilTabState extends State<ProfilTab> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow.withValues(alpha: 0.5),
+        color: AppColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(

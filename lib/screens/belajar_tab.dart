@@ -76,33 +76,33 @@ class _BelajarTabState extends State<BelajarTab> {
   }
 
   /// Hero tab Belajar — aksen primary. Light: solid white card (no glow).
-  /// Dark: soft gradient + glow, selaras hero Home/Jadwal.
+  /// Dark: solid raised + primary tint + glow (selaras Home di pure black).
   Widget _progressCard(int completed, int total) {
     final progress = total > 0 ? completed / total : 0.0;
     final light = isLightTheme;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: light ? AppColors.surfaceContainerLow : null,
+        color: AppColors.surfaceContainerLow,
         gradient: light
             ? null
             : LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.12),
-                  AppColors.surfaceContainer.withValues(alpha: 0.7),
+                  AppColors.primary.withValues(alpha: 0.14),
+                  AppColors.surfaceContainerLow,
                 ],
               ),
         borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: light ? 0.35 : 0.4),
+          color: AppColors.primary.withValues(alpha: light ? 0.35 : 0.45),
         ),
         boxShadow: light
             ? null
             : [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: AppColors.primary.withValues(alpha: 0.18),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),

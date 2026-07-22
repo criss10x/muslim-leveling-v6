@@ -90,13 +90,20 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainer,
+                        // Light: white raised card + hairline. Dark: surface + neon pulse.
+                        color: light
+                            ? AppColors.surfaceContainerLowest
+                            : AppColors.surfaceContainer,
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3 + 0.4 * t),
-                          width: 2,
+                          color: light
+                              ? AppColors.primary
+                                  .withValues(alpha: 0.45 + 0.25 * t)
+                              : AppColors.primary
+                                  .withValues(alpha: 0.3 + 0.4 * t),
+                          width: light ? 1.5 : 2,
                         ),
-                        // Glow pulse: dark-only. Light = border alpha only.
+                        // Glow pulse: dark-only. Light stays flat (Strava).
                         boxShadow: light
                             ? null
                             : [
@@ -117,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                // Light: solid primary title. Dark: neon gradient mask.
+                // Light: deep emerald ink title. Dark: neon gradient mask.
                 isLightTheme
                     ? Text(
                         'MUSLIM LEVELING',
@@ -129,7 +136,7 @@ class _SplashScreenState extends State<SplashScreen>
                       )
                     : ShaderMask(
                         shaderCallback: (rect) => LinearGradient(
-                          colors: [AppColors.primary, AppColors.tertiary],
+                          colors: [AppColors.primary, AppColors.primaryFixed],
                         ).createShader(rect),
                         child: Text(
                           'MUSLIM LEVELING',
@@ -158,7 +165,10 @@ class _SplashScreenState extends State<SplashScreen>
                         Container(
                           height: 4,
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceContainerHigh,
+                            // Light track needs stronger inset vs canvas #E8EAED.
+                            color: isLightTheme
+                                ? AppColors.surfaceContainerHighest
+                                : AppColors.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -167,9 +177,17 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Container(
                             height: 4,
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [AppColors.primary, AppColors.tertiary],
-                              ),
+                              // Light: solid deep primary (AA, no neon mint tail).
+                              // Dark: neon jade→cyan brand flair.
+                              color: isLightTheme ? AppColors.primary : null,
+                              gradient: isLightTheme
+                                  ? null
+                                  : LinearGradient(
+                                      colors: [
+                                        AppColors.primary,
+                                        AppColors.tertiary,
+                                      ],
+                                    ),
                               borderRadius: BorderRadius.circular(2),
                               boxShadow: isLightTheme
                                   ? null

@@ -153,7 +153,7 @@ class _MedalPainter extends CustomPainter {
           radius: 1.2,
           colors: [
             primary.withValues(alpha: unlocked ? 0.30 : 0.10),
-            const Color(0xFF0E1512),
+            const Color(0xFF000000),
           ],
         ).createShader(rect),
     );
