@@ -356,7 +356,7 @@ class _QiblaScreenState extends State<QiblaScreen>
                 border: Border.all(
                     color: AppColors.outlineVariant.withValues(alpha: 0.3)),
               ),
-              child: const Icon(Icons.arrow_back,
+              child: Icon(Icons.arrow_back,
                   color: AppColors.onSurface, size: 20),
             ),
           ),
@@ -388,8 +388,11 @@ class _QiblaScreenState extends State<QiblaScreen>
   Widget _compass(bool aligned) {
     // Dial selalu mint (identitas app + logo). Jarum cyan saat mencari,
     // mengunci ke mint saat sejajar — pasangan mint/cyan = gradient logo.
-    const compassColor = AppColors.primary;
-    final arrowColor = aligned ? AppColors.primaryFixed : AppColors.tertiary;
+    final compassColor = AppColors.primary;
+    // Light: primaryFixed is bright fill-only (fails as ink). Use deep primary.
+    final arrowColor = aligned
+        ? (isLightTheme ? AppColors.primary : AppColors.primaryFixed)
+        : AppColors.tertiary;
 
     return AnimatedBuilder(
       animation: _pulse,

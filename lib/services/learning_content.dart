@@ -252,6 +252,10 @@ class LearningContent {
   static List<LearningModule> getAllModulesOrdered() =>
       categories.expand((c) => c.modules).toList();
 
+  /// Null when [moduleId] unknown — callers must not use bare `.first`.
+  static LearningModule? getModule(String moduleId) =>
+      getAllModulesOrdered().where((m) => m.id == moduleId).firstOrNull;
+
   static bool isModuleUnlocked(String moduleId, List<ModuleProgress> progress) {
     for (final cat in categories) {
       final idx = cat.modules.indexWhere((m) => m.id == moduleId);
@@ -2099,7 +2103,13 @@ class LearningService {
     if (raw != null) {
       try {
         _cache = LearningState.fromMap(jsonDecode(raw) as Map<String, dynamic>);
+        return _cache;
       } catch (_) {}
+    }
+    final remote = await SupabaseSync.loadLearning();
+    if (remote != null) {
+      _cache = LearningState.fromMap(remote);
+      await p.setString(_key, jsonEncode(remote));
     }
     return _cache;
   }

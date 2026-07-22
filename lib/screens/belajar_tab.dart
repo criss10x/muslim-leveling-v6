@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../services/learning_content.dart';
+import '../../services/theme_service.dart';
 import 'belajar_article.dart';
 
 /// Belajar / Learning Hub — modules list with category tabs and progress.
@@ -20,6 +21,17 @@ class _BelajarTabState extends State<BelajarTab> {
   void initState() {
     super.initState();
     _load();
+    themeNotifier.addListener(_onThemeChange);
+  }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {
@@ -63,30 +75,38 @@ class _BelajarTabState extends State<BelajarTab> {
     );
   }
 
-  /// Hero tab Belajar — satu-satunya kartu ber-aksen (glow tenang),
-  /// konsisten dengan hero Status Window (Home) & kartu masjid (Jadwal).
+  /// Hero tab Belajar — aksen primary. Light: solid white card (no glow).
+  /// Dark: solid raised + primary tint + glow (selaras Home di pure black).
   Widget _progressCard(int completed, int total) {
     final progress = total > 0 ? completed / total : 0.0;
+    final light = isLightTheme;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary.withValues(alpha: 0.12),
-            AppColors.surfaceContainer.withValues(alpha: 0.7),
-          ],
-        ),
+        color: AppColors.surfaceContainerLow,
+        gradient: light
+            ? null
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.14),
+                  AppColors.surfaceContainerLow,
+                ],
+              ),
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: light ? 0.35 : 0.45),
+        ),
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.18),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -212,7 +232,7 @@ class _BelajarTabState extends State<BelajarTab> {
                 child: Center(
                   child: unlocked
                       ? Text(mod.icon, style: const TextStyle(fontSize: 26))
-                      : const Icon(Icons.lock, color: AppColors.onSurfaceVariant, size: 20),
+                      : Icon(Icons.lock, color: AppColors.onSurfaceVariant, size: 20),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),

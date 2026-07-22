@@ -49,14 +49,33 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
     super.dispose();
   }
 
-  LearningModule get _module => LearningContent.getAllModulesOrdered()
-      .where((m) => m.id == widget.moduleId)
-      .first;
+  LearningModule? get _module => LearningContent.getModule(widget.moduleId);
 
   bool get _passed => widget.score >= LearningService.passScore;
 
   @override
   Widget build(BuildContext context) {
+    final module = _module;
+    if (module == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Modul tidak ditemukan', style: AppText.titleLg()),
+                const SizedBox(height: AppSpacing.md),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Kembali'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     final bgColor = _passed ? AppColors.primary : AppColors.tertiary;
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -108,8 +127,8 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
                       const SizedBox(height: 24),
                       _scoreCard(),
                       const SizedBox(height: 20),
-                      if (_passed && !_xpClaimed) _claimButton(),
-                      if (_passed && _xpClaimed) _claimedBadge(),
+                      if (_passed && !_xpClaimed) _claimButton(module),
+                      if (_passed && _xpClaimed) _claimedBadge(module),
                       if (!_passed) _retryHint(),
                       const SizedBox(height: 24),
                       _actions(context),
@@ -126,8 +145,10 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
   }
 
   Widget _victoryBadge() {
+    final light = isLightTheme;
     final accent = _passed ? AppColors.secondaryFixed : AppColors.tertiary;
-    final iconColor = _passed ? AppColors.onSecondaryFixed : AppColors.onTertiaryContainer;
+    final iconColor =
+        _passed ? AppColors.onSecondaryFixed : AppColors.onTertiaryContainer;
     return AnimatedBuilder(
       animation: _floatCtrl,
       builder: (_, child) {
@@ -137,28 +158,61 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(width: 130, height: 130,
+          Container(
+            width: 130,
+            height: 130,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: accent.withValues(alpha: 0.2),
-              boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 50, spreadRadius: 10)],
+              color: accent.withValues(alpha: light ? 0.12 : 0.2),
+              boxShadow: light
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.35),
+                        blurRadius: 50,
+                        spreadRadius: 10,
+                      ),
+                    ],
             ),
           ),
           ClipPath(
             clipper: const _DiamondClipper(),
             child: Container(
-              width: 96, height: 96,
+              width: 96,
+              height: 96,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  // Light fail: soft container (Fixed = fill-only, muddy as surface).
                   colors: _passed
                       ? [AppColors.secondaryFixed, AppColors.onSecondaryFixed]
-                      : [AppColors.tertiaryFixed, AppColors.tertiaryContainer],
+                      : light
+                          ? [
+                              AppColors.tertiaryContainer,
+                              AppColors.tertiary.withValues(alpha: 0.35),
+                            ]
+                          : [
+                              AppColors.tertiaryFixed,
+                              AppColors.tertiaryContainer,
+                            ],
                 ),
                 border: Border.all(color: accent.withValues(alpha: 0.7), width: 2),
-                boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.5), blurRadius: 30, spreadRadius: 4)],
+                boxShadow: light
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.5),
+                          blurRadius: 30,
+                          spreadRadius: 4,
+                        ),
+                      ],
               ),
-              child: Icon(_passed ? Icons.workspace_premium : Icons.refresh, size: 52, color: iconColor),
+              child: Icon(
+                _passed ? Icons.workspace_premium : Icons.refresh,
+                size: 52,
+                color: iconColor,
+              ),
             ),
           ),
         ],
@@ -167,16 +221,34 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
   }
 
   Widget _heading() {
+    final light = isLightTheme;
+    final title = _passed ? 'Modul Selesai!' : 'Belum Lulus';
+    if (light) {
+      return Text(
+        title,
+        textAlign: TextAlign.center,
+        style: AppText.displayHero(40).copyWith(
+          color: AppColors.onSurface,
+          fontSize: 32,
+        ),
+      );
+    }
     return ShaderMask(
       shaderCallback: (rect) => LinearGradient(
         colors: [AppColors.primary, AppColors.tertiary],
       ).createShader(rect),
       child: Text(
-        _passed ? 'Modul Selesai!' : 'Belum Lulus',
+        title,
         textAlign: TextAlign.center,
         style: AppText.displayHero(40).copyWith(
-          color: Colors.white, fontSize: 32,
-          shadows: [Shadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 15)],
+          color: Colors.white,
+          fontSize: 32,
+          shadows: [
+            Shadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 15,
+            ),
+          ],
         ),
       ),
     );
@@ -191,15 +263,28 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
   }
 
   Widget _scoreCard() {
+    final light = isLightTheme;
     final accent = _passed ? AppColors.secondaryFixed : AppColors.tertiary;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
-        boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 40, offset: Offset(0, 12))],
+        color: light
+            ? AppColors.surfaceContainerLow
+            : AppColors.surfaceContainerLow.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(AppRadius.xxl + 8),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: light ? 0.7 : 0.4),
+        ),
+        boxShadow: light
+            ? null
+            : const [
+                BoxShadow(
+                  color: Colors.black54,
+                  blurRadius: 40,
+                  offset: Offset(0, 12),
+                ),
+              ],
       ),
       child: Column(
         children: [
@@ -214,16 +299,29 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
               ]),
             ),
           ),
-          Text('HASIL QUIZ', style: AppText.labelCaps().copyWith(color: accent, letterSpacing: 3)),
+          Text(
+            'HASIL QUIZ',
+            style: AppText.labelCaps().copyWith(color: accent, letterSpacing: 3),
+          ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text('${widget.score}',
-                style: AppText.displayHero(48).copyWith(color: accent, fontSize: 56,
-                  shadows: [Shadow(color: accent.withValues(alpha: 0.6), blurRadius: 25)],
+              Text(
+                '${widget.score}',
+                style: AppText.displayHero(48).copyWith(
+                  color: accent,
+                  fontSize: 56,
+                  shadows: light
+                      ? null
+                      : [
+                          Shadow(
+                            color: accent.withValues(alpha: 0.6),
+                            blurRadius: 25,
+                          ),
+                        ],
                 ),
               ),
               Text('%', style: AppText.headlineMd().copyWith(color: accent)),
@@ -252,36 +350,36 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
     );
   }
 
-  Widget _claimButton() {
+  Widget _claimButton(LearningModule module) {
     return SizedBox(
       width: double.infinity,
       child: HeroButton(
-        label: 'KLAIM +${_module.xpReward} XP',
+        label: 'KLAIM +${module.xpReward} XP',
         trailingIcon: Icons.stars,
-        onPressed: _processing ? null : _claimXp,
+        onPressed: _processing ? null : () => _claimXp(module),
       ),
     );
   }
 
-  Future<void> _claimXp() async {
+  Future<void> _claimXp(LearningModule module) async {
     if (_processing) return;
     setState(() => _processing = true);
     await LearningService.claimXp(widget.moduleId);
-    final (_, levelsGained) = await GameService.addXp(_module.xpReward);
+    final (_, levelsGained) = await GameService.addXp(module.xpReward);
     setState(() { _xpClaimed = true; _processing = false; });
     if (!mounted) return;
     if (levelsGained > 0) {
       Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => NaikLevelScreen(xpGained: _module.xpReward, levelsGained: levelsGained),
+        builder: (_) => NaikLevelScreen(xpGained: module.xpReward, levelsGained: levelsGained),
       ));
     } else {
       Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => DapetExpScreen(xpGained: _module.xpReward, moduleTitle: _module.title, score: widget.score),
+        builder: (_) => DapetExpScreen(xpGained: module.xpReward, moduleTitle: module.title, score: widget.score),
       ));
     }
   }
 
-  Widget _claimedBadge() {
+  Widget _claimedBadge(LearningModule module) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
@@ -295,7 +393,7 @@ class _BelajarResultScreenState extends State<BelajarResultScreen>
         children: [
           Icon(Icons.bolt, color: AppColors.primary, size: 22),
           const SizedBox(width: 8),
-          Text('+${_module.xpReward} XP',
+          Text('+${module.xpReward} XP',
               style: AppText.headlineMd().copyWith(color: AppColors.primary, fontSize: 22)),
           const SizedBox(width: 8),
           Text('Diperoleh', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),

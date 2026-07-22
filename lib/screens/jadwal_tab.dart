@@ -4,6 +4,7 @@ import '../../widgets/common.dart';
 import '../../widgets/city_picker.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
+import '../../services/theme_service.dart';
 import 'qibla_screen.dart';
 
 /// Jadwal Sholat — V3 logic ported to V1 design.
@@ -31,16 +32,22 @@ class _JadwalTabState extends State<JadwalTab> {
     PrayerService.locationVersion.addListener(_loadAndFetch);
     // Rebuild status "sudah dilog" saat sholat dicentang di tab Home.
     GameService.stateVersion.addListener(_onStateChanged);
+    themeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
     PrayerService.locationVersion.removeListener(_loadAndFetch);
     GameService.stateVersion.removeListener(_onStateChanged);
+    themeNotifier.removeListener(_onThemeChange);
     super.dispose();
   }
 
   void _onStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onThemeChange() {
     if (mounted) setState(() {});
   }
 
@@ -200,11 +207,11 @@ class _JadwalTabState extends State<JadwalTab> {
           Row(
             children: [
               Text(_todayLabel(), style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6),
                 child: Text('•', style: TextStyle(color: AppColors.outlineVariant)),
               ),
-              const Icon(Icons.location_on, size: 14, color: AppColors.onSurfaceVariant),
+              Icon(Icons.location_on, size: 14, color: AppColors.onSurfaceVariant),
               const SizedBox(width: 4),
               Expanded(
                 child: InkWell(
@@ -219,7 +226,7 @@ class _JadwalTabState extends State<JadwalTab> {
               ),
               InkWell(
                 onTap: _changeLocation,
-                child: const Icon(Icons.edit, size: 14, color: AppColors.primary),
+                child: Icon(Icons.edit, size: 14, color: AppColors.primary),
               ),
             ],
           ),
@@ -248,13 +255,13 @@ class _JadwalTabState extends State<JadwalTab> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.explore, size: 22, color: AppColors.secondaryFixed),
+            Icon(Icons.explore, size: 22, color: AppColors.secondaryFixed),
             const SizedBox(width: AppSpacing.sm),
             Text('Kompas Kiblat',
                 style: AppText.titleLg()
                     .copyWith(fontSize: 15, color: AppColors.onSurface)),
             const Spacer(),
-            const Icon(Icons.arrow_forward_ios,
+            Icon(Icons.arrow_forward_ios,
                 size: 14, color: AppColors.secondaryFixed),
           ],
         ),
@@ -264,124 +271,143 @@ class _JadwalTabState extends State<JadwalTab> {
 
   Widget _nextPrayerCard() {
     final next = _nextPrayer();
-
-    // Hero tab ini — satu-satunya elemen dengan foto + glow (statis,
-    // konsisten dengan hero Status Window di Home).
+    // Solid raised + primary tint/glow — same language as Home/Belajar/Profil.
+    final light = isLightTheme;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.22),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        child: Container(
-          color: AppColors.surfaceContainerHigh,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset('assets/images/mosque_bg.jpg', fit: BoxFit.cover),
-              ),
-              Positioned.fill(
-                child: Container(color: Colors.black.withValues(alpha: 0.7)),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: _loading
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: CircularProgressIndicator(color: AppColors.primary),
-                        ),
-                      )
-                    : _error != null
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  const Icon(Icons.cloud_off, color: AppColors.error, size: 32),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _error!,
-                                    textAlign: TextAlign.center,
-                                    style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  TextButton(
-                                    onPressed: _fetch,
-                                    child: Text('Coba lagi', style: AppText.bodyMd().copyWith(color: AppColors.primary)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('SHOLAT BERIKUTNYA', style: AppText.labelCaps().copyWith(color: AppColors.primary)),
-                                      const SizedBox(height: 2),
-                                      Text(next.name, style: AppText.headlineLg()),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.45),
-                                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.timer, size: 14, color: AppColors.secondaryFixed),
-                                        const SizedBox(width: 4),
-                                        Text(next.countdown, style: AppText.labelCaps().copyWith(color: AppColors.secondaryFixed)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  ShaderMask(
-                                    shaderCallback: (rect) => const LinearGradient(
-                                      colors: [AppColors.primary, AppColors.primaryFixed],
-                                    ).createShader(rect),
-                                    child: Text(
-                                      next.time,
-                                      style: AppText.displayHero(40).copyWith(color: Colors.white),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryContainer.withValues(alpha: 0.2),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.5)),
-                                    ),
-                                    child: const Icon(Icons.notifications_active, color: AppColors.primary, size: 20),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-              ),
-            ],
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          gradient: light
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.14),
+                    AppColors.surfaceContainerLow,
+                  ],
+                ),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: light ? 0.35 : 0.45),
           ),
         ),
+        child: _loading
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              )
+            : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Icon(Icons.cloud_off, color: AppColors.error, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: _fetch,
+                            child: Text('Coba lagi', style: AppText.bodyMd().copyWith(color: AppColors.primary)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('SHOLAT BERIKUTNYA',
+                                  style: AppText.labelCaps().copyWith(color: AppColors.primary)),
+                              const SizedBox(height: 2),
+                              Text(next.name, style: AppText.headlineLg()),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryFixed.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              border: Border.all(
+                                color: AppColors.secondaryFixed.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.timer, size: 14, color: AppColors.secondaryFixed),
+                                const SizedBox(width: 4),
+                                Text(next.countdown,
+                                    style: AppText.labelCaps()
+                                        .copyWith(color: AppColors.secondaryFixed)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          light
+                              ? Text(
+                                  next.time,
+                                  style: AppText.displayHero(40)
+                                      .copyWith(color: AppColors.primary),
+                                )
+                              : ShaderMask(
+                                  shaderCallback: (rect) => LinearGradient(
+                                    colors: [AppColors.primary, AppColors.primaryFixed],
+                                  ).createShader(rect),
+                                  child: Text(
+                                    next.time,
+                                    style: AppText.displayHero(40)
+                                        .copyWith(color: Colors.white),
+                                  ),
+                                ),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.45),
+                              ),
+                            ),
+                            child: Icon(Icons.notifications_active,
+                                color: AppColors.primary, size: 20),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
       ),
     );
   }

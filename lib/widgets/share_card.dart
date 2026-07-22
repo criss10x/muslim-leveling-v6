@@ -27,15 +27,15 @@ import 'achievement_medal.dart';
         const Color(0xFFFFD700), const Color(0xFFDC2626));
   }
   return switch (tier) {
-    AchievementTier.rookie => (const Color(0xFF0E1512), const Color(0xFF1A211E),
+    AchievementTier.rookie => (const Color(0xFF000000), const Color(0xFF161C19),
         const Color(0xFF6B7280), const Color(0xFF00A86B)),
-    AchievementTier.elite => (const Color(0xFF0E1512), const Color(0xFF0A2E22),
+    AchievementTier.elite => (const Color(0xFF000000), const Color(0xFF0A2E22),
         const Color(0xFF10B981), const Color(0xFF059669)),
-    AchievementTier.gold => (const Color(0xFF0E1512), const Color(0xFF1E1600),
+    AchievementTier.gold => (const Color(0xFF000000), const Color(0xFF1E1600),
         const Color(0xFFFFD700), const Color(0xFFF59E0B)),
-    AchievementTier.epic => (const Color(0xFF0E1512), const Color(0xFF0D0828),
+    AchievementTier.epic => (const Color(0xFF000000), const Color(0xFF0D0828),
         const Color(0xFF6366F1), const Color(0xFF8B5CF6)),
-    AchievementTier.legendary => (const Color(0xFF0E1512), const Color(0xFF1A0E00),
+    AchievementTier.legendary => (const Color(0xFF000000), const Color(0xFF1A0E00),
         const Color(0xFFFFD700), const Color(0xFFDC2626)),
   };
 }

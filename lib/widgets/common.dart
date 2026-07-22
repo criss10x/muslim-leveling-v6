@@ -2,11 +2,11 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/theme_service.dart';
 
-/// Glass panel — translucent dark surface with subtle border and inner glow.
-/// Mirrors the `glass-panel` Tailwind utility used throughout the designs.
-/// Set [blurSigma] > 0 for a real frosted-glass backdrop blur (use sparingly —
-/// BackdropFilter is expensive, so reserve it for hero surfaces and the nav bar).
+/// Glass panel — translucent surface with subtle border.
+/// Light: solid FlatCard-equivalent (no frosted alpha, no blur).
+/// Dark: translucent glass; set [blurSigma] > 0 sparingly (BackdropFilter cost).
 class GlassPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -29,20 +29,26 @@ class GlassPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final light = isLightTheme;
     final panel = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainer.withValues(alpha: 0.6),
+        // Light: solid raised surface (alpha 0.6 on near-white = muddy grey).
+        // Dark: translucent glass over ambient bg.
+        color: light
+            ? AppColors.surfaceContainerLow
+            : AppColors.surfaceContainer.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: borderColor ?? AppColors.outlineVariant.withValues(alpha: 0.4),
+          color: borderColor ?? AppColors.outlineVariant.withValues(alpha: light ? 0.6 : 0.4),
           width: borderWidth,
         ),
-        boxShadow: shadow,
+        boxShadow: shadow ?? AppShadow.card(),
       ),
       child: child,
     );
-    if (blurSigma <= 0) return panel;
+    // Never blur in light — frosted glass on solid canvas is smudge + cost.
+    if (blurSigma <= 0 || light) return panel;
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
@@ -69,8 +75,7 @@ class HudHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Text(label,
-              style: AppText.labelCaps().copyWith(color: color, fontSize: 11)),
+          Text(label, style: AppText.labelCapsSm().copyWith(color: color)),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Container(
@@ -80,9 +85,7 @@ class HudHeader extends StatelessWidget {
           ),
           if (meta != null) ...[
             const SizedBox(width: AppSpacing.sm),
-            Text(meta!,
-                style:
-                    AppText.labelCaps().copyWith(color: color, fontSize: 11)),
+            Text(meta!, style: AppText.labelCapsSm().copyWith(color: color)),
           ],
         ],
       ),
@@ -90,8 +93,8 @@ class HudHeader extends StatelessWidget {
   }
 }
 
-/// FlatCard — kartu datar standar redesign: surfaceContainerLow, radius 16,
-/// tanpa border/shadow. Sorotan (hairline/tint) hanya untuk state bermakna.
+/// FlatCard — kartu datar standar: surfaceContainerLow, radius 16,
+/// tanpa border/shadow. Depth dari surface ramp, bukan BoxShadow.
 class FlatCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -195,20 +198,24 @@ class _PressableScaleState extends State<PressableScale> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onTap != null;
-    return GestureDetector(
-      onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
-      onTapUp: enabled
-          ? (_) {
-              setState(() => _pressed = false);
-              widget.onTap?.call();
-            }
-          : null,
-      onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
-      child: AnimatedScale(
-        scale: _pressed ? widget.pressedScale : 1.0,
-        duration: const Duration(milliseconds: 110),
-        curve: Curves.easeOut,
-        child: widget.child,
+    return Semantics(
+      button: enabled,
+      enabled: enabled,
+      child: GestureDetector(
+        onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: enabled
+            ? (_) {
+                setState(() => _pressed = false);
+                widget.onTap?.call();
+              }
+            : null,
+        onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
+        child: AnimatedScale(
+          scale: _pressed ? widget.pressedScale : 1.0,
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: widget.child,
+        ),
       ),
     );
   }
@@ -376,7 +383,7 @@ class _ConfettiPainter extends CustomPainter {
   final int count;
   _ConfettiPainter(this.t, this.count);
 
-  static const _palette = [
+  static final _palette = [
     AppColors.primary,
     AppColors.secondaryFixed,
     AppColors.tertiary,
@@ -439,6 +446,7 @@ class HeroButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final light = isLightTheme;
     final btn = Material(
       color: Colors.transparent,
       child: InkWell(
@@ -451,17 +459,23 @@ class HeroButton extends StatelessWidget {
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryFixed],
-            ),
+            // Light: solid deep primary (AA). Dark: neon gradient + glow.
+            color: light ? AppColors.primary : null,
+            gradient: light
+                ? null
+                : LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryFixed],
+                  ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 30,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: light
+                ? null
+                : [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
           ),
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -570,16 +584,31 @@ class _AmbientBackgroundState extends State<AmbientBackground>
       vsync: this,
       duration: const Duration(seconds: 12),
     )..repeat();
+    themeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
     _fireflyController.dispose();
     super.dispose();
   }
 
+  void _onThemeChange() => setState(() {});
+
   @override
   Widget build(BuildContext context) {
+    // Light mode: calm, clean canvas. The firefly + glow-blob motif is a
+    // dark-only night-sky effect; on a light surface it reads as smudges.
+    // Depth now comes from elevated cards, so the background stays quiet.
+    if (isLightTheme) {
+      return Stack(
+        children: [
+          Positioned.fill(child: ColoredBox(color: AppColors.background)),
+          widget.child,
+        ],
+      );
+    }
     return Stack(
       children: [
         Positioned.fill(
@@ -709,6 +738,8 @@ class _NeonPulseState extends State<NeonPulse>
 
   @override
   Widget build(BuildContext context) {
+    // Light: border-only pulse, no glow (neon = dark language).
+    final light = isLightTheme;
     return AnimatedBuilder(
       animation: _ctl,
       builder: (_, __) {
@@ -719,12 +750,14 @@ class _NeonPulseState extends State<NeonPulse>
               color: widget.color.withValues(alpha: 0.3 + 0.2 * t),
             ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.1 + 0.25 * t),
-                blurRadius: 5 + 12 * t,
-              ),
-            ],
+            boxShadow: light
+                ? null
+                : [
+                    BoxShadow(
+                      color: widget.color.withValues(alpha: 0.1 + 0.25 * t),
+                      blurRadius: 5 + 12 * t,
+                    ),
+                  ],
           ),
           child: widget.child,
         );
@@ -743,16 +776,17 @@ class NeonProgressBar extends StatelessWidget {
   final int segments;
   final bool leadingGlow; // glow di ujung leading bar (hero rank card)
 
-  const NeonProgressBar({
+  NeonProgressBar({
     super.key,
     required this.progress,
-    this.fromColor = AppColors.primaryContainer,
-    this.toColor = AppColors.primary,
+    Color? fromColor,
+    Color? toColor,
     this.height = 16,
     this.segmented = false,
     this.segments = 5,
     this.leadingGlow = false,
-  });
+  })  : fromColor = fromColor ?? AppColors.primary,
+        toColor = toColor ?? AppColors.primaryFixed;
 
   @override
   Widget build(BuildContext context) {
@@ -768,7 +802,8 @@ class NeonProgressBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: filled ? toColor : AppColors.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(1),
-                boxShadow: filled
+                // Segment glow: dark only.
+                boxShadow: filled && !isLightTheme
                     ? [
                         BoxShadow(
                           color: toColor.withValues(alpha: 0.6),
@@ -830,8 +865,8 @@ class NeonProgressBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // leading-edge glow: bright white spot + halo OUTSIDE clip
-              if (leadingGlow && p > 0.0 && p < 1.0)
+              // leading-edge glow: dark only (white halo vanishes / looks dirty on light).
+              if (leadingGlow && !isLightTheme && p > 0.0 && p < 1.0)
                 Positioned(
                   left: (fillWidth - glowSize / 2).clamp(0.0, barWidth - glowSize),
                   top: -(glowSize - height) / 2,

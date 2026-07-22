@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,10 @@ import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
+import '../../services/learning_content.dart';
+import '../../services/supabase_sync.dart';
+import '../../services/auth_service.dart';
+import '../../services/theme_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
 import 'achievements_screen.dart';
@@ -39,8 +44,17 @@ class _ProfilTabState extends State<ProfilTab> {
   @override
   void initState() {
     super.initState();
+    themeNotifier.addListener(_onThemeChange);
     _loadProfile();
   }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() => setState(() {});
 
   Future<void> _loadProfile() async {
     await GameService.load();
@@ -82,7 +96,7 @@ class _ProfilTabState extends State<ProfilTab> {
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
             ),
-            focusedBorder: const UnderlineInputBorder(
+            focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.primary),
             ),
           ),
@@ -150,7 +164,7 @@ class _ProfilTabState extends State<ProfilTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.primary),
+              leading: Icon(Icons.photo_library, color: AppColors.primary),
               title: Text('Ganti Foto', style: AppText.bodyLg()),
               onTap: () {
                 Navigator.pop(ctx);
@@ -159,7 +173,7 @@ class _ProfilTabState extends State<ProfilTab> {
             ),
             if (_avatarPath != null)
               ListTile(
-                leading: const Icon(Icons.delete, color: AppColors.error),
+                leading: Icon(Icons.delete, color: AppColors.error),
                 title: Text('Hapus Foto', style: AppText.bodyLg().copyWith(color: AppColors.error)),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -176,7 +190,7 @@ class _ProfilTabState extends State<ProfilTab> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text, style: AppText.bodyMd().copyWith(color: AppColors.onSurface)),
-        backgroundColor: AppColors.surfaceContainerHigh,
+        backgroundColor: AppColors.surfaceContainerLowest,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
@@ -386,7 +400,7 @@ class _ProfilTabState extends State<ProfilTab> {
                   width: double.infinity,
                   child: TextButton.icon(
                     onPressed: () => NotificationService.openChannelSettings(),
-                    icon: const Icon(Icons.settings, size: 16, color: AppColors.onSurfaceVariant),
+                    icon: Icon(Icons.settings, size: 16, color: AppColors.onSurfaceVariant),
                     label: Text('Pengaturan Notifikasi Android', style: AppText.bodyMd().copyWith(
                       color: AppColors.onSurfaceVariant,
                     )),
@@ -426,7 +440,11 @@ class _ProfilTabState extends State<ProfilTab> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryContainer.withValues(alpha: 0.15) : Colors.transparent,
+          color: selected
+              ? (isLightTheme
+                  ? AppColors.primaryContainer
+                  : AppColors.primaryContainer.withValues(alpha: 0.15))
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: selected ? AppColors.primary.withValues(alpha: 0.5) : AppColors.outlineVariant.withValues(alpha: 0.3),
@@ -559,6 +577,8 @@ class _ProfilTabState extends State<ProfilTab> {
               const SizedBox(height: AppSpacing.lg),
               _haidModeToggle(),
               const SizedBox(height: AppSpacing.md),
+              _accountBackup(),
+              const SizedBox(height: AppSpacing.md),
               _settings(),
             ],
           ),
@@ -572,220 +592,247 @@ class _ProfilTabState extends State<ProfilTab> {
     final levelInfo = GameService.getLevelInfo(state.xp);
     final rankTitle = GameService.getRankTitle(state.level);
 
-    return GlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      borderColor: AppColors.primary.withValues(alpha: 0.25),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _showAvatarOptions,
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.35),
-                            blurRadius: 24,
-                            spreadRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: TierProfileAvatar(
-                        profileImagePath: _avatarPath,
-                        tierName: getTierName(_level),
-                        sizeDp: 72,
-                        showEditBadge: true,
-                        onTap: _showAvatarOptions,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.all(2),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: AppColors.primary, width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        'LVL $_level',
-                        style: AppText.labelCaps().copyWith(
-                          color: AppColors.primary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
+    // Solid raised hero (same language as Home) — GlassPanel alpha muddies on pure black.
+    final light = isLightTheme;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.22),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                        Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _nickname,
-                            style: AppText.headlineMd().copyWith(fontSize: 22),
-                            overflow: TextOverflow.ellipsis,
+              ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: light ? 0.35 : 0.45),
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: _showAvatarOptions,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: light
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.35),
+                                    blurRadius: 24,
+                                    spreadRadius: 4,
+                                  ),
+                                ],
+                        ),
+                        child: TierProfileAvatar(
+                          profileImagePath: _avatarPath,
+                          tierName: getTierName(_level),
+                          sizeDp: 72,
+                          showEditBadge: true,
+                          onTap: _showAvatarOptions,
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(color: AppColors.primary, width: 1),
+                          boxShadow: light
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                        ),
+                        child: Text(
+                          'LVL $_level',
+                          style: AppText.labelCapsSm().copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: GestureDetector(
-                            onTap: _editNickname,
-                            child: Icon(
-                              Icons.edit,
-                              color: AppColors.primary,
-                              size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _nickname,
+                              style: AppText.headlineMd().copyWith(fontSize: 22),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondaryFixed.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.35)),
-                      ),
-                      child: Text(
-                        rankTitle,
-                        style: AppText.labelCaps().copyWith(
-                          color: AppColors.secondaryFixed,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // XP Progress bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'XP Progress',
-                    style: AppText.labelCaps().copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 10,
-                    ),
-                  ),
-                  Text(
-                    '${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel} XP',
-                    style: AppText.bodyMd().copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: Container(
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: levelInfo.progress.clamp(0.0, 1.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryFixed],
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
+                          const SizedBox(width: AppSpacing.xs),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: GestureDetector(
+                              onTap: _editNickname,
+                              child: Icon(
+                                Icons.edit,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const Divider(color: AppColors.outlineVariant),
-          const SizedBox(height: AppSpacing.md),
-          // Location row — editable
-          InkWell(
-            onTap: _editLocation,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.sm),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_on, color: AppColors.primary, size: 18),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'LOKASI',
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryFixed.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(color: AppColors.secondaryFixed.withValues(alpha: 0.35)),
+                        ),
+                        child: Text(
+                          rankTitle,
                           style: AppText.labelCaps().copyWith(
-                            color: AppColors.onSurfaceVariant,
+                            color: AppColors.secondaryFixed,
                             fontSize: 10,
                           ),
                         ),
-                        Text(
-                          _cityName,
-                          style: AppText.bodyLg().copyWith(color: AppColors.onSurface),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // XP Progress bar
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'XP Progress',
+                      style: AppText.labelCaps().copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      '${levelInfo.xpInCurrentLevel}/${levelInfo.xpNeededForNextLevel} XP',
+                      style: AppText.bodyMd().copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: Container(
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: levelInfo.progress.clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.primary, AppColors.primaryFixed],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          boxShadow: light
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.5),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant, size: 20),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Divider(color: AppColors.outlineVariant),
+            const SizedBox(height: AppSpacing.md),
+            // Location row — editable
+            InkWell(
+              onTap: _editLocation,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on, color: AppColors.primary, size: 18),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LOKASI',
+                            style: AppText.labelCaps().copyWith(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 10,
+                            ),
+                          ),
+                          Text(
+                            _cityName,
+                            style: AppText.bodyLg().copyWith(color: AppColors.onSurface),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant, size: 20),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(child: _miniStat('Level', '${GameService.current.level}')),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _miniStat('XP', '${GameService.current.xp}')),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _miniStat('Streak', '${GameService.current.heroStreak.current}🔥')),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _miniStat('Rank', GameService.getRankTitle(GameService.current.level))),
-            ],
-          ),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(child: _miniStat('Level', '${GameService.current.level}')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _miniStat('XP', '${GameService.current.xp}')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _miniStat('Streak', '${GameService.current.heroStreak.current}🔥')),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: _miniStat('Rank', GameService.getRankTitle(GameService.current.level))),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -795,7 +842,7 @@ class _ProfilTabState extends State<ProfilTab> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow.withValues(alpha: 0.5),
+        color: AppColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
@@ -1020,7 +1067,7 @@ class _ProfilTabState extends State<ProfilTab> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.base),
-                const Icon(Icons.arrow_forward_ios,
+                Icon(Icons.arrow_forward_ios,
                     size: 14, color: AppColors.secondaryFixed),
               ],
             ),
@@ -1041,7 +1088,7 @@ class _ProfilTabState extends State<ProfilTab> {
               color: AppColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: const Icon(Icons.bloodtype_outlined, color: AppColors.error, size: 20),
+            child: Icon(Icons.bloodtype_outlined, color: AppColors.error, size: 20),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -1070,11 +1117,172 @@ class _ProfilTabState extends State<ProfilTab> {
     );
   }
 
+  // ── Backup & Account ──
+  Future<void> _handleGoogleLogin() async {
+    final uid = await AuthService.signInWithGoogle();
+    if (uid == null) {
+      final err = AuthService.lastError ?? 'Login Google dibatalkan atau gagal.';
+      _showSettingSnackbar('❌ $err');
+      return;
+    }
+    SupabaseSync.initWithUser(uid);
+
+    // Pastikan cache lokal terisi dulu (source of truth di device)
+    await GameService.load();
+    await LearningService.load();
+    await AchievementService.load(force: true);
+
+    final remote = await SupabaseSync.load();
+    final hasRemoteGame = remote != null && remote['game'] is Map;
+    final hasRemoteLearning = remote != null && remote['learning'] is Map;
+    final hasRemoteAchievements = remote != null && remote['achievements'] is Map;
+
+    final p = await SharedPreferences.getInstance();
+    if (hasRemoteGame) {
+      await p.setString('game_state_v1', jsonEncode(remote['game']));
+    }
+    if (hasRemoteLearning) {
+      await p.setString('learning_state_v1', jsonEncode(remote['learning']));
+    }
+    if (hasRemoteAchievements) {
+      // AchievementService key = achievements_unlocked, value = {id: yyyy-MM-dd}
+      final ach = remote['achievements'];
+      final unlocked = (ach is Map && ach['unlocked'] is Map)
+          ? ach['unlocked']
+          : ach;
+      if (unlocked is Map) {
+        await p.setString('achievements_unlocked', jsonEncode(unlocked));
+      }
+    }
+
+    // Reload setelah write remote → local
+    await GameService.load();
+    await LearningService.load();
+    await AchievementService.load(force: true);
+
+    // Kalau cloud kosong: push progress lokal biar backup mulai jalan
+    if (!hasRemoteGame) {
+      await SupabaseSync.saveGame(GameService.current.toMap());
+    }
+    if (!hasRemoteLearning) {
+      await SupabaseSync.saveLearning(LearningService.current.toMap());
+    }
+    if (!hasRemoteAchievements) {
+      final raw = p.getString('achievements_unlocked');
+      Map<String, dynamic> unlockedMap = {};
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          unlockedMap = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+        } catch (_) {}
+      }
+      await SupabaseSync.saveAchievements({
+        'unlocked': unlockedMap,
+        'ts': DateTime.now().toUtc().toIso8601String(),
+      });
+    }
+
+    if (!mounted) return;
+    setState(() {});
+    await _loadProfile();
+    _showSettingSnackbar(
+      hasRemoteGame || hasRemoteLearning || hasRemoteAchievements
+          ? '☁️ Login berhasil! Progress cloud dipulihkan.'
+          : '☁️ Login berhasil! Progress perangkat di-backup ke cloud.',
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    await AuthService.signOut();
+    // Kembali ke device_id lokal (progress tetap utuh di SharedPreferences)
+    final p = await SharedPreferences.getInstance();
+    final deviceId = p.getString('device_id');
+    if (deviceId != null) SupabaseSync.init(deviceId);
+    if (!mounted) return;
+    setState(() {});
+    _showSettingSnackbar('Logout berhasil. Progress tersimpan di perangkat ini.');
+  }
+
+  Widget _accountBackup() {
+    final signedIn = AuthService.isSignedIn;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const HudHeader('BACKUP & AKUN'),
+        FlatCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    signedIn ? Icons.cloud_done : Icons.cloud_off,
+                    color: signedIn ? AppColors.primary : AppColors.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      signedIn
+                          ? 'Progress tersinkron ke akun Google'
+                          : 'Belum login — progress hanya di perangkat ini',
+                      style: AppText.bodyMd().copyWith(
+                        color: signedIn ? AppColors.primary : AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (signedIn)
+                OutlinedButton.icon(
+                  onPressed: _handleLogout,
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Keluar dari Akun'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: _handleGoogleLogin,
+                  icon: const Icon(Icons.g_mobiledata, size: 22),
+                  label: const Text('Lanjut dengan Google'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                signedIn
+                    ? 'Ganti HP? Login pakai akun sama untuk restore otomatis.'
+                    : 'Login agar progress aman saat ganti HP atau instal ulang.',
+                style: AppText.bodyMd().copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 11,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _settings() {
     final rows = <_SettingRow>[
       _SettingRow('Pengaturan Akun', Icons.person_outline, onTap: _editNickname),
       _SettingRow('Notifikasi', Icons.notifications_outlined, onTap: _showNotifDialog),
-      _SettingRow('Tema & Tampilan', Icons.palette_outlined, onTap: () => _showSettingSnackbar('Saat ini hanya tema gelap yang tersedia')),
+      _SettingRow('Tema Terang', Icons.light_mode_outlined, trailing: _ThemeToggle()),
       _SettingRow('Privasi & Data', Icons.lock_outline, onTap: _showPrivacyDialog),
       _SettingRow('Tentang Aplikasi', Icons.info_outline, onTap: _showAboutDialog),
       _SettingRow('Keluar', Icons.logout, color: AppColors.error, onTap: _confirmLogout),
@@ -1112,11 +1320,12 @@ class _ProfilTabState extends State<ProfilTab> {
                                 style: AppText.bodyLg().copyWith(color: color),
                               ),
                             ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.onSurfaceVariant,
-                              size: 20,
-                            ),
+                            r.trailing ??
+                              Icon(
+                                Icons.chevron_right,
+                                color: AppColors.onSurfaceVariant,
+                                  size: 20,
+                                ),
                           ],
                         ),
                       ),
@@ -1144,5 +1353,36 @@ class _SettingRow {
   final IconData icon;
   final Color? color;
   final VoidCallback? onTap;
-  _SettingRow(this.title, this.icon, {this.color, this.onTap});
+  final Widget? trailing;
+  _SettingRow(this.title, this.icon, {this.color, this.onTap, this.trailing});
+}
+
+class _ThemeToggle extends StatefulWidget {
+  @override
+  State<_ThemeToggle> createState() => _ThemeToggleState();
+}
+
+class _ThemeToggleState extends State<_ThemeToggle> {
+  @override
+  void initState() {
+    super.initState();
+    themeNotifier.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    return Switch.adaptive(
+      value: themeNotifier.isLight,
+      onChanged: (_) => themeNotifier.toggle(),
+      activeThumbColor: AppColors.primary,
+    );
+  }
 }

@@ -13,33 +13,52 @@ class BelajarArticleScreen extends StatefulWidget {
 }
 
 class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
-  late final LearningModule _module;
+  LearningModule? _module;
   late final List<ArticleBlock> _blocks;
   double _scrollProgress = 0;
 
   @override
   void initState() {
     super.initState();
-    _module = LearningContent.getAllModulesOrdered()
-        .where((m) => m.id == widget.moduleId)
-        .first;
+    _module = LearningContent.getModule(widget.moduleId);
     _blocks = LearningContent.getArticle(widget.moduleId);
   }
 
   @override
   Widget build(BuildContext context) {
+    final module = _module;
+    if (module == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Modul tidak ditemukan', style: AppText.titleLg()),
+                const SizedBox(height: AppSpacing.md),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Kembali'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            _appBar(context),
+            _appBar(context, module),
             // Reading progress bar
             LinearProgressIndicator(
               value: _scrollProgress,
               minHeight: 2,
               backgroundColor: AppColors.surfaceContainer,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
             Expanded(
               child: NotificationListener<ScrollNotification>(
@@ -65,23 +84,23 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
     );
   }
 
-  Widget _appBar(BuildContext context) {
+  Widget _appBar(BuildContext context, LearningModule module) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+            icon: Icon(Icons.arrow_back, color: AppColors.onBackground),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${_module.icon}  ${_module.title}',
+                Text('${module.icon}  ${module.title}',
                     style: AppText.titleLg().copyWith(fontSize: 16),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text('${_module.estimatedMinutes} min baca • +${_module.xpReward} XP',
+                Text('${module.estimatedMinutes} min baca • +${module.xpReward} XP',
                     style: AppText.labelCaps().copyWith(
                         color: AppColors.onSurfaceVariant, fontSize: 10)),
               ],
@@ -140,7 +159,7 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.school, color: AppColors.tertiary, size: 20),
+            Icon(Icons.school, color: AppColors.tertiary, size: 20),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(block.text,
@@ -173,12 +192,12 @@ class _BelajarArticleScreenState extends State<BelajarArticleScreen> {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
           children: [
-            const Expanded(child: Divider(color: AppColors.outlineVariant)),
+            Expanded(child: Divider(color: AppColors.outlineVariant)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: Text('✦', style: AppText.labelCaps().copyWith(color: AppColors.outlineVariant)),
             ),
-            const Expanded(child: Divider(color: AppColors.outlineVariant)),
+            Expanded(child: Divider(color: AppColors.outlineVariant)),
           ],
         ),
       );

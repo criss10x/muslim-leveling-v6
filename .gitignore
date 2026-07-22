@@ -48,6 +48,9 @@ app.*.map.json
 .gradle/
 local.properties
 debug.keystore
+key.properties
+*.jks
+*.keystore
 apk-output/
 app/build/
 android/app/build/

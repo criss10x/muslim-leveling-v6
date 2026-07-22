@@ -61,7 +61,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                       child: TextField(
                         controller: _nickname,
                         style: AppText.bodyLg(),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Masukkan Nickname',
                           hintStyle: TextStyle(color: AppColors.onSurfaceVariant),
                           border: InputBorder.none,
@@ -90,7 +90,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                                   ),
                                 ),
                               ),
-                              const Icon(Icons.search, color: AppColors.primary, size: 20),
+                              Icon(Icons.search, color: AppColors.primary, size: 20),
                             ],
                           ),
                         ),
@@ -150,16 +150,22 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   Widget _header() {
     return Column(
       children: [
-        ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
-            colors: [AppColors.primary, AppColors.tertiary],
-          ).createShader(rect),
-          child: Text(
-            'BUAT KARAKTERMU',
-            textAlign: TextAlign.center,
-            style: AppText.displayHero(32).copyWith(color: Colors.white),
-          ),
-        ),
+        isLightTheme
+            ? Text(
+                'BUAT KARAKTERMU',
+                textAlign: TextAlign.center,
+                style: AppText.displayHero(32).copyWith(color: AppColors.primary),
+              )
+            : ShaderMask(
+                shaderCallback: (rect) => LinearGradient(
+                  colors: [AppColors.primary, AppColors.tertiary],
+                ).createShader(rect),
+                child: Text(
+                  'BUAT KARAKTERMU',
+                  textAlign: TextAlign.center,
+                  style: AppText.displayHero(32).copyWith(color: Colors.white),
+                ),
+              ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'Tentukan identitas perjalanan spiritualmu di alam Ascension.',

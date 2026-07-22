@@ -1,6 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
@@ -155,7 +153,7 @@ class _MedalPainter extends CustomPainter {
           radius: 1.2,
           colors: [
             primary.withValues(alpha: unlocked ? 0.30 : 0.10),
-            const Color(0xFF0E1512),
+            const Color(0xFF000000),
           ],
         ).createShader(rect),
     );
@@ -210,9 +208,8 @@ class _MedalPainter extends CustomPainter {
       old.unlocked != unlocked;
 }
 
-/// Popup announcer ala Mobile Legends: backdrop blur gelap, medali masuk
-/// dengan pantulan elastis, judul menyala, confetti. Tap di mana saja atau
-/// tombol untuk menutup. Await sampai ditutup — antre kalau unlock banyak.
+/// Popup announcer: medali masuk elastis, confetti. Light = solid GlassPanel
+/// (no BackdropFilter). Dark keeps soft glow title. Await until closed.
 Future<void> showAchievementUnlock(
     BuildContext context, AchievementDef def) async {
   final (c1, _) = tierColors(def.tier);
@@ -232,113 +229,114 @@ Future<void> showAchievementUnlock(
     pageBuilder: (ctx, _, __) => Center(
       child: Material(
         color: Colors.transparent,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Padding(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: GlassPanel(
                 padding: const EdgeInsets.all(AppSpacing.xl),
-                child: GlassPanel(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  borderColor: c1.withValues(alpha: 0.5),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'ACHIEVEMENT UNLOCKED!',
-                        style: AppText.labelCaps().copyWith(
-                          color: AppColors.secondaryFixed,
-                          letterSpacing: 2,
-                        ),
+                borderColor: c1.withValues(alpha: 0.5),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'ACHIEVEMENT UNLOCKED!',
+                      style: AppText.labelCaps().copyWith(
+                        color: AppColors.secondaryFixed,
+                        letterSpacing: 2,
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.6, end: 1.0),
-                        duration: const Duration(milliseconds: 700),
-                        curve: Curves.elasticOut,
-                        builder: (_, scale, child) =>
-                            Transform.scale(scale: scale, child: child),
-                        child: ShimmerSweep(
-                          child: AchievementMedal(
-                              def: def, unlocked: true, size: 130),
-                        ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.6, end: 1.0),
+                      duration: const Duration(milliseconds: 700),
+                      curve: Curves.elasticOut,
+                      builder: (_, scale, child) =>
+                          Transform.scale(scale: scale, child: child),
+                      child: ShimmerSweep(
+                        child: AchievementMedal(
+                            def: def, unlocked: true, size: 130),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        def.title,
-                        textAlign: TextAlign.center,
-                        style: AppText.displayHero(30).copyWith(
-                          color: c1,
-                          shadows: [
-                            Shadow(
-                                color: c1.withValues(alpha: 0.7),
-                                blurRadius: 18),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        def.desc,
-                        textAlign: TextAlign.center,
-                        style: AppText.bodyMd()
-                            .copyWith(color: AppColors.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        tierLabel(def.tier),
-                        style: AppText.labelCaps()
-                            .copyWith(color: c1, fontSize: 10),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: HeroButton(
-                              label: 'MANTAP!',
-                              trailingIcon: Icons.emoji_events,
-                              onPressed: () => Navigator.of(ctx).pop(),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          OutlinedButton(
-                            onPressed: () => showShareCard(context, def),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: c1,
-                              side: BorderSide(color: c1.withValues(alpha: 0.5)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.xl),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                                vertical: AppSpacing.md,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.share, size: 16, color: c1),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Bagikan',
-                                  style: AppText.bodyLg().copyWith(color: c1),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      def.title,
+                      textAlign: TextAlign.center,
+                      style: AppText.displayHero(30).copyWith(
+                        color: c1,
+                        shadows: isLightTheme
+                            ? null
+                            : [
+                                Shadow(
+                                  color: c1.withValues(alpha: 0.7),
+                                  blurRadius: 18,
                                 ),
                               ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      def.desc,
+                      textAlign: TextAlign.center,
+                      style: AppText.bodyMd()
+                          .copyWith(color: AppColors.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      tierLabel(def.tier),
+                      style: AppText.labelCaps()
+                          .copyWith(color: c1, fontSize: 10),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: HeroButton(
+                            label: 'MANTAP!',
+                            trailingIcon: Icons.emoji_events,
+                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        OutlinedButton(
+                          onPressed: () => showShareCard(context, def),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: c1,
+                            side: BorderSide(color: c1.withValues(alpha: 0.5)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.xl),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.share, size: 16, color: c1),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Bagikan',
+                                style: AppText.bodyLg().copyWith(color: c1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const Positioned.fill(
-                child: IgnorePointer(
-                  child: ConfettiBurst(particleCount: 45),
-                ),
+            ),
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: ConfettiBurst(particleCount: 45),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     ),

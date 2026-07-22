@@ -106,6 +106,7 @@ class DapetExpScreen extends StatelessWidget {
   }
 
   Widget _badge() {
+    final light = isLightTheme;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.8, end: 1.0),
       duration: const Duration(milliseconds: 800),
@@ -116,20 +117,24 @@ class DapetExpScreen extends StatelessWidget {
         height: 140,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const RadialGradient(
-            colors: [AppColors.tertiaryFixed, AppColors.tertiaryContainer],
+          gradient: RadialGradient(
+            colors: light
+                ? [AppColors.tertiaryContainer, AppColors.tertiary]
+                : [AppColors.tertiaryFixed, AppColors.tertiaryContainer],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.tertiary.withValues(alpha: 0.5),
-              blurRadius: 40,
-              spreadRadius: 4,
-            ),
-          ],
+          boxShadow: light
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppColors.tertiary.withValues(alpha: 0.5),
+                    blurRadius: 40,
+                    spreadRadius: 4,
+                  ),
+                ],
         ),
-        child: const Icon(
+        child: Icon(
           Icons.auto_stories,
-          color: AppColors.background,
+          color: light ? AppColors.onPrimary : AppColors.background,
           size: 72,
         ),
       ),
@@ -148,18 +153,21 @@ class DapetExpScreen extends StatelessWidget {
   }
 
   Widget _rewardChip(String value, String label, Color color, IconData icon) {
+    final light = isLightTheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainer,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: color.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            blurRadius: 12,
-          ),
-        ],
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.2),
+                  blurRadius: 12,
+                ),
+              ],
       ),
       child: Column(
         children: [

@@ -42,11 +42,11 @@ class CityPicker {
                     decoration: InputDecoration(
                       hintText: 'Ketik nama kota/kab...',
                       hintStyle: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
-                      prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 20),
+                      prefixIcon: Icon(Icons.search, color: AppColors.primary, size: 20),
                       enabledBorder: UnderlineInputBorder(
                         borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
                       ),
-                      focusedBorder: const UnderlineInputBorder(
+                      focusedBorder: UnderlineInputBorder(
                         borderSide: BorderSide(color: AppColors.primary),
                       ),
                     ),
@@ -54,7 +54,7 @@ class CityPicker {
                   ),
                   const SizedBox(height: 12),
                   if (loading)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(16),
                       child: CircularProgressIndicator(color: AppColors.primary),
                     )
@@ -77,7 +77,7 @@ class CityPicker {
                           final id = c['id']?.toString() ?? '';
                           return ListTile(
                             dense: true,
-                            leading: const Icon(Icons.location_on, color: AppColors.primary, size: 18),
+                            leading: Icon(Icons.location_on, color: AppColors.primary, size: 18),
                             title: Text(name, style: AppText.bodyMd()),
                             onTap: () => Navigator.pop(ctx, (id: id, name: name)),
                           );

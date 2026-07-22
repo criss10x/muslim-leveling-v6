@@ -9,6 +9,7 @@ import '../../services/game_service.dart';
 import '../../services/prayer_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
+import '../../services/theme_service.dart';
 import '../../widgets/achievement_medal.dart';
 import 'naik_level_screen.dart';
 
@@ -42,13 +43,19 @@ class _HomeTabState extends State<HomeTab> {
     // Kota diganti dari tab jadwal/profil → refetch timing kota baru
     // (sekalian reschedule notif adzan di _fetchTimingsSilently).
     PrayerService.locationVersion.addListener(_onLocationChanged);
+    themeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
     _tick?.cancel();
     PrayerService.locationVersion.removeListener(_onLocationChanged);
+    themeNotifier.removeListener(_onThemeChange);
     super.dispose();
+  }
+
+  void _onThemeChange() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _onLocationChanged() async {
@@ -182,8 +189,8 @@ class _HomeTabState extends State<HomeTab> {
   void _toast(String msg, {bool top = false}) {
     final screenHeight = MediaQuery.of(context).size.height;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: AppText.bodyMd().copyWith(color: Colors.white)),
-      backgroundColor: AppColors.surfaceContainerHigh,
+      content: Text(msg, style: AppText.bodyMd().copyWith(color: AppColors.onSurface)),
+      backgroundColor: AppColors.surfaceContainerLowest,
       behavior: SnackBarBehavior.floating,
       duration: const Duration(seconds: 3),
       margin: top ? EdgeInsets.only(bottom: screenHeight - 80) : null,
@@ -263,7 +270,7 @@ class _HomeTabState extends State<HomeTab> {
         ),
         const Spacer(),
         IconButton(
-          icon: const Icon(Icons.settings_outlined,
+          icon: Icon(Icons.settings_outlined,
               color: AppColors.onSurfaceVariant),
           onPressed: widget.onSettingsPressed,
         ),
@@ -273,51 +280,76 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _heroRank(LevelInfo info) {
     final tier = getTierVisualConfig(getTierName(info.level));
+    final light = isLightTheme;
+    // Light: AA ink for border/pattern. Dark: neon brand.
+    final tierP = tier.inkPrimary;
+    final tierS = tier.inkSecondary;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(color: tier.primaryColor.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(0, 10)),
-        ],
+        // Outer glow: dark only — light uses solid surface + border.
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  // pure black canvas: slightly stronger tier glow
+                  color: tier.primaryColor.withValues(alpha: 0.25),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                tier.primaryColor.withValues(alpha: 0.14),
-                AppColors.surfaceContainer.withValues(alpha: 0.75),
-                tier.secondaryColor.withValues(alpha: 0.08),
-              ],
-            ),
+            // Light: solid raised. Dark: solid raised + tier tint (no alpha mud).
+            color: light ? AppColors.surfaceContainerLow : AppColors.surfaceContainer,
+            gradient: light
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      tier.primaryColor.withValues(alpha: 0.16),
+                      AppColors.surfaceContainer,
+                      tier.secondaryColor.withValues(alpha: 0.10),
+                    ],
+                  ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: tier.primaryColor.withValues(alpha: 0.45), width: 1.5),
+            border: Border.all(
+              color: tierP.withValues(alpha: light ? 0.55 : 0.45),
+              width: light ? 1.0 : 1.5,
+            ),
           ),
           child: Stack(
             children: [
               // subtle Islamic geometric lattice, tinted by tier
               Positioned.fill(
                 child: IgnorePointer(
-                  child: CustomPaint(painter: _GeoPatternPainter(tier.primaryColor)),
+                  child: CustomPaint(painter: _GeoPatternPainter(tierP)),
                 ),
               ),
-              Positioned(
-                top: -40,
-                right: -40,
-                child: Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: tier.primaryColor.withValues(alpha: 0.10),
-                    boxShadow: [BoxShadow(color: tier.secondaryColor.withValues(alpha: 0.12), blurRadius: 60)],
+              if (!light)
+                Positioned(
+                  top: -40,
+                  right: -40,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: tier.primaryColor.withValues(alpha: 0.10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: tier.secondaryColor.withValues(alpha: 0.12),
+                          blurRadius: 60,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -331,20 +363,31 @@ class _HomeTabState extends State<HomeTab> {
                           children: [
                             Text('CURRENT RANK', style: AppText.labelCaps().copyWith(color: AppColors.onSurfaceVariant)),
                             const SizedBox(height: 4),
-                            ShaderMask(
-                              shaderCallback: (rect) => LinearGradient(
-                                colors: [tier.primaryColor, tier.secondaryColor],
-                              ).createShader(rect),
-                              child: Text(
-                                GameService.getRankTitle(info.level),
-                                style: AppText.headlineMd().copyWith(
-                                  color: Colors.white,
-                                  shadows: [Shadow(color: tier.primaryColor.withValues(alpha: 0.5), blurRadius: 12)],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
+                            // Light: bright tier colors (some are white/gold)
+                            // vanish on the near-white card — use solid ink.
+                            // Dark: keep the tier gradient (gaming identity).
+                            isLightTheme
+                                ? Text(
+                                    GameService.getRankTitle(info.level),
+                                    style: AppText.headlineMd()
+                                        .copyWith(color: AppColors.onSurface),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : ShaderMask(
+                                    shaderCallback: (rect) => LinearGradient(
+                                      colors: [tierP, tierS],
+                                    ).createShader(rect),
+                                    child: Text(
+                                      GameService.getRankTitle(info.level),
+                                      style: AppText.headlineMd().copyWith(
+                                        color: Colors.white,
+                                        shadows: [Shadow(color: tierP.withValues(alpha: 0.5), blurRadius: 12)],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                             Text(
                               '$_nickname • Lv ${info.level}',
                               style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12),
@@ -409,8 +452,8 @@ class _HomeTabState extends State<HomeTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: AppText.labelCaps()
-                    .copyWith(color: AppColors.onSurfaceVariant, fontSize: 9)),
+                style: AppText.labelCapsSm()
+                    .copyWith(color: AppColors.onSurfaceVariant)),
             const SizedBox(height: 4),
             Text(value,
                 maxLines: 1,
@@ -447,17 +490,17 @@ class _HomeTabState extends State<HomeTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('STREAK',
-                  style: AppText.labelCaps().copyWith(
-                      color: AppColors.onSurfaceVariant, fontSize: 9)),
+                  style: AppText.labelCapsSm().copyWith(
+                      color: AppColors.onSurfaceVariant)),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.local_fire_department,
-                      color: AppColors.secondaryFixed, size: 16),
+                  Icon(Icons.local_fire_department,
+                      color: AppColors.goldInk, size: 16),
                   const SizedBox(width: 2),
                   Text('${_state.heroStreak.current}',
                       style: AppText.titleLg().copyWith(
-                          color: AppColors.secondaryFixed,
+                          color: AppColors.goldInk,
                           fontSize: 16,
                           height: 1.1)),
                 ],
@@ -789,12 +832,12 @@ class _HomeTabState extends State<HomeTab> {
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
                   child: Text('CLAIM', style: AppText.labelCaps().copyWith(color: AppColors.onPrimary, fontSize: 10)),
                 )
               else if (q.claimed)
-                const Icon(Icons.check, color: AppColors.onSurfaceVariant, size: 18),
+                Icon(Icons.check, color: AppColors.onSurfaceVariant, size: 18),
             ],
           ),
           ),
@@ -804,18 +847,48 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _sideQuest(BuildContext context) {
-    final done = GameService.tilawahDoneToday;
+    final sedekahDone = GameService.isPrayerCheckedToday('sedekah');
+    final tilawahDone = GameService.tilawahDoneToday;
     const xp = 15;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HudHeader('SIDE QUEST'),
         PressableScale(
+          onTap: () => _togglePrayer('sedekah', 'sedekah'),
+          child: FlatCard(
+            child: Row(
+              children: [
+                Icon(Icons.favorite, color: AppColors.error, size: 26),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sedekah',
+                          style: AppText.titleLg().copyWith(
+                            fontSize: 16,
+                            color: sedekahDone
+                                ? AppColors.onSurfaceVariant
+                                : AppColors.onSurface,
+                          )),
+                      Text(sedekahDone ? 'Selesai hari ini ✓' : 'Bersedekah hari ini',
+                          style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                _xpPill(xp, AppColors.error, AppColors.onError, done: sedekahDone),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        PressableScale(
           onTap: () => _togglePrayer('tilawah', 'tilawah'),
           child: FlatCard(
             child: Row(
               children: [
-                const Icon(Icons.menu_book, color: AppColors.tertiary, size: 26),
+                Icon(Icons.menu_book, color: AppColors.tertiary, size: 26),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
@@ -824,16 +897,16 @@ class _HomeTabState extends State<HomeTab> {
                       Text('Tilawah & Dzikir',
                           style: AppText.titleLg().copyWith(
                             fontSize: 16,
-                            color: done
+                            color: tilawahDone
                                 ? AppColors.onSurfaceVariant
                                 : AppColors.onSurface,
                           )),
-                      Text(done ? 'Selesai hari ini ✓' : 'Baca Al-Qur\'an / Dzikir',
+                      Text(tilawahDone ? 'Selesai hari ini ✓' : 'Baca Al-Qur\'an / Dzikir',
                           style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant, fontSize: 12)),
                     ],
                   ),
                 ),
-                _xpPill(xp, AppColors.tertiary, AppColors.onTertiary, done: done),
+                _xpPill(xp, AppColors.tertiary, AppColors.onTertiary, done: tilawahDone),
               ],
             ),
           ),
@@ -940,12 +1013,12 @@ class _HomeTabState extends State<HomeTab> {
                           style: AppText.displayHero(28).copyWith(color: AppColors.primary)),
                       const SizedBox(height: 6),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 4,
                           backgroundColor: AppColors.surfaceContainerHighest,
-                          valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                          valueColor: AlwaysStoppedAnimation(AppColors.primary),
                         ),
                       ),
                     ],
@@ -1249,7 +1322,7 @@ class _HomeTabState extends State<HomeTab> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: AppColors.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                 ),
               ),

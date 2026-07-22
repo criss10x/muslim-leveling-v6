@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // TIER PROFILE AVATAR — Square rounded 16dp with progressive tier borders
@@ -48,6 +49,36 @@ class TierVisualConfig {
     this.hasCrownEmblem = false,
     this.cornerEmblem,
   });
+
+  /// Light-safe ink for borders/icons on white cards. Dark keeps neon.
+  // ponytail: map only; full dual-palette TierConfig if more roles appear.
+  Color get inkPrimary => isLightTheme ? _lightInk(primaryColor, true) : primaryColor;
+  Color get inkSecondary => isLightTheme ? _lightInk(secondaryColor, false) : secondaryColor;
+}
+
+// Neon → AA ink on white. Legend/Glory white becomes near-black.
+Color _lightInk(Color c, bool primary) {
+  final v = c.toARGB32() & 0xFFFFFF;
+  switch (v) {
+    case 0x8B5CF6: return const Color(0xFF5B21B6); // Warrior
+    case 0x6366F1: return const Color(0xFF4338CA);
+    case 0x3B82F6: return const Color(0xFF1D4ED8); // Elite
+    case 0x06B6D4: return const Color(0xFF0E7490);
+    case 0x14B8A6: return const Color(0xFF0F766E); // Master
+    case 0x10B981: return const Color(0xFF047857);
+    case 0xF59E0B: return const Color(0xFFB45309); // Grandmaster / Mythic gold
+    case 0xFCD34D: return const Color(0xFFD97706);
+    case 0xDC2626: return const Color(0xFFB91C1C); // Epic / Mythic red
+    case 0xEC4899: return const Color(0xFFBE185D);
+    case 0xFFFFFF: return primary
+        ? const Color(0xFF1A1A1A) // Legend white → ink
+        : const Color(0xFFB45309);
+    case 0x6B7280: return const Color(0xFF4B5563);
+    case 0x9CA3AF: return const Color(0xFF6B7280);
+    default:
+      // Fallback: darken ~35% toward black
+      return Color.lerp(c, const Color(0xFF000000), 0.35)!;
+  }
 }
 
 TierVisualConfig getTierVisualConfig(String tierName) {
@@ -307,6 +338,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
   }
 
   Widget _buildGlowLayer(TierVisualConfig config, double size, double cornerRadius) {
+    if (isLightTheme) return const SizedBox.shrink();
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
@@ -320,7 +352,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
             borderRadius: BorderRadius.circular(cornerRadius + 6),
             boxShadow: [
               BoxShadow(
-                color: config.primaryColor.withValues(alpha: glowAlpha),
+                color: config.inkPrimary.withValues(alpha: glowAlpha),
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -340,8 +372,8 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
           child: CustomPaint(
             size: Size(size + 8, size + 8),
             painter: _ArcRingPainter(
-              primaryColor: config.primaryColor,
-              secondaryColor: config.secondaryColor,
+              primaryColor: config.inkPrimary,
+              secondaryColor: config.inkSecondary,
               strokeWidth: 2,
               startAngle: 0,
               sweepAngle: 300,
@@ -361,7 +393,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
           child: CustomPaint(
             size: Size(size + 4, size + 4),
             painter: _ArcRingPainter(
-              primaryColor: config.secondaryColor,
+              primaryColor: config.inkSecondary,
               secondaryColor: Colors.transparent,
               strokeWidth: 1.5,
               startAngle: 45,
@@ -380,7 +412,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
         return CustomPaint(
           size: Size(size + 14, size + 14),
           painter: _ParticlePainter(
-            color: config.secondaryColor,
+            color: config.inkSecondary,
             phase: _particleController.value * 360,
             particleCount: 6,
           ),
@@ -408,6 +440,9 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
     final hasPhoto = widget.profileImagePath != null &&
         File(widget.profileImagePath!).existsSync();
     final bw = config.borderWidth;
+    final p = config.inkPrimary;
+    final s = config.inkSecondary;
+    final light = isLightTheme;
 
     final content = Container(
       width: size,
@@ -415,24 +450,27 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
       padding: EdgeInsets.all(bw),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(cornerRadius),
-        boxShadow: [
-          BoxShadow(
-            color: config.primaryColor.withValues(alpha: config.hasGlow ? 0.5 : 0.3),
-            blurRadius: config.hasGlow ? 16 : 8,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: config.secondaryColor.withValues(alpha: config.hasGlow ? 0.4 : 0.2),
-            blurRadius: config.hasGlow ? 12 : 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        // Glow: dark only (light uses solid ink border, no neon halo).
+        boxShadow: light
+            ? null
+            : [
+                BoxShadow(
+                  color: p.withValues(alpha: config.hasGlow ? 0.5 : 0.3),
+                  blurRadius: config.hasGlow ? 16 : 8,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: s.withValues(alpha: config.hasGlow ? 0.4 : 0.2),
+                  blurRadius: config.hasGlow ? 12 : 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            config.primaryColor.withValues(alpha: 0.2),
-            const Color(0xFF0E1512), // DarkBackground
+            p.withValues(alpha: 0.2),
+            light ? AppColors.surfaceContainerLow : AppColors.background,
           ],
         ),
       ),
@@ -446,7 +484,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
                 height: size,
               )
             : Container(
-                color: const Color(0xFF0E1512),
+                color: light ? AppColors.surfaceContainerHigh : AppColors.background,
                 alignment: Alignment.center,
                 child: Text(
                   _defaultEmoji(widget.tierName, config),
@@ -462,8 +500,8 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
     if (!config.hasGlow) {
       return CustomPaint(
         foregroundPainter: _GradientBorderPainter(
-          primaryColor: config.primaryColor,
-          secondaryColor: config.secondaryColor,
+          primaryColor: p,
+          secondaryColor: s,
           strokeWidth: bw,
           cornerRadius: cornerRadius,
           rotation: 0,
@@ -475,8 +513,8 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
       animation: _ringController,
       builder: (context, child) => CustomPaint(
         foregroundPainter: _GradientBorderPainter(
-          primaryColor: config.primaryColor,
-          secondaryColor: config.secondaryColor,
+          primaryColor: p,
+          secondaryColor: s,
           strokeWidth: bw,
           cornerRadius: cornerRadius,
           rotation: _ringController.value * 2 * pi,
@@ -490,7 +528,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
   Widget _buildCornerAccents(TierVisualConfig config, double size) {
     return CustomPaint(
       size: Size(size, size),
-      painter: _CornerAccentPainter(color: config.secondaryColor),
+      painter: _CornerAccentPainter(color: config.inkSecondary),
     );
   }
 
@@ -513,16 +551,22 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
         height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [Color(0xFF42E5B1), Color(0xFFF59E0B)],
+          gradient: LinearGradient(
+            colors: [AppColors.primary, AppColors.goldFill],
           ),
-          border: Border.all(color: const Color(0xFF0E1512), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 6,
-            ),
-          ],
+          border: Border.all(
+            color: isLightTheme ? AppColors.surfaceContainerLow : AppColors.background,
+            width: 2,
+          ),
+          // Soft drop on dark only — light uses solid border for depth.
+          boxShadow: isLightTheme
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                  ),
+                ],
         ),
         alignment: Alignment.center,
         child: const Text('📷', style: TextStyle(fontSize: 14)),
@@ -570,13 +614,17 @@ class SmallTierAvatar extends StatelessWidget {
         padding: EdgeInsets.all(effectiveBorderWidth),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(cornerRadius),
-          boxShadow: [
-            BoxShadow(
-              color: config.primaryColor.withValues(alpha: 0.3),
-              blurRadius: 4,
-            ),
-          ],
-          color: const Color(0xFF0E1512),
+          boxShadow: isLightTheme
+              ? null
+              : [
+                  BoxShadow(
+                    color: config.primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                  ),
+                ],
+          color: isLightTheme
+              ? AppColors.surfaceContainerHigh
+              : AppColors.background,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(cornerRadius - effectiveBorderWidth),
