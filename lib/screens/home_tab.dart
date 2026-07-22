@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
@@ -9,7 +8,6 @@ import '../../services/game_service.dart';
 import '../../services/prayer_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/achievement_service.dart';
-import '../../services/theme_service.dart';
 import '../../widgets/achievement_medal.dart';
 import 'naik_level_screen.dart';
 
@@ -28,7 +26,6 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   GameState _state = GameState();
   String _nickname = 'Pejuang';
-  Timer? _tick;
   String _claimingQuestId = '';
   String _error = '';
 
@@ -37,25 +34,22 @@ class _HomeTabState extends State<HomeTab> {
     super.initState();
     // ponytail: load in background; never block the first paint
     _load(showLoading: false);
-    _tick = Timer.periodic(const Duration(seconds: 60), (_) {
-      if (mounted) setState(() {});
-    });
+    // Rebuild when game state changes (prayer log, quests, XP) from other tabs.
+    GameService.stateVersion.addListener(_onStateChanged);
     // Kota diganti dari tab jadwal/profil → refetch timing kota baru
     // (sekalian reschedule notif adzan di _fetchTimingsSilently).
     PrayerService.locationVersion.addListener(_onLocationChanged);
-    themeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
-    _tick?.cancel();
+    GameService.stateVersion.removeListener(_onStateChanged);
     PrayerService.locationVersion.removeListener(_onLocationChanged);
-    themeNotifier.removeListener(_onThemeChange);
     super.dispose();
   }
 
-  void _onThemeChange() {
-    if (mounted) setState(() {});
+  void _onStateChanged() {
+    if (mounted) setState(() => _state = GameService.current);
   }
 
   Future<void> _onLocationChanged() async {
@@ -135,6 +129,7 @@ class _HomeTabState extends State<HomeTab> {
     final isLogged = GameService.isPrayerCheckedToday(prayer);
     if (isLogged) {
       final s = await GameService.unlogPrayer(prayer);
+      if (!mounted) return;
       setState(() => _state = s);
       return;
     }
@@ -143,6 +138,7 @@ class _HomeTabState extends State<HomeTab> {
       return;
     }
     final res = await GameService.logPrayerAsync(prayer, type);
+    if (!mounted) return;
     if (res == null) {
       _toast('Sholat ini udah dicatat hari ini!');
       return;

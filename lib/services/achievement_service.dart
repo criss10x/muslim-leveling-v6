@@ -378,11 +378,11 @@ class AchievementService {
     if (raw != null && raw.isNotEmpty) {
       try {
         _unlocked = Map<String, String>.from(jsonDecode(raw) as Map);
+        _loaded = true;
+        return;
       } catch (_) {
-        _unlocked = {};
+        // corrupt local → fall through to remote
       }
-      _loaded = true;
-      return;
     }
     final remote = await SupabaseSync.loadAchievements();
     if (remote != null && remote['unlocked'] is Map) {

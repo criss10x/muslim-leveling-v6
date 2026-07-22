@@ -4,7 +4,6 @@ import '../../widgets/common.dart';
 import '../../widgets/city_picker.dart';
 import '../../services/prayer_service.dart';
 import '../../services/game_service.dart';
-import '../../services/theme_service.dart';
 import 'qibla_screen.dart';
 
 /// Jadwal Sholat — V3 logic ported to V1 design.
@@ -32,22 +31,16 @@ class _JadwalTabState extends State<JadwalTab> {
     PrayerService.locationVersion.addListener(_loadAndFetch);
     // Rebuild status "sudah dilog" saat sholat dicentang di tab Home.
     GameService.stateVersion.addListener(_onStateChanged);
-    themeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
     PrayerService.locationVersion.removeListener(_loadAndFetch);
     GameService.stateVersion.removeListener(_onStateChanged);
-    themeNotifier.removeListener(_onThemeChange);
     super.dispose();
   }
 
   void _onStateChanged() {
-    if (mounted) setState(() {});
-  }
-
-  void _onThemeChange() {
     if (mounted) setState(() {});
   }
 

@@ -45,17 +45,13 @@ class _ProfilTabState extends State<ProfilTab> {
   @override
   void initState() {
     super.initState();
-    themeNotifier.addListener(_onThemeChange);
     _loadProfile();
   }
 
   @override
   void dispose() {
-    themeNotifier.removeListener(_onThemeChange);
     super.dispose();
   }
-
-  void _onThemeChange() => setState(() {});
 
   Future<void> _loadProfile() async {
     await GameService.load();
@@ -64,6 +60,7 @@ class _ProfilTabState extends State<ProfilTab> {
     final loc = await PrayerService.loadLocation();
     final state = GameService.current;
     final levelInfo = GameService.getLevelInfo(state.xp);
+    if (!mounted) return;
     setState(() {
       _nickname = p.getString('nickname') ?? 'Pejuang';
       _avatarPath = p.getString('avatar_path');

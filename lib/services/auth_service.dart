@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase_sync.dart';
 
 /// Auth layer: Google → Supabase Auth (untuk backup progress online).
 ///
@@ -41,9 +42,23 @@ class AuthService {
   static String? _userId;
   static String? get userId => _userId;
   static bool get isSignedIn => _userId != null;
+  static StreamSubscription<AuthState>? _authSub;
 
   static Future<bool> init() async {
     try {
+      // Keep _userId + SupabaseSync in sync with session changes (refresh, expire, multi-tab).
+      _authSub?.cancel();
+      _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        final session = data.session;
+        if (session != null) {
+          _userId = session.user.id;
+          SupabaseSync.initWithUser(session.user.id);
+        } else {
+          _userId = null;
+          SupabaseSync.clearUser();
+        }
+      });
+
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null) {
         _userId = session.user.id;
@@ -175,6 +190,7 @@ class AuthService {
       await Supabase.instance.client.auth.signOut();
     } catch (_) {}
     _userId = null;
+    SupabaseSync.clearUser();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefGoogleUser);
   }

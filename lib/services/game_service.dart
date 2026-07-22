@@ -227,10 +227,14 @@ class GameService {
     final p = await SharedPreferences.getInstance();
     final raw = p.getString(_key);
     if (raw != null) {
-      try { _cache = GameState.fromMap(jsonDecode(raw) as Map<String, dynamic>); } catch (_) {}
-      return _cache;
+      try {
+        _cache = GameState.fromMap(jsonDecode(raw) as Map<String, dynamic>);
+        return _cache;
+      } catch (_) {
+        // corrupt local → fall through to remote
+      }
     }
-    // Fresh install — try Supabase
+    // Fresh install or corrupt local — try Supabase
     final remote = await SupabaseSync.loadGame();
     if (remote != null) {
       _cache = GameState.fromMap(remote);
@@ -244,13 +248,7 @@ class GameService {
     stateVersion.value++; // broadcast to passive listeners (Jadwal tab)
     final p = await SharedPreferences.getInstance();
     await p.setString(_key, jsonEncode(s.toMap()));
-    // fire-and-forget tapi beri feedback ringan (sukses/gagal)
-    final ok = await SupabaseSync.saveGame(s.toMap());
-    if (ok) {
-      debugPrint('[GameService] backup Supabase OK');
-    } else {
-      debugPrint('[GameService] backup Supabase gagal (offline?)');
-    }
+    SupabaseSync.saveGame(s.toMap()); // fire-and-forget, local is source of truth
   }
 
   static Future<void> setTimings(Timings t) => _save(_cache.copyWith(timings: t));
