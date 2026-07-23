@@ -78,6 +78,9 @@ class NotificationService {
 
     // Initialize timezone data
     tz.initializeTimeZones();
+    // ponytail: WIB-only. Add city→timezone mapping when eastern users report
+    // notifications fire at wrong times.
+    tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
