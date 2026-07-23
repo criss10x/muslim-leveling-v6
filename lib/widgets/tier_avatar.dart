@@ -250,26 +250,55 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
   @override
   void initState() {
     super.initState();
+    // Controllers are cheap to allocate; only *tick* the ones the current
+    // tier actually paints. Warrior/Elite/Master pay zero animation cost.
     _ringController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
-    )..repeat();
+    );
     _ringReverseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
-    )..repeat();
+    );
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
+    );
     _particleController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    );
     _sparkleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
-    )..repeat();
+    );
+    _syncControllers();
+  }
+
+  @override
+  void didUpdateWidget(covariant TierProfileAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tierName != widget.tierName) _syncControllers();
+  }
+
+  void _syncControllers() {
+    final config = getTierVisualConfig(widget.tierName);
+    void gate(AnimationController c, bool need, {bool reverse = false}) {
+      if (need) {
+        if (!c.isAnimating) {
+          reverse ? c.repeat(reverse: true) : c.repeat();
+        }
+      } else if (c.isAnimating) {
+        c.stop();
+      }
+    }
+
+    gate(_ringController, config.hasRotatingRing);
+    gate(_ringReverseController, config.hasDoubleRing);
+    // Glow layer only animates when pulse is requested; static glow skips ticker.
+    gate(_pulseController, config.hasPulsingGlow, reverse: true);
+    gate(_particleController, config.hasParticles);
+    gate(_sparkleController, config.hasSparkles);
   }
 
   @override
@@ -339,13 +368,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
 
   Widget _buildGlowLayer(TierVisualConfig config, double size, double cornerRadius) {
     if (isLightTheme) return const SizedBox.shrink();
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        final glowAlpha = config.hasPulsingGlow
-            ? 0.3 + 0.4 * _pulseController.value
-            : 0.4;
-        return Container(
+    Widget glow(double glowAlpha) => Container(
           width: size + 12,
           height: size + 12,
           decoration: BoxDecoration(
@@ -359,7 +382,11 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
             ],
           ),
         );
-      },
+    if (!config.hasPulsingGlow) return glow(0.4);
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) =>
+          glow(0.3 + 0.4 * _pulseController.value),
     );
   }
 
@@ -482,6 +509,11 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
                 fit: BoxFit.cover,
                 width: size,
                 height: size,
+                // Decode at display size — full-res camera photos are multi-MB.
+                cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round(),
+                cacheHeight: (size * MediaQuery.devicePixelRatioOf(context)).round(),
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
               )
             : Container(
                 color: light ? AppColors.surfaceContainerHigh : AppColors.background,
@@ -634,6 +666,12 @@ class SmallTierAvatar extends StatelessWidget {
                   fit: BoxFit.cover,
                   width: sizeDp,
                   height: sizeDp,
+                  cacheWidth:
+                      (sizeDp * MediaQuery.devicePixelRatioOf(context)).round(),
+                  cacheHeight:
+                      (sizeDp * MediaQuery.devicePixelRatioOf(context)).round(),
+                  gaplessPlayback: true,
+                  filterQuality: FilterQuality.medium,
                 )
               : Center(
                   child: Text(

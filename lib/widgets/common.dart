@@ -583,7 +583,10 @@ class _AmbientBackgroundState extends State<AmbientBackground>
     _fireflyController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 12),
-    )..repeat();
+    );
+    // Light mode paints a static canvas — don't burn a 12s ticker for
+    // fireflies that never get drawn.
+    if (!isLightTheme) _fireflyController.repeat();
     themeNotifier.addListener(_onThemeChange);
   }
 
@@ -594,7 +597,14 @@ class _AmbientBackgroundState extends State<AmbientBackground>
     super.dispose();
   }
 
-  void _onThemeChange() => setState(() {});
+  void _onThemeChange() {
+    if (isLightTheme) {
+      if (_fireflyController.isAnimating) _fireflyController.stop();
+    } else if (!_fireflyController.isAnimating) {
+      _fireflyController.repeat();
+    }
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {

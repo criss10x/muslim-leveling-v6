@@ -60,14 +60,20 @@ class _HomeTabState extends State<HomeTab> {
   Future<void> _load({bool showLoading = true}) async {
     _error = '';
     try {
+      // Sequential game mutations first — runDailyCheck / ensureDailyQuests
+      // write GameService.current; achievements need the post-mutation snapshot.
       await GameService.load();
       await GameService.runDailyCheck();
       await GameService.ensureDailyQuests();
-      // Backfill diam-diam: progress lama (mis. streak sebelum update app)
-      // langsung terisi di grid profil tanpa memberondong popup saat buka.
-      await AchievementService.refresh();
-      final p = await SharedPreferences.getInstance();
-      await _fetchTimingsSilently();
+      // Independent I/O after state is settled.
+      late SharedPreferences p;
+      await Future.wait([
+        // Backfill diam-diam: progress lama (mis. streak sebelum update app)
+        // langsung terisi di grid profil tanpa memberondong popup saat buka.
+        AchievementService.refresh(),
+        _fetchTimingsSilently(),
+        SharedPreferences.getInstance().then((v) => p = v),
+      ]);
       if (mounted) {
         setState(() {
           _state = GameService.current;
