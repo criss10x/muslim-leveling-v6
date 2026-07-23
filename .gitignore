@@ -55,3 +55,9 @@ apk-output/
 app/build/
 android/app/build/
 
+# Env / secret screenshots (never commit)
+.env
+.env.*
+supabase_key.jpg
+*.pem
+

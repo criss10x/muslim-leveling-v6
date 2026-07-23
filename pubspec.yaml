@@ -1,7 +1,7 @@
 name: muslim_leveling
 description: "Muslim Leveling - Nur Quest gaming Islamic app (Stitch design)."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.9.1+21
 
 environment:
   sdk: ^3.12.2
