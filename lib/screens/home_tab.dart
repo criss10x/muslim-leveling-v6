@@ -93,7 +93,7 @@ class _HomeTabState extends State<HomeTab> {
     try {
       final loc = await PrayerService.loadLocation();
       if (loc == null) return;
-      final j = await PrayerService.fetchSchedule(cityId: loc.id).timeout(
+      final j = await PrayerService.fetchSchedule(cityId: loc.id, cityName: loc.name).timeout(
         const Duration(seconds: 5),
         onTimeout: () => null,
       );

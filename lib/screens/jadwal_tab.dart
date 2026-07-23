@@ -77,7 +77,7 @@ class _JadwalTabState extends State<JadwalTab> {
       _loading = true;
       _error = null;
     });
-    final j = await PrayerService.fetchSchedule(cityId: _cityId);
+    final j = await PrayerService.fetchSchedule(cityId: _cityId, cityName: _cityName);
     if (!mounted) return;
     if (j != null) {
       await GameService.setTimings(Timings(
