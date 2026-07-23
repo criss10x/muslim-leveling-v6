@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:collection/collection.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'supabase_sync.dart';
 
@@ -230,8 +231,9 @@ class GameService {
       try {
         _cache = GameState.fromMap(jsonDecode(raw) as Map<String, dynamic>);
         return _cache;
-      } catch (_) {
-        // corrupt local → fall through to remote
+      } catch (e) {
+        // ponytail: corrupt local → fall through to remote; notify Sentry
+        await Sentry.captureException(e);
       }
     }
     // Fresh install or corrupt local — try Supabase

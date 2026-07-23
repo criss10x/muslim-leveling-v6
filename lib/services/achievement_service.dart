@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'game_service.dart';
@@ -380,8 +381,9 @@ class AchievementService {
         _unlocked = Map<String, String>.from(jsonDecode(raw) as Map);
         _loaded = true;
         return;
-      } catch (_) {
-        // corrupt local → fall through to remote
+      } catch (e) {
+        // ponytail: corrupt local → fall through to remote; notify Sentry
+        await Sentry.captureException(e);
       }
     }
     final remote = await SupabaseSync.loadAchievements();
