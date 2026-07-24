@@ -311,7 +311,9 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
   void didUpdateWidget(covariant TierProfileAvatar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.tierName != widget.tierName ||
-        oldWidget.equippedAuraId != widget.equippedAuraId) _syncControllers();
+        oldWidget.equippedAuraId != widget.equippedAuraId) {
+      _syncControllers();
+    }
   }
 
   void _syncControllers() {

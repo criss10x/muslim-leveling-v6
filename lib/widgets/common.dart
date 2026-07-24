@@ -650,22 +650,6 @@ class _AmbientBackgroundState extends State<AmbientBackground>
       ],
     );
   }
-
-  Widget _blur(Color color, double size, double opacity) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color.withValues(alpha: opacity),
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: opacity), blurRadius: 200, spreadRadius: 50),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _Firefly {
