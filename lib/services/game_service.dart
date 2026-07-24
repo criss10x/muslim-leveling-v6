@@ -122,6 +122,8 @@ class GameState {
   final List<String> rewards;          // collected cosmetic reward names
   final String dailyChestOpenedDate;   // YYYY-MM-DD last chest open ("" = never)
   final bool haidMode;                 // menstruation mode: streaks frozen
+  final List<String> ownedCosmetics; // cosmetic ids owned (earned/free)
+  final Map<String, String> equipped; // slot name -> cosmetic id
 
   GameState({
     this.xp = 0, this.level = 1,
@@ -134,6 +136,8 @@ class GameState {
     this.rewards = const [],
     this.dailyChestOpenedDate = '',
     this.haidMode = false,
+    this.ownedCosmetics = const [],
+    this.equipped = const {},
   })  : timings = timings ?? Timings(),
         prayerLog = prayerLog ?? [],
         heroStreak = heroStreak ?? StreakState(),
@@ -151,6 +155,8 @@ class GameState {
     List<String>? rewards,
     String? dailyChestOpenedDate,
     bool? haidMode,
+    List<String>? ownedCosmetics,
+    Map<String, String>? equipped,
   }) => GameState(
       xp: xp ?? this.xp, level: level ?? this.level,
       timings: timings ?? this.timings, prayerLog: prayerLog ?? this.prayerLog,
@@ -164,7 +170,9 @@ class GameState {
       zikirCounter: zikirCounter ?? this.zikirCounter,
       rewards: rewards ?? this.rewards,
       dailyChestOpenedDate: dailyChestOpenedDate ?? this.dailyChestOpenedDate,
-      haidMode: haidMode ?? this.haidMode);
+      haidMode: haidMode ?? this.haidMode,
+      ownedCosmetics: ownedCosmetics ?? this.ownedCosmetics,
+      equipped: equipped ?? this.equipped);
 
   factory GameState.fromMap(Map<String, dynamic> m) {
     final logList = (m['prayerLog'] as List?)?.map((e) => PrayerLog.fromMap(e as Map<String, dynamic>)).toList() ?? [];
@@ -177,6 +185,10 @@ class GameState {
     final zikir = m['zikirCounter'] != null
         ? ZikirCounter.fromMap(m['zikirCounter'] as Map<String, dynamic>)
         : const ZikirCounter();
+    final ownedList = (m['ownedCosmetics'] as List?)?.cast<String>() ?? [];
+    final equippedMap = (m['equipped'] as Map?)?.map(
+            (k, v) => MapEntry(k.toString(), v.toString())) ??
+        <String, String>{};
     return GameState(
       xp: m['xp'] ?? 0, level: m['level'] ?? 1,
       timings: m['timings'] != null ? Timings.fromMap(m['timings'] as Map<String, dynamic>) : Timings(),
@@ -192,6 +204,8 @@ class GameState {
       rewards: rewardList,
       dailyChestOpenedDate: m['dailyChestOpenedDate'] ?? '',
       haidMode: m['haidMode'] ?? false,
+      ownedCosmetics: ownedList,
+      equipped: equippedMap,
     );
   }
   Map<String, dynamic> toMap() => {
@@ -209,6 +223,8 @@ class GameState {
     'rewards': rewards,
     'dailyChestOpenedDate': dailyChestOpenedDate,
     'haidMode': haidMode,
+    'ownedCosmetics': ownedCosmetics,
+    'equipped': equipped,
   };
 }
 
