@@ -20,6 +20,10 @@ import '../../services/auth_service.dart';
 import '../../services/theme_service.dart';
 import '../../widgets/achievement_medal.dart';
 import '../../widgets/tier_avatar.dart';
+import '../../widgets/cosmetic_locker.dart';
+import '../../services/cosmetic_service.dart';
+import '../../services/cosmetic_catalog.dart';
+import '../../services/entitlement_service.dart';
 import 'achievements_screen.dart';
 import 'welcome_pejuang.dart';
 
@@ -567,6 +571,8 @@ class _ProfilTabState extends State<ProfilTab> {
             children: [
               _hero(context),
               const SizedBox(height: AppSpacing.lg),
+              _cosmeticLocker(),
+              const SizedBox(height: AppSpacing.lg),
               _stats(),
               const SizedBox(height: AppSpacing.md),
               _haidModeToggle(),
@@ -589,6 +595,15 @@ class _ProfilTabState extends State<ProfilTab> {
     final state = GameService.current;
     final levelInfo = GameService.getLevelInfo(state.xp);
     final rankTitle = GameService.getRankTitle(state.level);
+
+    // Equipped cosmetics — resolved fresh each build so they react to
+    // Locker taps and Pro toggles (GameService/EntitlementService listeners
+    // trigger setState elsewhere in the tree).
+    final isPro = EntitlementService.isPro;
+    final frameId = CosmeticService.resolveSlot(state, CosmeticSlot.frame, isPro: isPro);
+    final auraId = CosmeticService.resolveSlot(state, CosmeticSlot.aura, isPro: isPro);
+    final titleId = CosmeticService.resolveSlot(state, CosmeticSlot.title, isPro: isPro);
+    final equippedTitle = CosmeticCatalog.byId(titleId)?.titleText ?? '';
 
     // Solid raised hero (same language as Home) — GlassPanel alpha muddies on pure black.
     final light = isLightTheme;
@@ -642,6 +657,8 @@ class _ProfilTabState extends State<ProfilTab> {
                           sizeDp: 72,
                           showEditBadge: true,
                           onTap: _showAvatarOptions,
+                          equippedFrameId: frameId,
+                          equippedAuraId: auraId,
                         ),
                       ),
                       Container(
@@ -717,6 +734,12 @@ class _ProfilTabState extends State<ProfilTab> {
                           ),
                         ),
                       ),
+                      if (equippedTitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(equippedTitle,
+                            style: AppText.labelCaps().copyWith(
+                                color: AppColors.tertiary, fontSize: 10)),
+                      ],
                     ],
                   ),
                 ),
@@ -832,6 +855,21 @@ class _ProfilTabState extends State<ProfilTab> {
           ],
         ),
       ),
+    );
+  }
+
+  /// "Loker Skin" — cosmetic locker (frame/aura/title tabs) reusing the
+  /// same HudHeader + FlatCard shell as the other Profil sections.
+  Widget _cosmeticLocker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const HudHeader('LOKER SKIN'),
+        FlatCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: const CosmeticLocker(),
+        ),
+      ],
     );
   }
 
