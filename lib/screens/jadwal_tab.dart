@@ -195,7 +195,9 @@ class _JadwalTabState extends State<JadwalTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Waktu Sholat', style: AppText.displayHero(32)),
+          Text('Waktu Sholat',
+              style: AppText.displayHero(32)
+                  .copyWith(color: AppColors.onSurface)),
           const SizedBox(height: 4),
           Row(
             children: [

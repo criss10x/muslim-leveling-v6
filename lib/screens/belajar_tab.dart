@@ -51,7 +51,9 @@ class _BelajarTabState extends State<BelajarTab> {
               Text('LEARNING HUB',
                   style: AppText.labelCaps().copyWith(color: AppColors.primary)),
               const SizedBox(height: 4),
-              Text('Belajar Bareng', style: AppText.headlineLg().copyWith(fontSize: 28)),
+              Text('Belajar Bareng',
+                  style: AppText.headlineLg()
+                      .copyWith(fontSize: 28, color: AppColors.onSurface)),
               const SizedBox(height: 4),
               Text('Tingkatkan ilmu, raih lebih banyak XP.',
                   style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant)),

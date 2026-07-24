@@ -306,17 +306,16 @@ class _HomeTabState extends State<HomeTab> {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            // Light: solid raised. Dark: solid raised + tier tint (no alpha mud).
-            color: light ? AppColors.surfaceContainerLow : AppColors.surfaceContainer,
+            // Light: solid raised. Dark: surfaceContainerLow + primary tint (matching jadwal hero).
+            color: light ? AppColors.surfaceContainerLow : AppColors.surfaceContainerLow,
             gradient: light
                 ? null
                 : LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      tier.primaryColor.withValues(alpha: 0.16),
-                      AppColors.surfaceContainer,
-                      tier.secondaryColor.withValues(alpha: 0.10),
+                      AppColors.primary.withValues(alpha: 0.14),
+                      AppColors.surfaceContainerLow,
                     ],
                   ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -576,6 +575,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget _prayerQuests() {
     final wajib = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
     final done = GameService.checkedWajibToday;
+    final friday = DateTime.now().weekday == DateTime.friday;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -587,10 +587,13 @@ class _HomeTabState extends State<HomeTab> {
           final t = _state.timings;
           final active = !done && GameService.isCurrentOrUpcoming(p, t);
           final locked = !done && !GameService.isPrayerWindowOpen(p, t);
-          final xp = const {'subuh': 30, 'dzuhur': 20, 'ashar': 20, 'maghrib': 25, 'isya': 25}[p] ?? 15;
+          // ponytail: Jumat replaces Dzuhur label on Friday
+          final isJumat = friday && p == 'dzuhur';
+          final xp = isJumat ? 25 : (const {'subuh': 30, 'dzuhur': 20, 'ashar': 20, 'maghrib': 25, 'isya': 25}[p] ?? 15);
+          final label = isJumat ? 'Jumat' : p.cap;
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: _prayerRow(p, p.cap, done, active, locked, () => _togglePrayer(p, 'wajib'), xp),
+            child: _prayerRow(isJumat ? 'jumat' : p, label, done, active, locked, () => _togglePrayer(p, 'wajib'), xp),
           );
         }),
       ],
@@ -630,6 +633,7 @@ class _HomeTabState extends State<HomeTab> {
   IconData _prayerIcon(String key) => switch (key) {
         'subuh' => Icons.wb_twilight,    // fajar
         'dzuhur' => Icons.wb_sunny,      // terik
+        'jumat' => Icons.mosque,         // Jumat spesial
         'ashar' => Icons.wb_cloudy,      // sore
         'maghrib' => Icons.brightness_3, // senja (crescent)
         'isya' => Icons.nights_stay,     // malam

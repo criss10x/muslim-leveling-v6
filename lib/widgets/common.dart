@@ -636,16 +636,6 @@ class _AmbientBackgroundState extends State<AmbientBackground>
             ),
           ),
         ),
-        Positioned(
-          top: -120,
-          left: -100,
-          child: _blur(AppColors.primary, 300, 0.06),
-        ),
-        Positioned(
-          bottom: -180,
-          right: -120,
-          child: _blur(AppColors.tertiary, 320, 0.05),
-        ),
         AnimatedBuilder(
           animation: _fireflyController,
           builder: (_, __) => CustomPaint(

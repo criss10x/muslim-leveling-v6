@@ -31,13 +31,13 @@ class _SplashScreenState extends State<SplashScreen>
     )..repeat(reverse: true);
     _barCtl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1000),
     )..forward();
     _fadeCtl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 400),
     );
-    _navTimer = Timer(const Duration(milliseconds: 2400), () async {
+    _navTimer = Timer(const Duration(milliseconds: 1200), () async {
       if (mounted) {
         final prefs = await SharedPreferences.getInstance();
         final done = prefs.getBool('onboarding_done') ?? false;
@@ -148,11 +148,12 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                 const SizedBox(height: AppSpacing.sm),
+                // Light: body ink for punch. onSurfaceVariant fades into canvas.
                 Text(
                   'Level Up iman, Level Up Kehidupanmu',
                   textAlign: TextAlign.center,
                   style: AppText.bodyMd().copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: AppColors.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),

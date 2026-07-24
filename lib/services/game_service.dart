@@ -422,6 +422,26 @@ class GameService {
     return StreakState(current: cur, best: cur > s.best ? cur : s.best, lastDate: today);
   }
 
+  /// ponytail: Jumat weekly streak — 7-day gap check instead of yesterday.
+  static StreakState _updWeeklyStreak(StreakState s, String today) {
+    if (s.lastDate == today) return s;
+    if (s.lastDate.isEmpty) {
+      return StreakState(current: 1, best: s.best > 0 ? s.best : 1, lastDate: today);
+    }
+    try {
+      final diff = DateTime.parse(today).difference(DateTime.parse(s.lastDate)).inDays;
+      final cur = diff == 7 ? s.current + 1 : 1;
+      return StreakState(current: cur, best: cur > s.best ? cur : s.best, lastDate: today);
+    } catch (_) {
+      return StreakState(current: 1, best: s.best > 0 ? s.best : 1, lastDate: today);
+    }
+  }
+
+  static bool _isFriday(String dateStr) {
+    try { return DateTime.parse(dateStr).weekday == DateTime.friday; }
+    catch (_) { return false; }
+  }
+
   static String _adzanFor(String prayer, Timings t) => switch (prayer) {
     'subuh' => t.subuh, 'dzuhur' => t.dzuhur, 'ashar' => t.ashar,
     'maghrib' => t.maghrib, 'isya' => t.isya, _ => '',
@@ -621,6 +641,10 @@ class GameService {
 
     if (type == 'wajib' && wajibList.contains(prayer)) {
       pstr[prayer] = _updStreak(pstr[prayer] ?? StreakState(), today, yest);
+    }
+    // Jumat: weekly streak additional to dzuhur
+    if (type == 'wajib' && prayer == 'dzuhur' && _isFriday(today)) {
+      pstr['jumat'] = _updWeeklyStreak(pstr['jumat'] ?? StreakState(), today);
     }
     if (isHeroCompletor) hero = _updStreak(hero, today, yest);
     if (prayer == 'tilawah') tilawah = _updStreak(tilawah, today, yest);

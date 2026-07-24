@@ -569,12 +569,12 @@ class _ProfilTabState extends State<ProfilTab> {
               const SizedBox(height: AppSpacing.lg),
               _stats(),
               const SizedBox(height: AppSpacing.md),
+              _haidModeToggle(),
+              const SizedBox(height: AppSpacing.md),
               _prayerStreaks(),
               const SizedBox(height: AppSpacing.md),
               _achievements(),
               const SizedBox(height: AppSpacing.lg),
-              _haidModeToggle(),
-              const SizedBox(height: AppSpacing.md),
               _accountBackup(),
               const SizedBox(height: AppSpacing.md),
               _settings(),
@@ -999,6 +999,33 @@ class _ProfilTabState extends State<ProfilTab> {
             }).toList(),
           ),
         ),
+        if (streaks['jumat']?.current != null && streaks['jumat']!.current > 0) ...[
+          const SizedBox(height: AppSpacing.sm),
+          FlatCard(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            child: Row(
+              children: [
+                Icon(Icons.mosque, size: 18, color: AppColors.primary),
+                const SizedBox(width: AppSpacing.sm),
+                Text('Jumat',
+                    style: AppText.bodyLg()
+                        .copyWith(color: AppColors.onSurface)),
+                const Spacer(),
+                Icon(Icons.local_fire_department,
+                    size: 14, color: AppColors.secondaryFixed),
+                const SizedBox(width: 3),
+                Text('${streaks['jumat']!.current}',
+                    style: AppText.titleLg().copyWith(
+                        fontSize: 16, color: AppColors.secondaryFixed)),
+                const SizedBox(width: 3),
+                Text('minggu',
+                    style: AppText.bodyMd().copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1093,10 +1120,12 @@ class _ProfilTabState extends State<ProfilTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Mode Haid', style: AppText.bodyLg()),
+                Text('Mode Haid',
+                    style: AppText.bodyLg()
+                        .copyWith(color: AppColors.onSurface)),
                 Text(
                   _haidMode ? 'Streak dijaga — tidak ada penalti' : 'Nonaktif',
-                  style: AppText.bodyMd().copyWith(color: AppColors.onSurfaceVariant),
+                  style: AppText.bodyMd().copyWith(color: AppColors.onSurface),
                 ),
               ],
             ),
