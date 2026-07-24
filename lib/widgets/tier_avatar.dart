@@ -254,6 +254,7 @@ class TierProfileAvatar extends StatefulWidget {
   final bool showEditBadge;
   final VoidCallback? onTap;
   final String equippedFrameId;
+  final String equippedAuraId;
 
   const TierProfileAvatar({
     super.key,
@@ -263,6 +264,7 @@ class TierProfileAvatar extends StatefulWidget {
     this.showEditBadge = false,
     this.onTap,
     this.equippedFrameId = 'frame_default',
+    this.equippedAuraId = 'aura_none',
   });
 
   @override
@@ -327,7 +329,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
     gate(_ringReverseController, config.hasDoubleRing);
     // Glow layer only animates when pulse is requested; static glow skips ticker.
     gate(_pulseController, config.hasPulsingGlow, reverse: true);
-    gate(_particleController, config.hasParticles);
+    gate(_particleController, config.hasParticles || _auraSpec != null);
     gate(_sparkleController, config.hasSparkles);
   }
 
@@ -345,6 +347,8 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
     final c = CosmeticCatalog.byId(widget.equippedFrameId);
     return c?.frameShape ?? FrameShape.circle;
   }
+
+  AuraSpec? get _auraSpec => CosmeticCatalog.byId(widget.equippedAuraId)?.auraSpec;
 
   @override
   Widget build(BuildContext context) {
@@ -376,6 +380,22 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
             // Layer 3: Particles orbit (Mythic+)
             if (config.hasParticles)
               _buildParticleLayer(config, size),
+
+            // Equipped-aura layer (independent of tier particles)
+            if (_auraSpec != null)
+              AnimatedBuilder(
+                animation: _particleController,
+                builder: (context, _) => CustomPaint(
+                  size: Size(size + 14, size + 14),
+                  painter: _ParticlePainter(
+                    color: _auraSpec!.goldTint
+                        ? AppColors.goldFill
+                        : config.inkSecondary,
+                    phase: _particleController.value * 360,
+                    particleCount: _auraSpec!.particleCount,
+                  ),
+                ),
+              ),
 
             // Layer 4: Sparkles (Mythic Glory+)
             if (config.hasSparkles)
