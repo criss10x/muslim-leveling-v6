@@ -1186,7 +1186,10 @@ class _HomeTabState extends State<HomeTab> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.tertiary.withValues(alpha: 0.2),
+                  // Opaque tertiary tint over surface — a translucent top stop
+                  // shows the scrim through the card (washed-out in light theme).
+                  Color.alphaBlend(
+                      AppColors.tertiary.withValues(alpha: 0.2), AppColors.surface),
                   AppColors.surface,
                 ],
                 begin: Alignment.topCenter,
