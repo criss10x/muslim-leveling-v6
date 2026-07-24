@@ -5,6 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'supabase_sync.dart';
+import 'cosmetic_catalog.dart';
+import 'cosmetic_service.dart';
 
 // ponytail: single-file game state. No riverpod, no bloc.
 // Port dari V3 GameViewModel logic. State persisted as JSON di SharedPreferences.
@@ -243,21 +245,27 @@ class GameService {
   static Future<GameState> load() async {
     final p = await SharedPreferences.getInstance();
     final raw = p.getString(_key);
+    var loaded = false;
     if (raw != null) {
       try {
         _cache = GameState.fromMap(jsonDecode(raw) as Map<String, dynamic>);
-        return _cache;
+        loaded = true;
       } catch (e) {
         // ponytail: corrupt local → fall through to remote; notify Sentry
         await Sentry.captureException(e);
       }
     }
-    // Fresh install or corrupt local — try Supabase
-    final remote = await SupabaseSync.loadGame();
-    if (remote != null) {
-      _cache = GameState.fromMap(remote);
-      await p.setString(_key, jsonEncode(remote));
+    if (!loaded) {
+      // Fresh install or corrupt local — try Supabase
+      final remote = await SupabaseSync.loadGame();
+      if (remote != null) {
+        _cache = GameState.fromMap(remote);
+        await p.setString(_key, jsonEncode(remote));
+      }
     }
+    // ponytail: migrate legacy `rewards` → ownedCosmetics on every successful
+    // load path (local hit or remote hit) so equip/unequip see up-to-date ownership.
+    _cache = CosmeticService.migrateRewards(_cache);
     return _cache;
   }
 
@@ -267,6 +275,30 @@ class GameService {
     final p = await SharedPreferences.getInstance();
     await p.setString(_key, jsonEncode(s.toMap()));
     SupabaseSync.saveGame(s.toMap()); // fire-and-forget, local is source of truth
+  }
+
+  // ─── Cosmetics ───
+  static Future<bool> equipCosmetic(CosmeticSlot slot, String id,
+      {required bool isPro}) async {
+    final next = CosmeticService.equip(_cache, slot: slot, id: id, isPro: isPro);
+    if (next == null) return false;
+    await _save(next);
+    return true;
+  }
+
+  static Future<void> unequipCosmetic(CosmeticSlot slot) async {
+    await _save(CosmeticService.unequip(_cache, slot));
+  }
+
+  static Future<void> reconcileCosmeticLapse({required bool isPro}) async {
+    final next = CosmeticService.reconcileLapse(_cache, isPro: isPro);
+    if (!identical(next, _cache)) await _save(next);
+  }
+
+  /// TEST/DEV ONLY — grant ownership without going through the daily chest.
+  static Future<void> debugSeedOwned(List<String> ids) async {
+    final owned = {..._cache.ownedCosmetics, ...ids}.toList();
+    await _save(_cache.copyWith(ownedCosmetics: owned));
   }
 
   static Future<void> setTimings(Timings t) => _save(_cache.copyWith(timings: t));
