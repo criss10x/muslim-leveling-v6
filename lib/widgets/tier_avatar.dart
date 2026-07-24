@@ -310,7 +310,8 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
   @override
   void didUpdateWidget(covariant TierProfileAvatar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.tierName != widget.tierName) _syncControllers();
+    if (oldWidget.tierName != widget.tierName ||
+        oldWidget.equippedAuraId != widget.equippedAuraId) _syncControllers();
   }
 
   void _syncControllers() {
