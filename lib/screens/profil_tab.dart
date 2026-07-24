@@ -50,11 +50,20 @@ class _ProfilTabState extends State<ProfilTab> {
   void initState() {
     super.initState();
     _loadProfile();
+    // Rebuild avatar/title live when cosmetics equip or Pro status changes.
+    GameService.stateVersion.addListener(_onGameOrEntitlementChanged);
+    EntitlementService.proStatus.addListener(_onGameOrEntitlementChanged);
   }
 
   @override
   void dispose() {
+    GameService.stateVersion.removeListener(_onGameOrEntitlementChanged);
+    EntitlementService.proStatus.removeListener(_onGameOrEntitlementChanged);
     super.dispose();
+  }
+
+  void _onGameOrEntitlementChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadProfile() async {
@@ -597,8 +606,8 @@ class _ProfilTabState extends State<ProfilTab> {
     final rankTitle = GameService.getRankTitle(state.level);
 
     // Equipped cosmetics — resolved fresh each build so they react to
-    // Locker taps and Pro toggles (GameService/EntitlementService listeners
-    // trigger setState elsewhere in the tree).
+    // Locker taps and Pro toggles (this state listens to GameService.stateVersion
+    // and EntitlementService.proStatus directly and calls setState on change).
     final isPro = EntitlementService.isPro;
     final frameId = CosmeticService.resolveSlot(state, CosmeticSlot.frame, isPro: isPro);
     final auraId = CosmeticService.resolveSlot(state, CosmeticSlot.aura, isPro: isPro);
