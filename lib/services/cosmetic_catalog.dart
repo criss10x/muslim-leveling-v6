@@ -4,9 +4,10 @@ enum CosmeticSlot { frame, aura, title }
 /// How a cosmetic is unlocked. `oneTime` is intentionally deferred (v2).
 enum CosmeticAccess { free, pro }
 
-/// Silhouette of the avatar frame. Free frames use [squareRounded];
-/// premium shields change the outline (tier colors still show through).
-enum FrameShape { squareRounded, shieldClassic, shieldCrest, shieldGeometric }
+/// Silhouette of the avatar frame. The free default uses [circle];
+/// [squareRounded] is a free earned frame; [shieldClassic] is the one
+/// premium shield (tier colors still show through).
+enum FrameShape { circle, squareRounded, shieldClassic }
 
 /// Visual parameters for an aura layer around the avatar.
 class AuraSpec {
@@ -50,17 +51,13 @@ class CosmeticCatalog {
 
   static const List<Cosmetic> all = [
     // ── Frames ──
-    Cosmetic(id: 'frame_default', slot: CosmeticSlot.frame, name: 'Kotak Klasik',
-        emoji: '⬜', access: CosmeticAccess.free, frameShape: FrameShape.squareRounded),
+    Cosmetic(id: 'frame_default', slot: CosmeticSlot.frame, name: 'Lingkaran Klasik',
+        emoji: '⚪', access: CosmeticAccess.free, frameShape: FrameShape.circle),
     Cosmetic(id: 'frame_subuh', slot: CosmeticSlot.frame, name: 'Bingkai Penjelajah Subuh',
         emoji: '🖼️', access: CosmeticAccess.free, frameShape: FrameShape.squareRounded,
         legacyRewardName: 'Bingkai Penjelajah Subuh'),
     Cosmetic(id: 'shield_classic', slot: CosmeticSlot.frame, name: 'Perisai Klasik',
         emoji: '🛡️', access: CosmeticAccess.pro, frameShape: FrameShape.shieldClassic),
-    Cosmetic(id: 'shield_crest', slot: CosmeticSlot.frame, name: 'Perisai Bersayap',
-        emoji: '🛡️', access: CosmeticAccess.pro, frameShape: FrameShape.shieldCrest),
-    Cosmetic(id: 'shield_geometric', slot: CosmeticSlot.frame, name: 'Perisai Geometris',
-        emoji: '🛡️', access: CosmeticAccess.pro, frameShape: FrameShape.shieldGeometric),
 
     // ── Auras ──
     Cosmetic(id: 'aura_none', slot: CosmeticSlot.aura, name: 'Tanpa Aura',

@@ -1,7 +1,35 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/cosmetic_catalog.dart';
 import '../theme/app_theme.dart';
+
+/// Builds the avatar outline for a given [FrameShape]. Circle uses an oval,
+/// square uses a rounded rect, shield tapers to a point at bottom-center.
+/// Colors and tier effects are applied elsewhere — this is silhouette only.
+Path buildFramePath(FrameShape shape, Size size, double radius) {
+  final w = size.width, h = size.height;
+  switch (shape) {
+    case FrameShape.circle:
+      return Path()..addOval(Offset.zero & size);
+    case FrameShape.squareRounded:
+      return Path()
+        ..addRRect(RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)));
+    case FrameShape.shieldClassic:
+      final tip = h * 0.98;
+      final shoulder = h * 0.62;
+      return Path()
+        ..moveTo(radius, 0)
+        ..lineTo(w - radius, 0)
+        ..arcToPoint(Offset(w, radius), radius: Radius.circular(radius))
+        ..lineTo(w, shoulder)
+        ..quadraticBezierTo(w, tip * 0.9, w / 2, tip)
+        ..quadraticBezierTo(0, tip * 0.9, 0, shoulder)
+        ..lineTo(0, radius)
+        ..arcToPoint(Offset(radius, 0), radius: Radius.circular(radius))
+        ..close();
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // TIER PROFILE AVATAR — Square rounded 16dp with progressive tier borders
@@ -225,6 +253,7 @@ class TierProfileAvatar extends StatefulWidget {
   final double sizeDp;
   final bool showEditBadge;
   final VoidCallback? onTap;
+  final String equippedFrameId;
 
   const TierProfileAvatar({
     super.key,
@@ -233,6 +262,7 @@ class TierProfileAvatar extends StatefulWidget {
     this.sizeDp = 120,
     this.showEditBadge = false,
     this.onTap,
+    this.equippedFrameId = 'frame_default',
   });
 
   @override
@@ -309,6 +339,11 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
     _particleController.dispose();
     _sparkleController.dispose();
     super.dispose();
+  }
+
+  FrameShape get _frameShape {
+    final c = CosmeticCatalog.byId(widget.equippedFrameId);
+    return c?.frameShape ?? FrameShape.circle;
   }
 
   @override
@@ -501,8 +536,8 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
           ],
         ),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(cornerRadius - bw),
+      child: ClipPath(
+        clipper: _FrameClipper(_frameShape, cornerRadius - bw),
         child: hasPhoto
             ? Image.file(
                 File(widget.profileImagePath!),
@@ -537,6 +572,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
           strokeWidth: bw,
           cornerRadius: cornerRadius,
           rotation: 0,
+          shape: _frameShape,
         ),
         child: content,
       );
@@ -550,6 +586,7 @@ class _TierProfileAvatarState extends State<TierProfileAvatar>
           strokeWidth: bw,
           cornerRadius: cornerRadius,
           rotation: _ringController.value * 2 * pi,
+          shape: _frameShape,
         ),
         child: child,
       ),
@@ -616,13 +653,20 @@ class SmallTierAvatar extends StatelessWidget {
   final String? profileImagePath;
   final String tierName;
   final double sizeDp;
+  final String equippedFrameId;
 
   const SmallTierAvatar({
     super.key,
     this.profileImagePath,
     required this.tierName,
     this.sizeDp = 40,
+    this.equippedFrameId = 'frame_default',
   });
+
+  FrameShape get _frameShape {
+    final c = CosmeticCatalog.byId(equippedFrameId);
+    return c?.frameShape ?? FrameShape.circle;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -639,6 +683,7 @@ class SmallTierAvatar extends StatelessWidget {
         strokeWidth: effectiveBorderWidth,
         cornerRadius: cornerRadius,
         rotation: 0,
+        shape: _frameShape,
       ),
       child: Container(
         width: sizeDp,
@@ -658,8 +703,8 @@ class SmallTierAvatar extends StatelessWidget {
               ? AppColors.surfaceContainerHigh
               : AppColors.background,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(cornerRadius - effectiveBorderWidth),
+        child: ClipPath(
+          clipper: _FrameClipper(_frameShape, cornerRadius - effectiveBorderWidth),
           child: hasPhoto
               ? Image.file(
                   File(profileImagePath!),
@@ -698,6 +743,7 @@ class _GradientBorderPainter extends CustomPainter {
   final double strokeWidth;
   final double cornerRadius;
   final double rotation;
+  final FrameShape shape;
 
   _GradientBorderPainter({
     required this.primaryColor,
@@ -705,15 +751,21 @@ class _GradientBorderPainter extends CustomPainter {
     required this.strokeWidth,
     required this.cornerRadius,
     required this.rotation,
+    this.shape = FrameShape.squareRounded,
   });
+
+  /// Builds the frame path inset by [inset] on every side (mirrors the old
+  /// `Rect.deflate` behavior, but for an arbitrary [FrameShape] path).
+  Path _insetFramePath(Size size, double inset) {
+    final w = (size.width - inset * 2).clamp(0.0, size.width);
+    final h = (size.height - inset * 2).clamp(0.0, size.height);
+    final r = (cornerRadius - inset).clamp(0.0, cornerRadius);
+    return buildFramePath(shape, Size(w, h), r).shift(Offset(inset, inset));
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(
-      rect.deflate(strokeWidth / 2),
-      Radius.circular(cornerRadius - strokeWidth / 2),
-    );
 
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
@@ -729,7 +781,7 @@ class _GradientBorderPainter extends CustomPainter {
         stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
         transform: GradientRotation(rotation),
       ).createShader(rect);
-    canvas.drawRRect(rrect, borderPaint);
+    canvas.drawPath(_insetFramePath(size, strokeWidth / 2), borderPaint);
 
     // Glossy highlight — thin white stroke fading from the top edge.
     final highlightPaint = Paint()
@@ -743,7 +795,7 @@ class _GradientBorderPainter extends CustomPainter {
           Colors.white.withValues(alpha: 0.0),
         ],
       ).createShader(rect);
-    canvas.drawRRect(rrect.deflate(strokeWidth / 2 + 0.5), highlightPaint);
+    canvas.drawPath(_insetFramePath(size, strokeWidth + 0.5), highlightPaint);
   }
 
   @override
@@ -751,7 +803,20 @@ class _GradientBorderPainter extends CustomPainter {
       oldDelegate.rotation != rotation ||
       oldDelegate.primaryColor != primaryColor ||
       oldDelegate.secondaryColor != secondaryColor ||
-      oldDelegate.strokeWidth != strokeWidth;
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.shape != shape;
+}
+
+/// Clips avatar content to the equipped frame's silhouette.
+class _FrameClipper extends CustomClipper<Path> {
+  final FrameShape shape;
+  final double radius;
+  _FrameClipper(this.shape, this.radius);
+  @override
+  Path getClip(Size size) => buildFramePath(shape, size, radius);
+  @override
+  bool shouldReclip(covariant _FrameClipper old) =>
+      old.shape != shape || old.radius != radius;
 }
 
 class _ArcRingPainter extends CustomPainter {

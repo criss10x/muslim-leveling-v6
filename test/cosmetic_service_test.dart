@@ -41,9 +41,9 @@ void main() {
   });
 
   test('resolveSlot falls back to default when pro item not entitled', () {
-    final s = GameState(equipped: const {'frame': 'shield_crest'});
+    final s = GameState(equipped: const {'frame': 'shield_classic'});
     expect(CosmeticService.resolveSlot(s, CosmeticSlot.frame, isPro: false), 'frame_default');
-    expect(CosmeticService.resolveSlot(s, CosmeticSlot.frame, isPro: true), 'shield_crest');
+    expect(CosmeticService.resolveSlot(s, CosmeticSlot.frame, isPro: true), 'shield_classic');
   });
 
   test('reconcileLapse clears pro-equipped slots but keeps free ones', () {
